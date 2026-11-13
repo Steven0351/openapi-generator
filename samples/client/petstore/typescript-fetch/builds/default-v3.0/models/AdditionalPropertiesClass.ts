@@ -12,7 +12,7 @@
  * Do not edit the class manually.
  */
 
-import { exists, mapValues } from '../runtime';
+import { mapValues } from '../runtime';
 /**
  * 
  * @export
@@ -21,16 +21,19 @@ import { exists, mapValues } from '../runtime';
 export interface AdditionalPropertiesClass {
     /**
      * 
-     * @type {{ [key: string]: string; }}
-     * @memberof AdditionalPropertiesClass
      */
     mapProperty?: { [key: string]: string; };
     /**
      * 
-     * @type {{ [key: string]: { [key: string]: string; }; }}
-     * @memberof AdditionalPropertiesClass
      */
     mapOfMapProperty?: { [key: string]: { [key: string]: string; }; };
+}
+
+/**
+ * Check if a given object implements the AdditionalPropertiesClass interface.
+ */
+export function instanceOfAdditionalPropertiesClass(value: object): value is AdditionalPropertiesClass {
+    return true;
 }
 
 export function AdditionalPropertiesClassFromJSON(json: any): AdditionalPropertiesClass {
@@ -38,27 +41,29 @@ export function AdditionalPropertiesClassFromJSON(json: any): AdditionalProperti
 }
 
 export function AdditionalPropertiesClassFromJSONTyped(json: any, ignoreDiscriminator: boolean): AdditionalPropertiesClass {
-    if ((json === undefined) || (json === null)) {
+    if (json == null) {
         return json;
     }
     return {
         
-        'mapProperty': !exists(json, 'map_property') ? undefined : json['map_property'],
-        'mapOfMapProperty': !exists(json, 'map_of_map_property') ? undefined : json['map_of_map_property'],
+        'mapProperty': json['map_property'] == null ? undefined : json['map_property'],
+        'mapOfMapProperty': json['map_of_map_property'] == null ? undefined : json['map_of_map_property'],
     };
 }
 
-export function AdditionalPropertiesClassToJSON(value?: AdditionalPropertiesClass | null): any {
-    if (value === undefined) {
-        return undefined;
+export function AdditionalPropertiesClassToJSON(json: any): AdditionalPropertiesClass {
+    return AdditionalPropertiesClassToJSONTyped(json, false);
+}
+
+export function AdditionalPropertiesClassToJSONTyped(value?: AdditionalPropertiesClass | null, ignoreDiscriminator: boolean = false): any {
+    if (value == null) {
+        return value;
     }
-    if (value === null) {
-        return null;
-    }
+
     return {
         
-        'map_property': value.mapProperty,
-        'map_of_map_property': value.mapOfMapProperty,
+        'map_property': value['mapProperty'],
+        'map_of_map_property': value['mapOfMapProperty'],
     };
 }
 

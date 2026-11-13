@@ -2,33 +2,43 @@ package org.openapitools.model;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import javax.validation.constraints.*;
 import javax.validation.Valid;
 
 import io.swagger.annotations.ApiModelProperty;
+import java.util.Objects;
 import com.fasterxml.jackson.annotation.JsonProperty;
+
 
 public class TypeHolderExample  {
   
   @ApiModelProperty(example = "what", required = true, value = "")
+
   private String stringItem;
 
   @ApiModelProperty(example = "1.234", required = true, value = "")
+
   @Valid
+
   private BigDecimal numberItem;
 
   @ApiModelProperty(example = "1.234", required = true, value = "")
+
   private Float floatItem;
 
   @ApiModelProperty(example = "-2", required = true, value = "")
+
   private Integer integerItem;
 
   @ApiModelProperty(example = "true", required = true, value = "")
+
   private Boolean boolItem;
 
   @ApiModelProperty(example = "[0, 1, 2, 3]", required = true, value = "")
-  private List<Integer> arrayItem = new ArrayList<Integer>();
+
+  private List<Integer> arrayItem = new ArrayList<>();
  /**
    * Get stringItem
    * @return stringItem
@@ -148,6 +158,27 @@ public class TypeHolderExample  {
     return this;
   }
 
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    TypeHolderExample typeHolderExample = (TypeHolderExample) o;
+    return Objects.equals(this.stringItem, typeHolderExample.stringItem) &&
+        Objects.equals(this.numberItem, typeHolderExample.numberItem) &&
+        Objects.equals(this.floatItem, typeHolderExample.floatItem) &&
+        Objects.equals(this.integerItem, typeHolderExample.integerItem) &&
+        Objects.equals(this.boolItem, typeHolderExample.boolItem) &&
+        Objects.equals(this.arrayItem, typeHolderExample.arrayItem);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(stringItem, numberItem, floatItem, integerItem, boolItem, arrayItem);
+  }
 
   @Override
   public String toString() {
@@ -169,10 +200,7 @@ public class TypeHolderExample  {
    * (except the first line).
    */
   private static String toIndentedString(Object o) {
-    if (o == null) {
-      return "null";
-    }
-    return o.toString().replace("\n", "\n    ");
+    return o == null ? "null" : o.toString().replace("\n", "\n    ");
   }
 }
 

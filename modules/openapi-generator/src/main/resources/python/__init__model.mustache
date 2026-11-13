@@ -1,5 +1,33 @@
-# we can not import model classes here because that would create a circular
-# reference which would not work in python2
-# do not import all models into this module because that uses a lot of memory and stack frames
-# if you need the ability to import all models from one package, import them with
-# from {{packageName}.models import ModelA, ModelB
+# coding: utf-8
+
+# flake8: noqa
+{{>partial_header}}
+
+{{^lazyImports}}
+{{>exports_model}}
+{{/lazyImports}}
+{{#lazyImports}}__all__ = [
+{{#models}}{{#model}}    "{{classname}}",
+{{/model}}{{/models}}]
+
+import typing as _typing
+
+if _typing.TYPE_CHECKING:
+    {{>exports_model}}
+else:
+    from importlib import import_module
+
+    _exports = {
+{{#models}}{{#model}}        "{{classname}}": ".{{classFilename}}",
+{{/model}}{{/models}}    }
+
+    def __getattr__(name: str) -> object:
+        if (module_name := _exports.get(name)) is None:
+            raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+        value = getattr(import_module(module_name, __name__), name)
+        globals()[name] = value
+        return value
+
+    def __dir__() -> list[str]:
+        return sorted(globals().keys() | _exports.keys())
+{{/lazyImports}}

@@ -10,7 +10,7 @@ import Foundation
 import AnyCodable
 #endif
 
-@objc public class EnumTest: NSObject, Codable {
+@objcMembers public class EnumTest: NSObject, Codable, JSONEncodable {
 
     public enum EnumString: String, Codable, CaseIterable {
         case upper = "UPPER"
@@ -27,7 +27,9 @@ import AnyCodable
         case number1 = -1
     }
     public enum EnumNumber: Double, Codable, CaseIterable {
+        /// Description for 1.1
         case _11 = 1.1
+        /// Description for -1.2
         case number12 = -1.2
     }
     public var enumString: EnumString?

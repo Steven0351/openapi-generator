@@ -12,15 +12,28 @@
  * Do not edit the class manually.
  */
 
+
 /**
  * 
  * @export
- * @enum {string}
  */
-export enum OuterEnumIntegerDefaultValue {
-    NUMBER_0 = 0,
-    NUMBER_1 = 1,
-    NUMBER_2 = 2
+export const OuterEnumIntegerDefaultValue = {
+    NUMBER_0: 0,
+    NUMBER_1: 1,
+    NUMBER_2: 2,
+} as const;
+export type OuterEnumIntegerDefaultValue = typeof OuterEnumIntegerDefaultValue[keyof typeof OuterEnumIntegerDefaultValue];
+
+
+export function instanceOfOuterEnumIntegerDefaultValue(value: any): boolean {
+    for (const key in OuterEnumIntegerDefaultValue) {
+        if (Object.prototype.hasOwnProperty.call(OuterEnumIntegerDefaultValue, key)) {
+            if (OuterEnumIntegerDefaultValue[key as keyof typeof OuterEnumIntegerDefaultValue] === value) {
+                return true;
+            }
+        }
+    }
+    return false;
 }
 
 export function OuterEnumIntegerDefaultValueFromJSON(json: any): OuterEnumIntegerDefaultValue {
@@ -33,5 +46,9 @@ export function OuterEnumIntegerDefaultValueFromJSONTyped(json: any, ignoreDiscr
 
 export function OuterEnumIntegerDefaultValueToJSON(value?: OuterEnumIntegerDefaultValue | null): any {
     return value as any;
+}
+
+export function OuterEnumIntegerDefaultValueToJSONTyped(value: any, ignoreDiscriminator: boolean): OuterEnumIntegerDefaultValue {
+    return value as OuterEnumIntegerDefaultValue;
 }
 

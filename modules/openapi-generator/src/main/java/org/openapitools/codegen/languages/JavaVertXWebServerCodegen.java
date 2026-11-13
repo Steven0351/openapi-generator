@@ -20,17 +20,29 @@ import io.swagger.v3.oas.models.media.Schema;
 import org.openapitools.codegen.*;
 import org.openapitools.codegen.meta.GeneratorMetadata;
 import org.openapitools.codegen.meta.Stability;
+import org.openapitools.codegen.model.ModelMap;
+import org.openapitools.codegen.model.OperationMap;
+import org.openapitools.codegen.model.OperationsMap;
 
 import java.io.File;
-import java.util.*;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static org.openapitools.codegen.CodegenConstants.INTERFACE_ONLY;
+import static org.openapitools.codegen.CodegenConstants.INTERFACE_ONLY_DESC;
+
+/**
+ * <p>Mustache templates are located in {@code src/main/resources/JavaVertXWebServer/}.
+ */
 public class JavaVertXWebServerCodegen extends AbstractJavaCodegen {
 
     protected String resourceFolder = "src/main/resources";
     protected String apiVersion = "1.0.0-SNAPSHOT";
-
+    protected boolean interfaceOnly = false;
+    
     public JavaVertXWebServerCodegen() {
         super();
 
@@ -43,11 +55,6 @@ public class JavaVertXWebServerCodegen extends AbstractJavaCodegen {
 
         modelTemplateFiles.clear();
         modelTemplateFiles.put("model.mustache", ".java");
-
-        apiTemplateFiles.clear();
-        apiTemplateFiles.put("api.mustache", ".java");
-        apiTemplateFiles.put("apiImpl.mustache", "Impl.java");
-        apiTemplateFiles.put("apiHandler.mustache", "Handler.java");
 
         embeddedTemplateDir = templateDir = "JavaVertXWebServer";
 
@@ -65,6 +72,8 @@ public class JavaVertXWebServerCodegen extends AbstractJavaCodegen {
         updateOption(CodegenConstants.MODEL_PACKAGE, modelPackage);
         updateOption(CodegenConstants.INVOKER_PACKAGE, invokerPackage);
         updateOption(DATE_LIBRARY, this.getDateLibrary());
+        
+        cliOptions.add(CliOption.newBoolean(INTERFACE_ONLY, INTERFACE_ONLY_DESC));
 
         // Override type mapping
         typeMapping.put("file", "FileUpload");
@@ -73,14 +82,17 @@ public class JavaVertXWebServerCodegen extends AbstractJavaCodegen {
         typeMapping.put("DateTime", "String");
     }
 
+    @Override
     public CodegenType getTag() {
         return CodegenType.SERVER;
     }
 
+    @Override
     public String getName() {
         return "java-vertx-web";
     }
 
+    @Override
     public String getHelp() {
         return "Generates a Java Vert.x-Web Server (beta).";
     }
@@ -88,6 +100,18 @@ public class JavaVertXWebServerCodegen extends AbstractJavaCodegen {
     @Override
     public void processOpts() {
         super.processOpts();
+
+        if (additionalProperties.containsKey(INTERFACE_ONLY)) {
+            interfaceOnly = Boolean.parseBoolean(additionalProperties.get(INTERFACE_ONLY).toString());
+        }
+        additionalProperties.put(INTERFACE_ONLY, interfaceOnly);
+
+        apiTemplateFiles.clear();
+        apiTemplateFiles.put("api.mustache", ".java");
+        apiTemplateFiles.put("apiHandler.mustache", "Handler.java");
+        if (!interfaceOnly) {
+            apiTemplateFiles.put("apiImpl.mustache", "Impl.java");
+        }
 
         apiTestTemplateFiles.clear();
 
@@ -105,7 +129,9 @@ public class JavaVertXWebServerCodegen extends AbstractJavaCodegen {
         String sourcePackageFolder = sourceFolder + File.separator + invokerPackage.replace(".", File.separator);
         supportingFiles.clear();
         supportingFiles.add(new SupportingFile("supportFiles/openapi.mustache", resourceFolder, "openapi.yaml"));
-        supportingFiles.add(new SupportingFile("supportFiles/HttpServerVerticle.mustache", sourcePackageFolder, "HttpServerVerticle.java"));
+        if (!interfaceOnly) {
+            supportingFiles.add(new SupportingFile("supportFiles/HttpServerVerticle.mustache", sourcePackageFolder, "HttpServerVerticle.java"));
+        }
         supportingFiles.add(new SupportingFile("supportFiles/ApiResponse.mustache", sourcePackageFolder, "ApiResponse.java"));
         supportingFiles.add(new SupportingFile("supportFiles/pom.mustache", "", "pom.xml"));
 
@@ -125,13 +151,12 @@ public class JavaVertXWebServerCodegen extends AbstractJavaCodegen {
         }
     }
 
-    @SuppressWarnings("unchecked")
     @Override
-    public Map<String, Object> postProcessOperationsWithModels(Map<String, Object> objs, List<Object> allModels) {
-        Map<String, Object> newObjs = super.postProcessOperationsWithModels(objs, allModels);
-        Map<String, Object> operations = (Map<String, Object>) newObjs.get("operations");
+    public OperationsMap postProcessOperationsWithModels(OperationsMap objs, List<ModelMap> allModels) {
+        OperationsMap newObjs = super.postProcessOperationsWithModels(objs, allModels);
+        OperationMap operations = newObjs.getOperations();
         if (operations != null) {
-            List<CodegenOperation> ops = (List<CodegenOperation>) operations.get("operation");
+            List<CodegenOperation> ops = operations.getOperation();
             for (CodegenOperation operation : ops) {
                 operation.httpMethod = operation.httpMethod.toLowerCase(Locale.ROOT);
 
@@ -141,10 +166,10 @@ public class JavaVertXWebServerCodegen extends AbstractJavaCodegen {
                 if (operation.allParams.stream().anyMatch(p -> p.isFormParam && p.isFile)) {
                     // If there is a file upload, exclude other form params since it's not clear how the user should access to these
                     operation.allParams = operation
-                        .allParams
-                        .stream()
-                        .filter(p -> !p.isFormParam || p.isFile)
-                        .collect(Collectors.toList());
+                            .allParams
+                            .stream()
+                            .filter(p -> !p.isFormParam || p.isFile)
+                            .collect(Collectors.toList());
                 } else if (operation.allParams.stream().anyMatch(p -> p.isFormParam)) {
                     // In Vert.x 4 Web OpenAPI the forms are handled as single json object
                     // We create a dummy param here and remove the other ones
@@ -154,8 +179,8 @@ public class JavaVertXWebServerCodegen extends AbstractJavaCodegen {
                     dummyParam.dataType = "JsonObject";
                     dummyParam.paramName = "formBody";
                     operation.allParams = Stream.concat(
-                        operation.allParams.stream().filter(p -> !p.isFormParam),
-                        Stream.of(dummyParam)
+                            operation.allParams.stream().filter(p -> !p.isFormParam),
+                            Stream.of(dummyParam)
                     ).collect(Collectors.toList());
                 }
             }

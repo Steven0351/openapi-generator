@@ -4,11 +4,10 @@
 
 use async_trait::async_trait;
 use futures::{future, Stream, StreamExt, TryFutureExt, TryStreamExt};
-use hyper::server::conn::Http;
-use hyper::service::Service;
+use hyper::server::conn::http1;
+use hyper_util::rt::TokioIo;
+use hyper::service::{service_fn, Service};
 use log::info;
-#[cfg(not(any(target_os = "macos", target_os = "windows", target_os = "ios")))]
-use openssl::ssl::SslAcceptorBuilder;
 use std::future::Future;
 use std::marker::PhantomData;
 use std::net::SocketAddr;
@@ -20,20 +19,21 @@ use swagger::EmptyContext;
 use tokio::net::TcpListener;
 
 #[cfg(not(any(target_os = "macos", target_os = "windows", target_os = "ios")))]
-use openssl::ssl::{SslAcceptor, SslFiletype, SslMethod};
+use openssl::ssl::{Ssl, SslAcceptor, SslAcceptorBuilder, SslFiletype, SslMethod};
 
 use openapi_v3::models;
 
 /// Builds an SSL implementation for Simple HTTPS from some hard-coded file names
 pub async fn create(addr: &str, https: bool) {
-    let addr = addr.parse().expect("Failed to parse bind address");
+    let addr: SocketAddr = addr.parse().expect("Failed to parse bind address");
+    let listener = TcpListener::bind(&addr).await.unwrap();
 
     let server = Server::new();
 
     let service = MakeService::new(server);
-
     let service = MakeAllowAllAuthenticator::new(service, "cosmo");
 
+    #[allow(unused_mut)]
     let mut service =
         openapi_v3::server::context::MakeAddContext::<_, EmptyContext>::new(
             service
@@ -54,35 +54,62 @@ pub async fn create(addr: &str, https: bool) {
             ssl.set_certificate_chain_file("examples/server-chain.pem").expect("Failed to set certificate chain");
             ssl.check_private_key().expect("Failed to check private key");
 
-            let tls_acceptor = Arc::new(ssl.build());
-            let mut tcp_listener = TcpListener::bind(&addr).await.unwrap();
-            let mut incoming = tcp_listener.incoming();
+            let tls_acceptor = ssl.build();
 
-            while let (Some(tcp), rest) = incoming.into_future().await {
-                if let Ok(tcp) = tcp {
-                    let addr = tcp.peer_addr().expect("Unable to get remote address");
+            info!("Starting a server (with https)");
+            loop {
+                if let Ok((tcp, addr)) = listener.accept().await {
+                    let ssl = Ssl::new(tls_acceptor.context()).unwrap();
                     let service = service.call(addr);
-                    let tls_acceptor = Arc::clone(&tls_acceptor);
 
                     tokio::spawn(async move {
-                        let tls = tokio_openssl::accept(&*tls_acceptor, tcp).await.map_err(|_| ())?;
-
+                        let tls = tokio_openssl::SslStream::new(ssl, tcp).map_err(|_| ())?;
                         let service = service.await.map_err(|_| ())?;
 
-                        Http::new().serve_connection(tls, service).await.map_err(|_| ())
+                        http1::Builder::new()
+                            .serve_connection(TokioIo::new(tls), service)
+                            .await
+                            .map_err(|_| ())
                     });
                 }
-
-                incoming = rest;
             }
         }
     } else {
-        // Using HTTP
-        hyper::server::Server::bind(&addr).serve(service).await.unwrap()
+        info!("Starting a server (over http, so no TLS)");
+        println!("Listening on http://{}", addr);
+
+        loop {
+            // When an incoming TCP connection is received grab a TCP stream for
+            // client<->server communication.
+            //
+            // Note, this is a .await point, this loop will loop forever but is not a busy loop. The
+            // .await point allows the Tokio runtime to pull the task off of the thread until the task
+            // has work to do. In this case, a connection arrives on the port we are listening on and
+            // the task is woken up, at which point the task is then put back on a thread, and is
+            // driven forward by the runtime, eventually yielding a TCP stream.
+            let (tcp_stream, addr) = listener.accept().await.expect("Failed to accept connection");
+
+            let service = service.call(addr).await.unwrap();
+            let io = TokioIo::new(tcp_stream);
+            // Spin up a new task in Tokio so we can continue to listen for new TCP connection on the
+            // current task without waiting for the processing of the HTTP1 connection we just received
+            // to finish
+            tokio::task::spawn(async move {
+                // Handle the connection from the client using HTTP1 and pass any
+                // HTTP requests received on that connection to the `hello` function
+                let result = http1::Builder::new()
+                    .serve_connection(io, service)
+                    .await;
+                if let Err(err) = result
+                {
+                    println!("Error serving connection: {err:?}");
+                }
+            });
+        }
     }
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy)]
 pub struct Server<C> {
     marker: PhantomData<C>,
 }
@@ -93,26 +120,46 @@ impl<C> Server<C> {
     }
 }
 
+impl<C> Clone for Server<C> {
+    fn clone(&self) -> Self {
+        Self {
+            marker: PhantomData,
+        }
+    }
+}
+
+
+use jsonwebtoken::{decode, encode, errors::Error as JwtError, Algorithm, DecodingKey, EncodingKey, Header, TokenData, Validation};
+use serde::{Deserialize, Serialize};
+use swagger::auth::Authorization;
+use crate::server_auth;
+
 
 use openapi_v3::{
     Api,
     AnyOfGetResponse,
     CallbackWithHeaderPostResponse,
     ComplexQueryParamGetResponse,
-    EnumInPathPathParamGetResponse,
+    ExamplesTestResponse,
+    FormTestResponse,
+    GetWithBooleanParameterResponse,
     JsonComplexQueryParamGetResponse,
     MandatoryRequestHeaderGetResponse,
     MergePatchJsonGetResponse,
     MultigetGetResponse,
     MultipleAuthSchemeGetResponse,
+    MultipleResponseContentTypesResponse,
     OneOfGetResponse,
     OverrideServerGetResponse,
     ParamgetGetResponse,
+    QueryExampleGetResponse,
     ReadonlyAuthSchemeGetResponse,
     RegisterCallbackPostResponse,
+    RequiredBinaryStreamPutResponse,
     RequiredOctetStreamPutResponse,
     ResponsesWithHeadersGetResponse,
     Rfc7807GetResponse,
+    TwoFirstLetterHeadersResponse,
     UntypedPropertyGetResponse,
     UuidGetResponse,
     XmlExtraPostResponse,
@@ -120,6 +167,8 @@ use openapi_v3::{
     XmlOtherPutResponse,
     XmlPostResponse,
     XmlPutResponse,
+    EnumInPathPathParamGetResponse,
+    MultiplePathParamsWithVeryLongPathToTestFormattingPathParamAPathParamBGetResponse,
     CreateRepoResponse,
     GetRepoInfoResponse,
 };
@@ -130,14 +179,13 @@ use swagger::ApiError;
 #[async_trait]
 impl<C> Api<C> for Server<C> where C: Has<XSpanIdString> + Send + Sync
 {
-    async fn any_of_get(
+    async fn any_of_get<'a>(
         &self,
-        any_of: Option<&Vec<models::AnyOfObject>>,
+        any_of: Option<&'a Vec<models::AnyOfObject>>,
         context: &C) -> Result<AnyOfGetResponse, ApiError>
     {
-        let context = context.clone();
         info!("any_of_get({:?}) - X-Span-ID: {:?}", any_of, context.get().0.clone());
-        Err("Generic failure".into())
+        Err(ApiError("Api-Error: Operation is NOT implemented".into()))
     }
 
     async fn callback_with_header_post(
@@ -145,39 +193,56 @@ impl<C> Api<C> for Server<C> where C: Has<XSpanIdString> + Send + Sync
         url: String,
         context: &C) -> Result<CallbackWithHeaderPostResponse, ApiError>
     {
-        let context = context.clone();
-        info!("callback_with_header_post(\"{}\") - X-Span-ID: {:?}", url, context.get().0.clone());
-        Err("Generic failure".into())
+        info!("callback_with_header_post({:?}) - X-Span-ID: {:?}", url, context.get().0.clone());
+        Err(ApiError("Api-Error: Operation is NOT implemented".into()))
     }
 
-    async fn complex_query_param_get(
+    async fn complex_query_param_get<'a>(
         &self,
-        list_of_strings: Option<&Vec<models::StringObject>>,
+        list_of_strings: Option<&'a Vec<models::StringObject>>,
         context: &C) -> Result<ComplexQueryParamGetResponse, ApiError>
     {
-        let context = context.clone();
         info!("complex_query_param_get({:?}) - X-Span-ID: {:?}", list_of_strings, context.get().0.clone());
-        Err("Generic failure".into())
+        Err(ApiError("Api-Error: Operation is NOT implemented".into()))
     }
 
-    async fn enum_in_path_path_param_get(
+    /// Test examples
+    async fn examples_test<'a>(
         &self,
-        path_param: models::StringEnum,
-        context: &C) -> Result<EnumInPathPathParamGetResponse, ApiError>
+        ids: Option<&'a Vec<String>>,
+        context: &C) -> Result<ExamplesTestResponse, ApiError>
     {
-        let context = context.clone();
-        info!("enum_in_path_path_param_get({:?}) - X-Span-ID: {:?}", path_param, context.get().0.clone());
-        Err("Generic failure".into())
+        info!("examples_test({:?}) - X-Span-ID: {:?}", ids, context.get().0.clone());
+        Err(ApiError("Api-Error: Operation is NOT implemented".into()))
     }
 
-    async fn json_complex_query_param_get(
+    /// Test a Form Post
+    async fn form_test<'a>(
         &self,
-        list_of_strings: Option<&Vec<models::StringObject>>,
+        required_array: &'a Vec<String>,
+        enum_field: models::FormTestRequestEnumField,
+        context: &C) -> Result<FormTestResponse, ApiError>
+    {
+        info!("form_test({:?}, {:?}) - X-Span-ID: {:?}", required_array, enum_field, context.get().0.clone());
+        Err(ApiError("Api-Error: Operation is NOT implemented".into()))
+    }
+
+    async fn get_with_boolean_parameter(
+        &self,
+        iambool: bool,
+        context: &C) -> Result<GetWithBooleanParameterResponse, ApiError>
+    {
+        info!("get_with_boolean_parameter({:?}) - X-Span-ID: {:?}", iambool, context.get().0.clone());
+        Err(ApiError("Api-Error: Operation is NOT implemented".into()))
+    }
+
+    async fn json_complex_query_param_get<'a>(
+        &self,
+        list_of_strings: Option<&'a Vec<models::StringObject>>,
         context: &C) -> Result<JsonComplexQueryParamGetResponse, ApiError>
     {
-        let context = context.clone();
         info!("json_complex_query_param_get({:?}) - X-Span-ID: {:?}", list_of_strings, context.get().0.clone());
-        Err("Generic failure".into())
+        Err(ApiError("Api-Error: Operation is NOT implemented".into()))
     }
 
     async fn mandatory_request_header_get(
@@ -185,18 +250,16 @@ impl<C> Api<C> for Server<C> where C: Has<XSpanIdString> + Send + Sync
         x_header: String,
         context: &C) -> Result<MandatoryRequestHeaderGetResponse, ApiError>
     {
-        let context = context.clone();
-        info!("mandatory_request_header_get(\"{}\") - X-Span-ID: {:?}", x_header, context.get().0.clone());
-        Err("Generic failure".into())
+        info!("mandatory_request_header_get({:?}) - X-Span-ID: {:?}", x_header, context.get().0.clone());
+        Err(ApiError("Api-Error: Operation is NOT implemented".into()))
     }
 
     async fn merge_patch_json_get(
         &self,
         context: &C) -> Result<MergePatchJsonGetResponse, ApiError>
     {
-        let context = context.clone();
         info!("merge_patch_json_get() - X-Span-ID: {:?}", context.get().0.clone());
-        Err("Generic failure".into())
+        Err(ApiError("Api-Error: Operation is NOT implemented".into()))
     }
 
     /// Get some stuff.
@@ -204,36 +267,42 @@ impl<C> Api<C> for Server<C> where C: Has<XSpanIdString> + Send + Sync
         &self,
         context: &C) -> Result<MultigetGetResponse, ApiError>
     {
-        let context = context.clone();
         info!("multiget_get() - X-Span-ID: {:?}", context.get().0.clone());
-        Err("Generic failure".into())
+        Err(ApiError("Api-Error: Operation is NOT implemented".into()))
     }
 
     async fn multiple_auth_scheme_get(
         &self,
         context: &C) -> Result<MultipleAuthSchemeGetResponse, ApiError>
     {
-        let context = context.clone();
         info!("multiple_auth_scheme_get() - X-Span-ID: {:?}", context.get().0.clone());
-        Err("Generic failure".into())
+        Err(ApiError("Api-Error: Operation is NOT implemented".into()))
+    }
+
+    /// Test multiple content types in a single response
+    async fn multiple_response_content_types(
+        &self,
+        object_param: models::ObjectParam,
+        context: &C) -> Result<MultipleResponseContentTypesResponse, ApiError>
+    {
+        info!("multiple_response_content_types({:?}) - X-Span-ID: {:?}", object_param, context.get().0.clone());
+        Err(ApiError("Api-Error: Operation is NOT implemented".into()))
     }
 
     async fn one_of_get(
         &self,
         context: &C) -> Result<OneOfGetResponse, ApiError>
     {
-        let context = context.clone();
         info!("one_of_get() - X-Span-ID: {:?}", context.get().0.clone());
-        Err("Generic failure".into())
+        Err(ApiError("Api-Error: Operation is NOT implemented".into()))
     }
 
     async fn override_server_get(
         &self,
         context: &C) -> Result<OverrideServerGetResponse, ApiError>
     {
-        let context = context.clone();
         info!("override_server_get() - X-Span-ID: {:?}", context.get().0.clone());
-        Err("Generic failure".into())
+        Err(ApiError("Api-Error: Operation is NOT implemented".into()))
     }
 
     /// Get some stuff with parameters.
@@ -244,18 +313,27 @@ impl<C> Api<C> for Server<C> where C: Has<XSpanIdString> + Send + Sync
         some_list: Option<models::MyIdList>,
         context: &C) -> Result<ParamgetGetResponse, ApiError>
     {
-        let context = context.clone();
         info!("paramget_get({:?}, {:?}, {:?}) - X-Span-ID: {:?}", uuid, some_object, some_list, context.get().0.clone());
-        Err("Generic failure".into())
+        Err(ApiError("Api-Error: Operation is NOT implemented".into()))
+    }
+
+    /// Test required query params with and without examples
+    async fn query_example_get(
+        &self,
+        required_no_example: String,
+        required_with_example: i32,
+        context: &C) -> Result<QueryExampleGetResponse, ApiError>
+    {
+        info!("query_example_get({:?}, {:?}) - X-Span-ID: {:?}", required_no_example, required_with_example, context.get().0.clone());
+        Err(ApiError("Api-Error: Operation is NOT implemented".into()))
     }
 
     async fn readonly_auth_scheme_get(
         &self,
         context: &C) -> Result<ReadonlyAuthSchemeGetResponse, ApiError>
     {
-        let context = context.clone();
         info!("readonly_auth_scheme_get() - X-Span-ID: {:?}", context.get().0.clone());
-        Err("Generic failure".into())
+        Err(ApiError("Api-Error: Operation is NOT implemented".into()))
     }
 
     async fn register_callback_post(
@@ -263,9 +341,17 @@ impl<C> Api<C> for Server<C> where C: Has<XSpanIdString> + Send + Sync
         url: String,
         context: &C) -> Result<RegisterCallbackPostResponse, ApiError>
     {
-        let context = context.clone();
-        info!("register_callback_post(\"{}\") - X-Span-ID: {:?}", url, context.get().0.clone());
-        Err("Generic failure".into())
+        info!("register_callback_post({:?}) - X-Span-ID: {:?}", url, context.get().0.clone());
+        Err(ApiError("Api-Error: Operation is NOT implemented".into()))
+    }
+
+    async fn required_binary_stream_put(
+        &self,
+        body: swagger::ByteArray,
+        context: &C) -> Result<RequiredBinaryStreamPutResponse, ApiError>
+    {
+        info!("required_binary_stream_put({:?}) - X-Span-ID: {:?}", body, context.get().0.clone());
+        Err(ApiError("Api-Error: Operation is NOT implemented".into()))
     }
 
     async fn required_octet_stream_put(
@@ -273,27 +359,34 @@ impl<C> Api<C> for Server<C> where C: Has<XSpanIdString> + Send + Sync
         body: swagger::ByteArray,
         context: &C) -> Result<RequiredOctetStreamPutResponse, ApiError>
     {
-        let context = context.clone();
         info!("required_octet_stream_put({:?}) - X-Span-ID: {:?}", body, context.get().0.clone());
-        Err("Generic failure".into())
+        Err(ApiError("Api-Error: Operation is NOT implemented".into()))
     }
 
     async fn responses_with_headers_get(
         &self,
         context: &C) -> Result<ResponsesWithHeadersGetResponse, ApiError>
     {
-        let context = context.clone();
         info!("responses_with_headers_get() - X-Span-ID: {:?}", context.get().0.clone());
-        Err("Generic failure".into())
+        Err(ApiError("Api-Error: Operation is NOT implemented".into()))
     }
 
     async fn rfc7807_get(
         &self,
         context: &C) -> Result<Rfc7807GetResponse, ApiError>
     {
-        let context = context.clone();
         info!("rfc7807_get() - X-Span-ID: {:?}", context.get().0.clone());
-        Err("Generic failure".into())
+        Err(ApiError("Api-Error: Operation is NOT implemented".into()))
+    }
+
+    async fn two_first_letter_headers(
+        &self,
+        x_header_one: Option<bool>,
+        x_header_two: Option<bool>,
+        context: &C) -> Result<TwoFirstLetterHeadersResponse, ApiError>
+    {
+        info!("two_first_letter_headers({:?}, {:?}) - X-Span-ID: {:?}", x_header_one, x_header_two, context.get().0.clone());
+        Err(ApiError("Api-Error: Operation is NOT implemented".into()))
     }
 
     async fn untyped_property_get(
@@ -301,18 +394,16 @@ impl<C> Api<C> for Server<C> where C: Has<XSpanIdString> + Send + Sync
         object_untyped_props: Option<models::ObjectUntypedProps>,
         context: &C) -> Result<UntypedPropertyGetResponse, ApiError>
     {
-        let context = context.clone();
         info!("untyped_property_get({:?}) - X-Span-ID: {:?}", object_untyped_props, context.get().0.clone());
-        Err("Generic failure".into())
+        Err(ApiError("Api-Error: Operation is NOT implemented".into()))
     }
 
     async fn uuid_get(
         &self,
         context: &C) -> Result<UuidGetResponse, ApiError>
     {
-        let context = context.clone();
         info!("uuid_get() - X-Span-ID: {:?}", context.get().0.clone());
-        Err("Generic failure".into())
+        Err(ApiError("Api-Error: Operation is NOT implemented".into()))
     }
 
     async fn xml_extra_post(
@@ -320,9 +411,8 @@ impl<C> Api<C> for Server<C> where C: Has<XSpanIdString> + Send + Sync
         duplicate_xml_object: Option<models::DuplicateXmlObject>,
         context: &C) -> Result<XmlExtraPostResponse, ApiError>
     {
-        let context = context.clone();
         info!("xml_extra_post({:?}) - X-Span-ID: {:?}", duplicate_xml_object, context.get().0.clone());
-        Err("Generic failure".into())
+        Err(ApiError("Api-Error: Operation is NOT implemented".into()))
     }
 
     async fn xml_other_post(
@@ -330,9 +420,8 @@ impl<C> Api<C> for Server<C> where C: Has<XSpanIdString> + Send + Sync
         another_xml_object: Option<models::AnotherXmlObject>,
         context: &C) -> Result<XmlOtherPostResponse, ApiError>
     {
-        let context = context.clone();
         info!("xml_other_post({:?}) - X-Span-ID: {:?}", another_xml_object, context.get().0.clone());
-        Err("Generic failure".into())
+        Err(ApiError("Api-Error: Operation is NOT implemented".into()))
     }
 
     async fn xml_other_put(
@@ -340,20 +429,18 @@ impl<C> Api<C> for Server<C> where C: Has<XSpanIdString> + Send + Sync
         another_xml_array: Option<models::AnotherXmlArray>,
         context: &C) -> Result<XmlOtherPutResponse, ApiError>
     {
-        let context = context.clone();
         info!("xml_other_put({:?}) - X-Span-ID: {:?}", another_xml_array, context.get().0.clone());
-        Err("Generic failure".into())
+        Err(ApiError("Api-Error: Operation is NOT implemented".into()))
     }
 
-    /// Post an array
+    /// Post an array.  It's important we test apostrophes, so include one here.
     async fn xml_post(
         &self,
         xml_array: Option<models::XmlArray>,
         context: &C) -> Result<XmlPostResponse, ApiError>
     {
-        let context = context.clone();
         info!("xml_post({:?}) - X-Span-ID: {:?}", xml_array, context.get().0.clone());
-        Err("Generic failure".into())
+        Err(ApiError("Api-Error: Operation is NOT implemented".into()))
     }
 
     async fn xml_put(
@@ -361,9 +448,27 @@ impl<C> Api<C> for Server<C> where C: Has<XSpanIdString> + Send + Sync
         xml_object: Option<models::XmlObject>,
         context: &C) -> Result<XmlPutResponse, ApiError>
     {
-        let context = context.clone();
         info!("xml_put({:?}) - X-Span-ID: {:?}", xml_object, context.get().0.clone());
-        Err("Generic failure".into())
+        Err(ApiError("Api-Error: Operation is NOT implemented".into()))
+    }
+
+    async fn enum_in_path_path_param_get(
+        &self,
+        path_param: models::StringEnum,
+        context: &C) -> Result<EnumInPathPathParamGetResponse, ApiError>
+    {
+        info!("enum_in_path_path_param_get({:?}) - X-Span-ID: {:?}", path_param, context.get().0.clone());
+        Err(ApiError("Api-Error: Operation is NOT implemented".into()))
+    }
+
+    async fn multiple_path_params_with_very_long_path_to_test_formatting_path_param_a_path_param_b_get(
+        &self,
+        path_param_a: String,
+        path_param_b: String,
+        context: &C) -> Result<MultiplePathParamsWithVeryLongPathToTestFormattingPathParamAPathParamBGetResponse, ApiError>
+    {
+        info!("multiple_path_params_with_very_long_path_to_test_formatting_path_param_a_path_param_b_get({:?}, {:?}) - X-Span-ID: {:?}", path_param_a, path_param_b, context.get().0.clone());
+        Err(ApiError("Api-Error: Operation is NOT implemented".into()))
     }
 
     async fn create_repo(
@@ -371,9 +476,8 @@ impl<C> Api<C> for Server<C> where C: Has<XSpanIdString> + Send + Sync
         object_param: models::ObjectParam,
         context: &C) -> Result<CreateRepoResponse, ApiError>
     {
-        let context = context.clone();
         info!("create_repo({:?}) - X-Span-ID: {:?}", object_param, context.get().0.clone());
-        Err("Generic failure".into())
+        Err(ApiError("Api-Error: Operation is NOT implemented".into()))
     }
 
     async fn get_repo_info(
@@ -381,9 +485,8 @@ impl<C> Api<C> for Server<C> where C: Has<XSpanIdString> + Send + Sync
         repo_id: String,
         context: &C) -> Result<GetRepoInfoResponse, ApiError>
     {
-        let context = context.clone();
-        info!("get_repo_info(\"{}\") - X-Span-ID: {:?}", repo_id, context.get().0.clone());
-        Err("Generic failure".into())
+        info!("get_repo_info({:?}) - X-Span-ID: {:?}", repo_id, context.get().0.clone());
+        Err(ApiError("Api-Error: Operation is NOT implemented".into()))
     }
 
 }

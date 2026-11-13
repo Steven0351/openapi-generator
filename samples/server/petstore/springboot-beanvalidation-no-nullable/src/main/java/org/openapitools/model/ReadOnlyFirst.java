@@ -1,25 +1,38 @@
 package org.openapitools.model;
 
+import java.net.URI;
 import java.util.Objects;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
-import io.swagger.annotations.ApiModel;
-import io.swagger.annotations.ApiModelProperty;
-import javax.validation.Valid;
-import javax.validation.constraints.*;
+import com.fasterxml.jackson.annotation.JsonSetter;
+import com.fasterxml.jackson.annotation.Nulls;
+import org.springframework.lang.Nullable;
+import java.time.OffsetDateTime;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.*;
+import io.swagger.v3.oas.annotations.media.Schema;
+
+
+import java.util.*;
+import jakarta.annotation.Generated;
 
 /**
  * ReadOnlyFirst
  */
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.SpringCodegen")
-public class ReadOnlyFirst   {
-  @JsonProperty("bar")
-  private String bar;
 
-  @JsonProperty("baz")
-  private String baz;
+@Generated(value = "org.openapitools.codegen.languages.SpringCodegen", comments = "Generator version: 7.28.0-SNAPSHOT")
+public class ReadOnlyFirst {
 
-  public ReadOnlyFirst bar(String bar) {
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  @JsonSetter(nulls = Nulls.SKIP)
+  private @Nullable String bar;
+
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  @JsonSetter(nulls = Nulls.SKIP)
+  private @Nullable String baz;
+
+  public ReadOnlyFirst bar(@Nullable String bar) {
     this.bar = bar;
     return this;
   }
@@ -27,19 +40,20 @@ public class ReadOnlyFirst   {
   /**
    * Get bar
    * @return bar
-  */
-  @ApiModelProperty(readOnly = true, value = "")
-
-
-  public String getBar() {
+   */
+  
+  @Schema(name = "bar", accessMode = Schema.AccessMode.READ_ONLY, requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+  @JsonProperty("bar")
+  public @Nullable String getBar() {
     return bar;
   }
 
-  public void setBar(String bar) {
+  @JsonProperty("bar")
+  public void setBar(@Nullable String bar) {
     this.bar = bar;
   }
 
-  public ReadOnlyFirst baz(String baz) {
+  public ReadOnlyFirst baz(@Nullable String baz) {
     this.baz = baz;
     return this;
   }
@@ -47,18 +61,18 @@ public class ReadOnlyFirst   {
   /**
    * Get baz
    * @return baz
-  */
-  @ApiModelProperty(value = "")
-
-
-  public String getBaz() {
+   */
+  
+  @Schema(name = "baz", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+  @JsonProperty("baz")
+  public @Nullable String getBaz() {
     return baz;
   }
 
-  public void setBaz(String baz) {
+  @JsonProperty("baz")
+  public void setBaz(@Nullable String baz) {
     this.baz = baz;
   }
-
 
   @Override
   public boolean equals(Object o) {
@@ -82,7 +96,6 @@ public class ReadOnlyFirst   {
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class ReadOnlyFirst {\n");
-    
     sb.append("    bar: ").append(toIndentedString(bar)).append("\n");
     sb.append("    baz: ").append(toIndentedString(baz)).append("\n");
     sb.append("}");
@@ -93,11 +106,8 @@ public class ReadOnlyFirst   {
    * Convert the given object to string with each line indented by 4 spaces
    * (except the first line).
    */
-  private String toIndentedString(Object o) {
-    if (o == null) {
-      return "null";
-    }
-    return o.toString().replace("\n", "\n    ");
+  private String toIndentedString(@Nullable Object o) {
+    return o == null ? "null" : o.toString().replace("\n", "\n    ");
   }
 }
 

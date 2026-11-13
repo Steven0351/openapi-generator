@@ -1,26 +1,41 @@
 package org.openapitools.model;
 
+import java.net.URI;
 import java.util.Objects;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
-import io.swagger.annotations.ApiModel;
-import io.swagger.annotations.ApiModelProperty;
-import javax.validation.Valid;
-import javax.validation.constraints.*;
+import com.fasterxml.jackson.annotation.JsonSetter;
+import com.fasterxml.jackson.annotation.JsonTypeName;
+import com.fasterxml.jackson.annotation.Nulls;
+import org.springframework.lang.Nullable;
+import java.time.OffsetDateTime;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.*;
+import io.swagger.v3.oas.annotations.media.Schema;
+
+
+import java.util.*;
+import jakarta.annotation.Generated;
 
 /**
  * Model for testing model name starting with number
  */
-@ApiModel(description = "Model for testing model name starting with number")
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.SpringCodegen")
-public class Model200Response   {
-  @JsonProperty("name")
-  private Integer name;
 
-  @JsonProperty("class")
-  private String propertyClass;
+@Schema(name = "200_response", description = "Model for testing model name starting with number")
+@JsonTypeName("200_response")
+@Generated(value = "org.openapitools.codegen.languages.SpringCodegen", comments = "Generator version: 7.28.0-SNAPSHOT")
+public class Model200Response {
 
-  public Model200Response name(Integer name) {
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  @JsonSetter(nulls = Nulls.SKIP)
+  private @Nullable Integer name;
+
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  @JsonSetter(nulls = Nulls.SKIP)
+  private @Nullable String propertyClass;
+
+  public Model200Response name(@Nullable Integer name) {
     this.name = name;
     return this;
   }
@@ -28,19 +43,20 @@ public class Model200Response   {
   /**
    * Get name
    * @return name
-  */
-  @ApiModelProperty(value = "")
-
-
-  public Integer getName() {
+   */
+  
+  @Schema(name = "name", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+  @JsonProperty("name")
+  public @Nullable Integer getName() {
     return name;
   }
 
-  public void setName(Integer name) {
+  @JsonProperty("name")
+  public void setName(@Nullable Integer name) {
     this.name = name;
   }
 
-  public Model200Response propertyClass(String propertyClass) {
+  public Model200Response propertyClass(@Nullable String propertyClass) {
     this.propertyClass = propertyClass;
     return this;
   }
@@ -48,18 +64,18 @@ public class Model200Response   {
   /**
    * Get propertyClass
    * @return propertyClass
-  */
-  @ApiModelProperty(value = "")
-
-
-  public String getPropertyClass() {
+   */
+  
+  @Schema(name = "class", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+  @JsonProperty("class")
+  public @Nullable String getPropertyClass() {
     return propertyClass;
   }
 
-  public void setPropertyClass(String propertyClass) {
+  @JsonProperty("class")
+  public void setPropertyClass(@Nullable String propertyClass) {
     this.propertyClass = propertyClass;
   }
-
 
   @Override
   public boolean equals(Object o) {
@@ -83,7 +99,6 @@ public class Model200Response   {
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class Model200Response {\n");
-    
     sb.append("    name: ").append(toIndentedString(name)).append("\n");
     sb.append("    propertyClass: ").append(toIndentedString(propertyClass)).append("\n");
     sb.append("}");
@@ -94,11 +109,8 @@ public class Model200Response   {
    * Convert the given object to string with each line indented by 4 spaces
    * (except the first line).
    */
-  private String toIndentedString(Object o) {
-    if (o == null) {
-      return "null";
-    }
-    return o.toString().replace("\n", "\n    ");
+  private String toIndentedString(@Nullable Object o) {
+    return o == null ? "null" : o.toString().replace("\n", "\n    ");
   }
 }
 

@@ -1,32 +1,48 @@
 package org.openapitools.model;
 
+import java.net.URI;
 import java.util.Objects;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonSetter;
 import com.fasterxml.jackson.annotation.JsonValue;
-import io.swagger.annotations.ApiModel;
-import io.swagger.annotations.ApiModelProperty;
-import org.threeten.bp.OffsetDateTime;
-import javax.validation.Valid;
-import javax.validation.constraints.*;
+import com.fasterxml.jackson.annotation.Nulls;
+import java.time.OffsetDateTime;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.lang.Nullable;
+import java.time.OffsetDateTime;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.*;
+import io.swagger.v3.oas.annotations.media.Schema;
+
+
+import java.util.*;
+import jakarta.annotation.Generated;
 
 /**
  * Order
  */
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.SpringCodegen")
-public class Order   {
-  @JsonProperty("id")
-  private Long id;
 
-  @JsonProperty("petId")
-  private Long petId;
+@Generated(value = "org.openapitools.codegen.languages.SpringCodegen", comments = "Generator version: 7.28.0-SNAPSHOT")
+public class Order {
 
-  @JsonProperty("quantity")
-  private Integer quantity;
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  @JsonSetter(nulls = Nulls.SKIP)
+  private @Nullable Long id;
 
-  @JsonProperty("shipDate")
-  @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME)
-  private OffsetDateTime shipDate;
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  @JsonSetter(nulls = Nulls.SKIP)
+  private @Nullable Long petId;
+
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  @JsonSetter(nulls = Nulls.SKIP)
+  private @Nullable Integer quantity;
+
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  @JsonSetter(nulls = Nulls.SKIP)
+  @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+  private @Nullable OffsetDateTime shipDate;
 
   /**
    * Order Status
@@ -38,7 +54,7 @@ public class Order   {
     
     DELIVERED("delivered");
 
-    private String value;
+    private final String value;
 
     StatusEnum(String value) {
       this.value = value;
@@ -65,13 +81,15 @@ public class Order   {
     }
   }
 
-  @JsonProperty("status")
-  private StatusEnum status;
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  @JsonSetter(nulls = Nulls.SKIP)
+  private @Nullable StatusEnum status;
 
-  @JsonProperty("complete")
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  @JsonSetter(nulls = Nulls.SKIP)
   private Boolean complete = false;
 
-  public Order id(Long id) {
+  public Order id(@Nullable Long id) {
     this.id = id;
     return this;
   }
@@ -79,19 +97,20 @@ public class Order   {
   /**
    * Get id
    * @return id
-  */
-  @ApiModelProperty(value = "")
-
-
-  public Long getId() {
+   */
+  
+  @Schema(name = "id", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+  @JsonProperty("id")
+  public @Nullable Long getId() {
     return id;
   }
 
-  public void setId(Long id) {
+  @JsonProperty("id")
+  public void setId(@Nullable Long id) {
     this.id = id;
   }
 
-  public Order petId(Long petId) {
+  public Order petId(@Nullable Long petId) {
     this.petId = petId;
     return this;
   }
@@ -99,19 +118,20 @@ public class Order   {
   /**
    * Get petId
    * @return petId
-  */
-  @ApiModelProperty(value = "")
-
-
-  public Long getPetId() {
+   */
+  
+  @Schema(name = "petId", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+  @JsonProperty("petId")
+  public @Nullable Long getPetId() {
     return petId;
   }
 
-  public void setPetId(Long petId) {
+  @JsonProperty("petId")
+  public void setPetId(@Nullable Long petId) {
     this.petId = petId;
   }
 
-  public Order quantity(Integer quantity) {
+  public Order quantity(@Nullable Integer quantity) {
     this.quantity = quantity;
     return this;
   }
@@ -119,19 +139,20 @@ public class Order   {
   /**
    * Get quantity
    * @return quantity
-  */
-  @ApiModelProperty(value = "")
-
-
-  public Integer getQuantity() {
+   */
+  
+  @Schema(name = "quantity", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+  @JsonProperty("quantity")
+  public @Nullable Integer getQuantity() {
     return quantity;
   }
 
-  public void setQuantity(Integer quantity) {
+  @JsonProperty("quantity")
+  public void setQuantity(@Nullable Integer quantity) {
     this.quantity = quantity;
   }
 
-  public Order shipDate(OffsetDateTime shipDate) {
+  public Order shipDate(@Nullable OffsetDateTime shipDate) {
     this.shipDate = shipDate;
     return this;
   }
@@ -139,20 +160,20 @@ public class Order   {
   /**
    * Get shipDate
    * @return shipDate
-  */
-  @ApiModelProperty(value = "")
-
-  @Valid
-
-  public OffsetDateTime getShipDate() {
+   */
+  @Valid 
+  @Schema(name = "shipDate", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+  @JsonProperty("shipDate")
+  public @Nullable OffsetDateTime getShipDate() {
     return shipDate;
   }
 
-  public void setShipDate(OffsetDateTime shipDate) {
+  @JsonProperty("shipDate")
+  public void setShipDate(@Nullable OffsetDateTime shipDate) {
     this.shipDate = shipDate;
   }
 
-  public Order status(StatusEnum status) {
+  public Order status(@Nullable StatusEnum status) {
     this.status = status;
     return this;
   }
@@ -160,15 +181,16 @@ public class Order   {
   /**
    * Order Status
    * @return status
-  */
-  @ApiModelProperty(value = "Order Status")
-
-
-  public StatusEnum getStatus() {
+   */
+  
+  @Schema(name = "status", description = "Order Status", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+  @JsonProperty("status")
+  public @Nullable StatusEnum getStatus() {
     return status;
   }
 
-  public void setStatus(StatusEnum status) {
+  @JsonProperty("status")
+  public void setStatus(@Nullable StatusEnum status) {
     this.status = status;
   }
 
@@ -180,18 +202,18 @@ public class Order   {
   /**
    * Get complete
    * @return complete
-  */
-  @ApiModelProperty(value = "")
-
-
+   */
+  
+  @Schema(name = "complete", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+  @JsonProperty("complete")
   public Boolean getComplete() {
     return complete;
   }
 
+  @JsonProperty("complete")
   public void setComplete(Boolean complete) {
     this.complete = complete;
   }
-
 
   @Override
   public boolean equals(Object o) {
@@ -219,7 +241,6 @@ public class Order   {
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class Order {\n");
-    
     sb.append("    id: ").append(toIndentedString(id)).append("\n");
     sb.append("    petId: ").append(toIndentedString(petId)).append("\n");
     sb.append("    quantity: ").append(toIndentedString(quantity)).append("\n");
@@ -234,11 +255,8 @@ public class Order   {
    * Convert the given object to string with each line indented by 4 spaces
    * (except the first line).
    */
-  private String toIndentedString(Object o) {
-    if (o == null) {
-      return "null";
-    }
-    return o.toString().replace("\n", "\n    ");
+  private String toIndentedString(@Nullable Object o) {
+    return o == null ? "null" : o.toString().replace("\n", "\n    ");
   }
 }
 

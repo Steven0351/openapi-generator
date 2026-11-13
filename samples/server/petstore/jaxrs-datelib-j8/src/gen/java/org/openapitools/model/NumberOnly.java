@@ -30,7 +30,7 @@ import javax.validation.Valid;
 @JsonPropertyOrder({
   NumberOnly.JSON_PROPERTY_JUST_NUMBER
 })
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaJerseyServerCodegen")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaJerseyServerCodegen", comments = "Generator version: 7.28.0-SNAPSHOT")
 public class NumberOnly  implements Serializable {
   public static final String JSON_PROPERTY_JUST_NUMBER = "JustNumber";
   @JsonProperty(JSON_PROPERTY_JUST_NUMBER)
@@ -74,7 +74,6 @@ public class NumberOnly  implements Serializable {
     return Objects.hash(justNumber);
   }
 
-
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
@@ -90,10 +89,7 @@ public class NumberOnly  implements Serializable {
    * (except the first line).
    */
   private String toIndentedString(Object o) {
-    if (o == null) {
-      return "null";
-    }
-    return o.toString().replace("\n", "\n    ");
+    return o == null ? "null" : o.toString().replace("\n", "\n    ");
   }
 }
 

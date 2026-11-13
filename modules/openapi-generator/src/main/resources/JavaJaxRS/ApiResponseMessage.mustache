@@ -1,13 +1,14 @@
 package {{apiPackage}};
 
 {{#withXml}}
-import javax.xml.bind.annotation.XmlTransient;
+import {{javaxPackage}}.xml.bind.annotation.XmlTransient;
 {{/withXml}}
 
 {{#withXml}}
-@javax.xml.bind.annotation.XmlRootElement
+@{{javaxPackage}}.xml.bind.annotation.XmlRootElement
 {{/withXml}}
 {{>generatedAnnotation}}
+
 public class ApiResponseMessage {
     public static final int ERROR = 1;
     public static final int WARNING = 2;

@@ -1,11 +1,13 @@
 package org.openapitools.codegen.languages;
 
-import io.swagger.v3.oas.models.media.ArraySchema;
 import io.swagger.v3.oas.models.media.Schema;
 import io.swagger.v3.parser.util.SchemaTypeUtil;
 import org.apache.commons.lang3.StringUtils;
 import org.openapitools.codegen.*;
 import org.openapitools.codegen.meta.features.*;
+import org.openapitools.codegen.model.ModelMap;
+import org.openapitools.codegen.model.OperationMap;
+import org.openapitools.codegen.model.OperationsMap;
 import org.openapitools.codegen.utils.ModelUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,13 +24,13 @@ public abstract class CppQtAbstractCodegen extends AbstractCppCodegen implements
     protected static final String CPP_NAMESPACE_DESC = "C++ namespace (convention: name::space::for::api).";
     protected static final String CONTENT_COMPRESSION_ENABLED = "contentCompression";
     protected static final String CONTENT_COMPRESSION_ENABLED_DESC = "Enable Compressed Content Encoding for requests and responses";
-    protected Set<String> foundationClasses = new HashSet<String>();
+    protected Set<String> foundationClasses = new HashSet<>();
     protected String cppNamespace = "OpenAPI";
-    protected Map<String, String> namespaces = new HashMap<String, String>();
-    protected Set<String> systemIncludes = new HashSet<String>();
+    protected Map<String, String> namespaces = new HashMap<>();
+    protected Set<String> systemIncludes = new HashSet<>();
     protected boolean isContentCompressionEnabled = false;
 
-    protected Set<String> nonFrameworkPrimitives = new HashSet<String>();
+    protected Set<String> nonFrameworkPrimitives = new HashSet<>();
 
     public CppQtAbstractCodegen() {
         super();
@@ -75,7 +77,7 @@ public abstract class CppQtAbstractCodegen extends AbstractCppCodegen implements
          * Language Specific Primitives.  These types will not trigger imports by
          * the client generator
          */
-        languageSpecificPrimitives = new HashSet<String>(
+        languageSpecificPrimitives = new HashSet<>(
                 Arrays.asList(
                         "bool",
                         "qint32",
@@ -93,7 +95,7 @@ public abstract class CppQtAbstractCodegen extends AbstractCppCodegen implements
                         "QByteArray")
         );
         languageSpecificPrimitives.addAll(foundationClasses);
-        super.typeMapping = new HashMap<String, String>();
+        super.typeMapping = new HashMap<>();
 
         typeMapping.put("date", "QDate");
         typeMapping.put("DateTime", "QDateTime");
@@ -116,8 +118,8 @@ public abstract class CppQtAbstractCodegen extends AbstractCppCodegen implements
         typeMapping.put("URI", "QString");
         typeMapping.put("file", "QByteArray");
         typeMapping.put("binary", "QByteArray");
-        importMapping = new HashMap<String, String>();
-        namespaces = new HashMap<String, String>();
+        importMapping = new HashMap<>();
+        namespaces = new HashMap<>();
 
         systemIncludes.add("QString");
         systemIncludes.add("QList");
@@ -126,6 +128,9 @@ public abstract class CppQtAbstractCodegen extends AbstractCppCodegen implements
         systemIncludes.add("QDate");
         systemIncludes.add("QDateTime");
         systemIncludes.add("QByteArray");
+
+        reservedWords.add("signals");
+        reservedWords.add("slots");
     }
 
     @Override
@@ -172,6 +177,22 @@ public abstract class CppQtAbstractCodegen extends AbstractCppCodegen implements
     }
 
     /**
+     * Resolve a schema reference. If the schema has a $ref, return the referenced schema.
+     * This is for nested maps.
+     */
+    private Schema resolveSchema(Schema schema) {
+        if (schema == null) {
+            return null;
+        }
+        if (StringUtils.isNotEmpty(schema.get$ref())) {
+            String ref = ModelUtils.getSimpleRef(schema.get$ref());
+            Schema resolved = ModelUtils.getSchema(openAPI, ref);
+            return resolved != null ? resolved : schema;
+        }
+        return schema;
+    }
+
+    /**
      * Optional - type declaration.  This is a String which is used by the templates to instantiate your
      * types.  There is typically special handling for different property types
      *
@@ -180,16 +201,22 @@ public abstract class CppQtAbstractCodegen extends AbstractCppCodegen implements
     @Override
     @SuppressWarnings("rawtypes")
     public String getTypeDeclaration(Schema p) {
-        String openAPIType = getSchemaType(p);
+        // Resolve the schema to check for nested maps/arrays - refs that point to map schemas
+        Schema resolved = resolveSchema(p);
 
-        if (ModelUtils.isArraySchema(p)) {
-            ArraySchema ap = (ArraySchema) p;
-            Schema inner = ap.getItems();
+        if (ModelUtils.isArraySchema(resolved)) {
+            Schema inner = ModelUtils.getSchemaItems(resolved);
             return getSchemaType(p) + "<" + getTypeDeclaration(inner) + ">";
-        } else if (ModelUtils.isMapSchema(p)) {
-            Schema inner = getAdditionalProperties(p);
-            return getSchemaType(p) + "<QString, " + getTypeDeclaration(inner) + ">";
-        } else if (ModelUtils.isBinarySchema(p)) {
+        } else if (ModelUtils.isMapSchema(resolved)) {
+            Schema inner = ModelUtils.getAdditionalProperties(resolved);
+            // inner can be null if additionalProperties is a boolean or not present
+            String innerType = inner != null ? getTypeDeclaration(inner) : PREFIX + "Object";
+            return getSchemaType(p) + "<QString, " + innerType + ">";
+        }
+
+        // For non-containers, use the original schema to preserve model names
+        String openAPIType = getSchemaType(p);
+        if (ModelUtils.isBinarySchema(p)) {
             return getSchemaType(p);
         } else if (ModelUtils.isFileSchema(p)) {
             return getSchemaType(p);
@@ -206,30 +233,32 @@ public abstract class CppQtAbstractCodegen extends AbstractCppCodegen implements
     @Override
     @SuppressWarnings("rawtypes")
     public String toDefaultValue(Schema p) {
-        if (ModelUtils.isBooleanSchema(p)) {
+        Schema schema = resolveSchema(p);
+        if (ModelUtils.isBooleanSchema(schema)) {
             return "false";
-        } else if (ModelUtils.isDateSchema(p)) {
+        } else if (ModelUtils.isDateSchema(schema)) {
             return "NULL";
-        } else if (ModelUtils.isDateTimeSchema(p)) {
+        } else if (ModelUtils.isDateTimeSchema(schema)) {
             return "NULL";
-        } else if (ModelUtils.isNumberSchema(p)) {
-            if (SchemaTypeUtil.FLOAT_FORMAT.equals(p.getFormat())) {
+        } else if (ModelUtils.isNumberSchema(schema)) {
+            if (SchemaTypeUtil.FLOAT_FORMAT.equals(schema.getFormat())) {
                 return "0.0f";
             }
             return "0.0";
-        } else if (ModelUtils.isIntegerSchema(p)) {
-            if (SchemaTypeUtil.INTEGER64_FORMAT.equals(p.getFormat())) {
+        } else if (ModelUtils.isIntegerSchema(schema)) {
+            if (SchemaTypeUtil.INTEGER64_FORMAT.equals(schema.getFormat())) {
                 return "0L";
             }
             return "0";
-        } else if (ModelUtils.isMapSchema(p)) {
-            Schema inner = getAdditionalProperties(p);
-            return "QMap<QString, " + getTypeDeclaration(inner) + ">()";
-        } else if (ModelUtils.isArraySchema(p)) {
-            ArraySchema ap = (ArraySchema) p;
-            Schema inner = ap.getItems();
+        } else if (ModelUtils.isMapSchema(schema)) {
+            Schema inner = ModelUtils.getAdditionalProperties(schema);
+            // inner can be null if additionalProperties is a boolean or not present
+            String innerType = inner != null ? getTypeDeclaration(inner) : PREFIX + "Object";
+            return "QMap<QString, " + innerType + ">()";
+        } else if (ModelUtils.isArraySchema(schema)) {
+            Schema inner = ModelUtils.getSchemaItems(schema);
             return "QList<" + getTypeDeclaration(inner) + ">()";
-        } else if (ModelUtils.isStringSchema(p)) {
+        } else if (ModelUtils.isStringSchema(schema)) {
             return "QString(\"\")";
         } else if (!StringUtils.isEmpty(p.get$ref())) {
             return toModelName(ModelUtils.getSimpleRef(p.get$ref())) + "()";
@@ -309,16 +338,15 @@ public abstract class CppQtAbstractCodegen extends AbstractCppCodegen implements
 
 
     @Override
-    @SuppressWarnings("unchecked")
-    public Map<String, Object> postProcessOperationsWithModels(Map<String, Object> objs, List<Object> allModels) {
-        Map<String, Object> objectMap = (Map<String, Object>) objs.get("operations");
-        List<CodegenOperation> operations = (List<CodegenOperation>) objectMap.get("operation");
+    public OperationsMap postProcessOperationsWithModels(OperationsMap objs, List<ModelMap> allModels) {
+        OperationMap objectMap = objs.getOperations();
+        List<CodegenOperation> operations = objectMap.getOperation();
 
-        List<Map<String, String>> imports = (List<Map<String, String>>) objs.get("imports");
-        Map<String, CodegenModel> codegenModels = new HashMap<String, CodegenModel>();
+        List<Map<String, String>> imports = objs.getImports();
+        Map<String, CodegenModel> codegenModels = new HashMap<>();
 
-        for (Object moObj : allModels) {
-            CodegenModel mo = ((Map<String, CodegenModel>) moObj).get("model");
+        for (ModelMap moObj : allModels) {
+            CodegenModel mo = moObj.getModel();
             if (mo.isEnum) {
                 codegenModels.put(mo.classname, mo);
             }
@@ -336,7 +364,7 @@ public abstract class CppQtAbstractCodegen extends AbstractCppCodegen implements
                     imports.add(createMapping("import", operation.returnBaseType));
                 }
             }
-            List<CodegenParameter> params = new ArrayList<CodegenParameter>();
+            List<CodegenParameter> params = new ArrayList<>();
             if (operation.allParams != null) params.addAll(operation.allParams);
 
             // Check all parameter baseType if there is a necessity to include, include it if not
@@ -365,17 +393,12 @@ public abstract class CppQtAbstractCodegen extends AbstractCppCodegen implements
     }
 
     @Override
-    public String toEnumValue(String value, String datatype) {
-        return escapeText(value);
-    }
-
-    @Override
     public boolean isDataTypeString(String dataType) {
         return "QString".equals(dataType);
     }
 
     private Map<String, String> createMapping(String key, String value) {
-        Map<String, String> customImport = new HashMap<String, String>();
+        Map<String, String> customImport = new HashMap<>();
         customImport.put(key, toModelImport(value));
         return customImport;
     }

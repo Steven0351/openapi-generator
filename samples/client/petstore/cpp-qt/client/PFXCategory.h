@@ -30,13 +30,13 @@ namespace test_namespace {
 class PFXCategory : public PFXObject {
 public:
     PFXCategory();
-    PFXCategory(QString json);
+    PFXCategory(const QString &json);
     ~PFXCategory() override;
 
     QString asJson() const override;
     QJsonObject asJsonObject() const override;
     void fromJsonObject(QJsonObject json) override;
-    void fromJson(QString jsonString) override;
+    void fromJson(const QString &jsonString) override;
 
     qint64 getId() const;
     void setId(const qint64 &id);
@@ -54,11 +54,11 @@ public:
 private:
     void initializeModel();
 
-    qint64 id;
+    qint64 m_id;
     bool m_id_isSet;
     bool m_id_isValid;
 
-    QString name;
+    QString m_name;
     bool m_name_isSet;
     bool m_name_isValid;
 };

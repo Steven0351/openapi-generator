@@ -14,8 +14,33 @@ class Order {
     Integer quantity
     
     Date shipDate
+
+    enum StatusEnum {
+    
+        placed("placed"),
+        
+        approved("approved"),
+        
+        delivered("delivered")
+    
+        private final String value
+    
+        StatusEnum(String value) {
+            this.value = value
+        }
+    
+        String getValue() {
+            value
+        }
+    
+        @Override
+        String toString() {
+            String.valueOf(value)
+        }
+    }
+
     /* Order Status */
-    String status
+    StatusEnum status
     
     Boolean complete = false
 }

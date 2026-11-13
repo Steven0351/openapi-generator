@@ -19,30 +19,36 @@ import ApiResponse from './model/ApiResponse';
 import ArrayOfArrayOfNumberOnly from './model/ArrayOfArrayOfNumberOnly';
 import ArrayOfNumberOnly from './model/ArrayOfNumberOnly';
 import ArrayTest from './model/ArrayTest';
+import BasquePig from './model/BasquePig';
+import Bird from './model/Bird';
 import Capitalization from './model/Capitalization';
 import Cat from './model/Cat';
-import CatAllOf from './model/CatAllOf';
 import Category from './model/Category';
 import ClassModel from './model/ClassModel';
 import Client from './model/Client';
+import Color from './model/Color';
+import DanishPig from './model/DanishPig';
 import DeprecatedObject from './model/DeprecatedObject';
 import Dog from './model/Dog';
-import DogAllOf from './model/DogAllOf';
 import EnumArrays from './model/EnumArrays';
 import EnumClass from './model/EnumClass';
 import EnumTest from './model/EnumTest';
 import File from './model/File';
 import FileSchemaTestClass from './model/FileSchemaTestClass';
+import Finch from './model/Finch';
+import Fish from './model/Fish';
 import Foo from './model/Foo';
+import FooGetDefaultResponse from './model/FooGetDefaultResponse';
 import FormatTest from './model/FormatTest';
 import HasOnlyReadOnly from './model/HasOnlyReadOnly';
 import HealthCheckResult from './model/HealthCheckResult';
-import InlineResponseDefault from './model/InlineResponseDefault';
 import List from './model/List';
 import MapTest from './model/MapTest';
 import MixedPropertiesAndAdditionalPropertiesClass from './model/MixedPropertiesAndAdditionalPropertiesClass';
 import Model200Response from './model/Model200Response';
 import Name from './model/Name';
+import NestedColor from './model/NestedColor';
+import NestedOneOf from './model/NestedOneOf';
 import NullableClass from './model/NullableClass';
 import NumberOnly from './model/NumberOnly';
 import ObjectWithDeprecatedFields from './model/ObjectWithDeprecatedFields';
@@ -53,11 +59,17 @@ import OuterEnumDefaultValue from './model/OuterEnumDefaultValue';
 import OuterEnumInteger from './model/OuterEnumInteger';
 import OuterEnumIntegerDefaultValue from './model/OuterEnumIntegerDefaultValue';
 import OuterObjectWithEnumProperty from './model/OuterObjectWithEnumProperty';
+import Parrot from './model/Parrot';
 import Pet from './model/Pet';
+import Pig from './model/Pig';
 import ReadOnlyFirst from './model/ReadOnlyFirst';
 import Return from './model/Return';
+import Salmon from './model/Salmon';
 import SpecialModelName from './model/SpecialModelName';
+import StringOrBoolean from './model/StringOrBoolean';
 import Tag from './model/Tag';
+import TestInlineFreeformAdditionalPropertiesRequest from './model/TestInlineFreeformAdditionalPropertiesRequest';
+import Tuna from './model/Tuna';
 import User from './model/User';
 import AnotherFakeApi from './api/AnotherFakeApi';
 import DefaultApi from './api/DefaultApi';
@@ -69,7 +81,7 @@ import UserApi from './api/UserApi';
 
 
 /**
-* This_spec_is_mainly_for_testing_Petstore_server_and_contains_fake_endpoints_models__Please_do_not_use_this_for_any_other_purpose__Special_characters___.<br>
+* This spec is mainly for testing Petstore server and contains fake endpoints, models. Please do not use this for any other purpose. Special characters: \&quot; \\.<br>
 * The <code>index</code> module provides access to constructors for all the classes which comprise the public API.
 * <p>
 * An AMD (recommended!) or CommonJS application will generally do something equivalent to the following:
@@ -143,6 +155,18 @@ export {
     ArrayTest,
 
     /**
+     * The BasquePig model constructor.
+     * @property {module:model/BasquePig}
+     */
+    BasquePig,
+
+    /**
+     * The Bird model constructor.
+     * @property {module:model/Bird}
+     */
+    Bird,
+
+    /**
      * The Capitalization model constructor.
      * @property {module:model/Capitalization}
      */
@@ -153,12 +177,6 @@ export {
      * @property {module:model/Cat}
      */
     Cat,
-
-    /**
-     * The CatAllOf model constructor.
-     * @property {module:model/CatAllOf}
-     */
-    CatAllOf,
 
     /**
      * The Category model constructor.
@@ -179,6 +197,18 @@ export {
     Client,
 
     /**
+     * The Color model constructor.
+     * @property {module:model/Color}
+     */
+    Color,
+
+    /**
+     * The DanishPig model constructor.
+     * @property {module:model/DanishPig}
+     */
+    DanishPig,
+
+    /**
      * The DeprecatedObject model constructor.
      * @property {module:model/DeprecatedObject}
      */
@@ -189,12 +219,6 @@ export {
      * @property {module:model/Dog}
      */
     Dog,
-
-    /**
-     * The DogAllOf model constructor.
-     * @property {module:model/DogAllOf}
-     */
-    DogAllOf,
 
     /**
      * The EnumArrays model constructor.
@@ -227,10 +251,28 @@ export {
     FileSchemaTestClass,
 
     /**
+     * The Finch model constructor.
+     * @property {module:model/Finch}
+     */
+    Finch,
+
+    /**
+     * The Fish model constructor.
+     * @property {module:model/Fish}
+     */
+    Fish,
+
+    /**
      * The Foo model constructor.
      * @property {module:model/Foo}
      */
     Foo,
+
+    /**
+     * The FooGetDefaultResponse model constructor.
+     * @property {module:model/FooGetDefaultResponse}
+     */
+    FooGetDefaultResponse,
 
     /**
      * The FormatTest model constructor.
@@ -249,12 +291,6 @@ export {
      * @property {module:model/HealthCheckResult}
      */
     HealthCheckResult,
-
-    /**
-     * The InlineResponseDefault model constructor.
-     * @property {module:model/InlineResponseDefault}
-     */
-    InlineResponseDefault,
 
     /**
      * The List model constructor.
@@ -285,6 +321,18 @@ export {
      * @property {module:model/Name}
      */
     Name,
+
+    /**
+     * The NestedColor model constructor.
+     * @property {module:model/NestedColor}
+     */
+    NestedColor,
+
+    /**
+     * The NestedOneOf model constructor.
+     * @property {module:model/NestedOneOf}
+     */
+    NestedOneOf,
 
     /**
      * The NullableClass model constructor.
@@ -347,10 +395,22 @@ export {
     OuterObjectWithEnumProperty,
 
     /**
+     * The Parrot model constructor.
+     * @property {module:model/Parrot}
+     */
+    Parrot,
+
+    /**
      * The Pet model constructor.
      * @property {module:model/Pet}
      */
     Pet,
+
+    /**
+     * The Pig model constructor.
+     * @property {module:model/Pig}
+     */
+    Pig,
 
     /**
      * The ReadOnlyFirst model constructor.
@@ -365,16 +425,40 @@ export {
     Return,
 
     /**
+     * The Salmon model constructor.
+     * @property {module:model/Salmon}
+     */
+    Salmon,
+
+    /**
      * The SpecialModelName model constructor.
      * @property {module:model/SpecialModelName}
      */
     SpecialModelName,
 
     /**
+     * The StringOrBoolean model constructor.
+     * @property {module:model/StringOrBoolean}
+     */
+    StringOrBoolean,
+
+    /**
      * The Tag model constructor.
      * @property {module:model/Tag}
      */
     Tag,
+
+    /**
+     * The TestInlineFreeformAdditionalPropertiesRequest model constructor.
+     * @property {module:model/TestInlineFreeformAdditionalPropertiesRequest}
+     */
+    TestInlineFreeformAdditionalPropertiesRequest,
+
+    /**
+     * The Tuna model constructor.
+     * @property {module:model/Tuna}
+     */
+    Tuna,
 
     /**
      * The User model constructor.

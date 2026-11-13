@@ -17,25 +17,33 @@
 
 package org.openapitools.codegen.languages;
 
-import com.google.common.collect.Sets;
+import lombok.Setter;
 import org.openapitools.codegen.CliOption;
 import org.openapitools.codegen.CodegenConstants;
 import org.openapitools.codegen.SupportingFile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * <p>Mustache templates are located in {@code src/main/resources/dart2/}.
+ */
 public class DartClientCodegen extends AbstractDartCodegen {
 
     private final Logger LOGGER = LoggerFactory.getLogger(DartClientCodegen.class);
 
     public static final String SERIALIZATION_LIBRARY_NATIVE = "native_serialization";
+    public static final String USE_FINAL_PROPERTIES = "useFinalProperties";
+
+    @Setter protected boolean useFinalProperties = false;
 
     public DartClientCodegen() {
         super();
+
+        addOption(USE_FINAL_PROPERTIES, "Add 'final' to class properties, thus making them immutable", String.valueOf(useFinalProperties));
+
         final CliOption serializationLibrary = CliOption.newString(CodegenConstants.SERIALIZATION_LIBRARY,
                 "Specify serialization library");
         serializationLibrary.setDefault(SERIALIZATION_LIBRARY_NATIVE);
@@ -44,14 +52,22 @@ public class DartClientCodegen extends AbstractDartCodegen {
         serializationOptions.put(SERIALIZATION_LIBRARY_NATIVE, "Use native serializer, backwards compatible");
         serializationLibrary.setEnum(serializationOptions);
         cliOptions.add(serializationLibrary);
+
+        sourceFolder = "";
     }
 
     @Override
     public void processOpts() {
         super.processOpts();
 
+        if (additionalProperties.containsKey(USE_FINAL_PROPERTIES)) {
+            this.setUseFinalProperties(convertPropertyToBooleanAndWriteBack(USE_FINAL_PROPERTIES));
+        } else {
+            additionalProperties.put(USE_FINAL_PROPERTIES, useFinalProperties);
+        }
+
         // handle library not being set
-        if(additionalProperties.get(CodegenConstants.SERIALIZATION_LIBRARY) == null) {
+        if (additionalProperties.get(CodegenConstants.SERIALIZATION_LIBRARY) == null) {
             this.library = SERIALIZATION_LIBRARY_NATIVE;
             LOGGER.debug("Serialization library not set, using default {}", SERIALIZATION_LIBRARY_NATIVE);
         } else {
@@ -60,20 +76,24 @@ public class DartClientCodegen extends AbstractDartCodegen {
 
         this.setSerializationLibrary();
 
-        final String libFolder = sourceFolder + File.separator + "lib";
         supportingFiles.add(new SupportingFile("pubspec.mustache", "", "pubspec.yaml"));
         supportingFiles.add(new SupportingFile("analysis_options.mustache", "", "analysis_options.yaml"));
-        supportingFiles.add(new SupportingFile("api_client.mustache", libFolder, "api_client.dart"));
-        supportingFiles.add(new SupportingFile("api_exception.mustache", libFolder, "api_exception.dart"));
-        supportingFiles.add(new SupportingFile("api_helper.mustache", libFolder, "api_helper.dart"));
-        supportingFiles.add(new SupportingFile("apilib.mustache", libFolder, "api.dart"));
+        supportingFiles.add(new SupportingFile("api_client.mustache", libPath, "api_client.dart"));
+        supportingFiles.add(new SupportingFile("api_exception.mustache", libPath, "api_exception.dart"));
+        supportingFiles.add(new SupportingFile("api_helper.mustache", libPath, "api_helper.dart"));
+        supportingFiles.add(new SupportingFile("apilib.mustache", libPath, "api.dart"));
 
-        final String authFolder = sourceFolder + File.separator + "lib" + File.separator + "auth";
+        final String authFolder = libPath + "auth";
         supportingFiles.add(new SupportingFile("auth/authentication.mustache", authFolder, "authentication.dart"));
         supportingFiles.add(new SupportingFile("auth/http_basic_auth.mustache", authFolder, "http_basic_auth.dart"));
         supportingFiles.add(new SupportingFile("auth/http_bearer_auth.mustache", authFolder, "http_bearer_auth.dart"));
         supportingFiles.add(new SupportingFile("auth/api_key_auth.mustache", authFolder, "api_key_auth.dart"));
         supportingFiles.add(new SupportingFile("auth/oauth.mustache", authFolder, "oauth.dart"));
+
+        if (useOptional) {
+            supportingFiles.add(new SupportingFile("optional.mustache", libPath, "optional.dart"));
+        }
+
         supportingFiles.add(new SupportingFile("git_push.sh.mustache", "", "git_push.sh"));
         supportingFiles.add(new SupportingFile("gitignore.mustache", "", ".gitignore"));
         supportingFiles.add(new SupportingFile("README.mustache", "", "README.md"));

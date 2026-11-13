@@ -4,12 +4,12 @@
 
 #include "Response.h"
 #include "Arduino.h"
-#include "AbstractService.h"
+#include "Service.h"
 #include "Helpers.h"
 #include <list>
 
-#include <map>
 #include "Order.h"
+#include <map>
 
 namespace Tiny {
 
@@ -18,11 +18,11 @@ namespace Tiny {
  * Generated with openapi::tiny-cpp-client
  */
 
-class StoreApi : public AbstractService {
+class StoreApi : public Service {
 public:
     StoreApi() = default;
 
-    virtual ~StoreApi() = default;
+    virtual ~StoreApi();
 
     /**
     * Delete purchase order by ID.
@@ -51,7 +51,7 @@ public:
     /**
     * Find purchase order by ID.
     *
-    * For valid response try integer IDs with value <= 5 or > 10. Other values will generated exceptions
+    * For valid response try integer IDs with value <= 5 or > 10. Other values will generate exceptions
     * \param orderId ID of pet that needs to be fetched *Required*
     */
     Response<

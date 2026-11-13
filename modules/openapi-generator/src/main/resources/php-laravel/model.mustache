@@ -1,21 +1,25 @@
-<?php
-{{#models}}{{#model}}/**
+{{>php_file_header}}
+
+{{#models}}
+{{#model}}
+/**
  * {{classname}}
  */
 namespace {{modelPackage}};
 
 /**
  * {{classname}}
+{{#description}}
+ * @description {{{.}}}
+{{/description}}
  */
-class {{classname}} {
+{{#isEnum}}
+{{>model_enum}}
 
-    {{#vars}}
-    /** @var {{{dataType}}} ${{name}} {{description}}*/
-{{#deprecated}}
-    /** @deprecated */
-{{/deprecated}}
-    private ${{name}};
+{{/isEnum}}
+{{^isEnum}}
+{{>model_generic}}
 
-    {{/vars}}
-}
-{{/model}}{{/models}}
+{{/isEnum}}
+{{/model}}
+{{/models}}

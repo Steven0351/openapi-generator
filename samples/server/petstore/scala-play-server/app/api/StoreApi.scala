@@ -1,8 +1,9 @@
 package api
 
+import play.api.libs.json._
 import model.Order
 
-
+@javax.annotation.Generated(value = Array("org.openapitools.codegen.languages.ScalaPlayFrameworkServerCodegen"), comments = "Generator version: 7.27.0-SNAPSHOT")
 trait StoreApi {
   /**
     * Delete purchase order by ID
@@ -19,13 +20,14 @@ trait StoreApi {
 
   /**
     * Find purchase order by ID
-    * For valid response try integer IDs with value &lt;&#x3D; 5 or &gt; 10. Other values will generated exceptions
+    * For valid response try integer IDs with value &lt;&#x3D; 5 or &gt; 10. Other values will generate exceptions
     * @param orderId ID of pet that needs to be fetched
     */
   def getOrderById(orderId: Long): Order
 
   /**
     * Place an order for a pet
+    * 
     * @param order order placed for purchasing the pet
     */
   def placeOrder(order: Order): Order

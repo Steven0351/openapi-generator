@@ -12,129 +12,345 @@
  * Do not edit the class manually.
  */
 
-
 import * as runtime from '../runtime';
 import {
-    Client,
+    type ChildWithNullable,
+    ChildWithNullableFromJSON,
+    ChildWithNullableToJSON,
+} from '../models/ChildWithNullable';
+import {
+    type Client,
     ClientFromJSON,
     ClientToJSON,
-    FileSchemaTestClass,
+} from '../models/Client';
+import {
+    type EnumClass,
+    EnumClassFromJSON,
+    EnumClassToJSON,
+} from '../models/EnumClass';
+import {
+    type FakeBigDecimalMap200Response,
+    FakeBigDecimalMap200ResponseFromJSON,
+    FakeBigDecimalMap200ResponseToJSON,
+} from '../models/FakeBigDecimalMap200Response';
+import {
+    type FileSchemaTestClass,
     FileSchemaTestClassFromJSON,
     FileSchemaTestClassToJSON,
-    HealthCheckResult,
+} from '../models/FileSchemaTestClass';
+import {
+    type HealthCheckResult,
     HealthCheckResultFromJSON,
     HealthCheckResultToJSON,
-    OuterComposite,
+} from '../models/HealthCheckResult';
+import {
+    type OuterComposite,
     OuterCompositeFromJSON,
     OuterCompositeToJSON,
-    OuterObjectWithEnumProperty,
+} from '../models/OuterComposite';
+import {
+    type OuterObjectWithEnumProperty,
     OuterObjectWithEnumPropertyFromJSON,
     OuterObjectWithEnumPropertyToJSON,
-    Pet,
+} from '../models/OuterObjectWithEnumProperty';
+import {
+    type Pet,
     PetFromJSON,
     PetToJSON,
-    User,
+} from '../models/Pet';
+import {
+    type TestInlineFreeformAdditionalPropertiesRequest,
+    TestInlineFreeformAdditionalPropertiesRequestFromJSON,
+    TestInlineFreeformAdditionalPropertiesRequestToJSON,
+} from '../models/TestInlineFreeformAdditionalPropertiesRequest';
+import {
+    type User,
     UserFromJSON,
     UserToJSON,
-} from '../models';
+} from '../models/User';
 
 export interface FakeHttpSignatureTestRequest {
+    /**
+     * Pet object that needs to be added to the store
+     */
     pet: Pet;
+    /**
+     * query parameter
+     */
     query1?: string;
+    /**
+     * header parameter
+     */
     header1?: string;
 }
 
 export interface FakeOuterBooleanSerializeRequest {
+    /**
+     * Input boolean as post body
+     */
     body?: boolean;
 }
 
 export interface FakeOuterCompositeSerializeRequest {
+    /**
+     * Input composite as post body
+     */
     outerComposite?: OuterComposite;
 }
 
 export interface FakeOuterNumberSerializeRequest {
+    /**
+     * Input number as post body
+     */
     body?: number;
 }
 
 export interface FakeOuterStringSerializeRequest {
+    /**
+     * Input string as post body
+     */
     body?: string;
 }
 
 export interface FakePropertyEnumIntegerSerializeRequest {
+    /**
+     * Input enum (int) as post body
+     */
     outerObjectWithEnumProperty: OuterObjectWithEnumProperty;
 }
 
+export interface TestAdditionalPropertiesReferenceRequest {
+    /**
+     * request body
+     */
+    requestBody: { [key: string]: any; };
+}
+
 export interface TestBodyWithBinaryRequest {
+    /**
+     * image to upload
+     */
     body: Blob | null;
 }
 
 export interface TestBodyWithFileSchemaRequest {
+    /**
+     * 
+     */
     fileSchemaTestClass: FileSchemaTestClass;
 }
 
 export interface TestBodyWithQueryParamsRequest {
+    /**
+     * 
+     */
     query: string;
+    /**
+     * 
+     */
     user: User;
 }
 
 export interface TestClientModelRequest {
+    /**
+     * client model
+     */
     client: Client;
 }
 
 export interface TestEndpointParametersRequest {
+    /**
+     * None
+     */
     number: number;
+    /**
+     * None
+     */
     _double: number;
+    /**
+     * None
+     */
     patternWithoutDelimiter: string;
+    /**
+     * None
+     */
     _byte: string;
+    /**
+     * None
+     */
     integer?: number;
+    /**
+     * None
+     */
     int32?: number;
+    /**
+     * None
+     */
     int64?: number;
+    /**
+     * None
+     */
     _float?: number;
+    /**
+     * None
+     */
     string?: string;
+    /**
+     * None
+     */
     binary?: Blob;
+    /**
+     * None
+     */
     date?: Date;
+    /**
+     * None
+     */
     dateTime?: Date;
+    /**
+     * None
+     */
     password?: string;
+    /**
+     * None
+     */
     callback?: string;
 }
 
 export interface TestEnumParametersRequest {
+    /**
+     * Header parameter enum test (string array)
+     */
     enumHeaderStringArray?: Array<TestEnumParametersEnumHeaderStringArrayEnum>;
+    /**
+     * Header parameter enum test (string)
+     */
     enumHeaderString?: TestEnumParametersEnumHeaderStringEnum;
+    /**
+     * Query parameter enum test (string array)
+     */
     enumQueryStringArray?: Array<TestEnumParametersEnumQueryStringArrayEnum>;
+    /**
+     * Query parameter enum test (string)
+     */
     enumQueryString?: TestEnumParametersEnumQueryStringEnum;
+    /**
+     * Query parameter enum test (double)
+     */
     enumQueryInteger?: TestEnumParametersEnumQueryIntegerEnum;
+    /**
+     * Query parameter enum test (double)
+     */
     enumQueryDouble?: TestEnumParametersEnumQueryDoubleEnum;
+    /**
+     * 
+     */
+    enumQueryModelArray?: Array<EnumClass>;
+    /**
+     * Form parameter enum test (string array)
+     */
     enumFormStringArray?: Array<TestEnumParametersEnumFormStringArrayEnum>;
+    /**
+     * Form parameter enum test (string)
+     */
     enumFormString?: TestEnumParametersEnumFormStringEnum;
 }
 
 export interface TestGroupParametersRequest {
+    /**
+     * Required String in group parameters
+     */
     requiredStringGroup: number;
+    /**
+     * Required Boolean in group parameters
+     */
     requiredBooleanGroup: boolean;
+    /**
+     * Required Integer in group parameters
+     */
     requiredInt64Group: number;
+    /**
+     * String in group parameters
+     */
     stringGroup?: number;
+    /**
+     * Boolean in group parameters
+     */
     booleanGroup?: boolean;
+    /**
+     * Integer in group parameters
+     */
     int64Group?: number;
 }
 
 export interface TestInlineAdditionalPropertiesRequest {
+    /**
+     * request body
+     */
     requestBody: { [key: string]: string; };
 }
 
+export interface TestInlineFreeformAdditionalPropertiesOperationRequest {
+    /**
+     * request body
+     */
+    testInlineFreeformAdditionalPropertiesRequest: TestInlineFreeformAdditionalPropertiesRequest;
+}
+
 export interface TestJsonFormDataRequest {
+    /**
+     * field1
+     */
     param: string;
+    /**
+     * field2
+     */
     param2: string;
 }
 
+export interface TestNullableRequest {
+    /**
+     * request body
+     */
+    childWithNullable: ChildWithNullable;
+}
+
 export interface TestQueryParameterCollectionFormatRequest {
+    /**
+     * 
+     */
     pipe: Array<string>;
+    /**
+     * 
+     */
     ioutil: Array<string>;
+    /**
+     * 
+     */
     http: Array<string>;
+    /**
+     * 
+     */
     url: Array<string>;
+    /**
+     * 
+     */
     context: Array<string>;
+    /**
+     * 
+     */
     allowEmpty: string;
+    /**
+     * 
+     */
     language?: { [key: string]: string; };
+}
+
+export interface TestStringMapReferenceRequest {
+    /**
+     * request body
+     */
+    requestBody: { [key: string]: string; };
 }
 
 /**
@@ -143,19 +359,67 @@ export interface TestQueryParameterCollectionFormatRequest {
 export class FakeApi extends runtime.BaseAPI {
 
     /**
-     * Health check endpoint
+     * Creates request options for fakeBigDecimalMap without sending the request
      */
-    async fakeHealthGetRaw(initOverrides?: RequestInit): Promise<runtime.ApiResponse<HealthCheckResult>> {
+    async fakeBigDecimalMapRequestOpts(): Promise<runtime.RequestOpts> {
         const queryParameters: any = {};
 
         const headerParameters: runtime.HTTPHeaders = {};
 
-        const response = await this.request({
-            path: `/fake/health`,
+
+        let urlPath = `/fake/BigDecimalMap`;
+
+        return {
+            path: urlPath,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
-        }, initOverrides);
+        };
+    }
+
+    /**
+     * for Java apache and Java native, test toUrlQueryString for maps with BegDecimal keys
+     */
+    async fakeBigDecimalMapRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<FakeBigDecimalMap200Response>> {
+        const requestOptions = await this.fakeBigDecimalMapRequestOpts();
+        const response = await this.request(requestOptions, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) => FakeBigDecimalMap200ResponseFromJSON(jsonValue));
+    }
+
+    /**
+     * for Java apache and Java native, test toUrlQueryString for maps with BegDecimal keys
+     */
+    async fakeBigDecimalMap(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<FakeBigDecimalMap200Response> {
+        const response = await this.fakeBigDecimalMapRaw(initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Creates request options for fakeHealthGet without sending the request
+     */
+    async fakeHealthGetRequestOpts(): Promise<runtime.RequestOpts> {
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+
+        let urlPath = `/fake/health`;
+
+        return {
+            path: urlPath,
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        };
+    }
+
+    /**
+     * Health check endpoint
+     */
+    async fakeHealthGetRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<HealthCheckResult>> {
+        const requestOptions = await this.fakeHealthGetRequestOpts();
+        const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.JSONApiResponse(response, (jsonValue) => HealthCheckResultFromJSON(jsonValue));
     }
@@ -163,40 +427,54 @@ export class FakeApi extends runtime.BaseAPI {
     /**
      * Health check endpoint
      */
-    async fakeHealthGet(initOverrides?: RequestInit): Promise<HealthCheckResult> {
+    async fakeHealthGet(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<HealthCheckResult> {
         const response = await this.fakeHealthGetRaw(initOverrides);
         return await response.value();
     }
 
     /**
-     * test http signature authentication
+     * Creates request options for fakeHttpSignatureTest without sending the request
      */
-    async fakeHttpSignatureTestRaw(requestParameters: FakeHttpSignatureTestRequest, initOverrides?: RequestInit): Promise<runtime.ApiResponse<void>> {
-        if (requestParameters.pet === null || requestParameters.pet === undefined) {
-            throw new runtime.RequiredError('pet','Required parameter requestParameters.pet was null or undefined when calling fakeHttpSignatureTest.');
+    async fakeHttpSignatureTestRequestOpts(requestParameters: FakeHttpSignatureTestRequest): Promise<runtime.RequestOpts> {
+        if (requestParameters['pet'] == null) {
+            throw new runtime.RequiredError(
+                'pet',
+                'Required parameter "pet" was null or undefined when calling fakeHttpSignatureTest().'
+            );
         }
 
         const queryParameters: any = {};
 
-        if (requestParameters.query1 !== undefined) {
-            queryParameters['query_1'] = requestParameters.query1;
+        if (requestParameters['query1'] != null) {
+            queryParameters['query_1'] = requestParameters['query1'];
         }
 
         const headerParameters: runtime.HTTPHeaders = {};
 
         headerParameters['Content-Type'] = 'application/json';
 
-        if (requestParameters.header1 !== undefined && requestParameters.header1 !== null) {
-            headerParameters['header_1'] = String(requestParameters.header1);
+        if (requestParameters['header1'] != null) {
+            headerParameters['header_1'] = String(requestParameters['header1']);
         }
 
-        const response = await this.request({
-            path: `/fake/http-signature-test`,
+
+        let urlPath = `/fake/http-signature-test`;
+
+        return {
+            path: urlPath,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
-            body: PetToJSON(requestParameters.pet),
-        }, initOverrides);
+            body: PetToJSON(requestParameters['pet']),
+        };
+    }
+
+    /**
+     * test http signature authentication
+     */
+    async fakeHttpSignatureTestRaw(requestParameters: FakeHttpSignatureTestRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>> {
+        const requestOptions = await this.fakeHttpSignatureTestRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.VoidApiResponse(response);
     }
@@ -204,56 +482,82 @@ export class FakeApi extends runtime.BaseAPI {
     /**
      * test http signature authentication
      */
-    async fakeHttpSignatureTest(requestParameters: FakeHttpSignatureTestRequest, initOverrides?: RequestInit): Promise<void> {
+    async fakeHttpSignatureTest(requestParameters: FakeHttpSignatureTestRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void> {
         await this.fakeHttpSignatureTestRaw(requestParameters, initOverrides);
     }
 
     /**
-     * Test serialization of outer boolean types
+     * Creates request options for fakeOuterBooleanSerialize without sending the request
      */
-    async fakeOuterBooleanSerializeRaw(requestParameters: FakeOuterBooleanSerializeRequest, initOverrides?: RequestInit): Promise<runtime.ApiResponse<boolean>> {
+    async fakeOuterBooleanSerializeRequestOpts(requestParameters: FakeOuterBooleanSerializeRequest): Promise<runtime.RequestOpts> {
         const queryParameters: any = {};
 
         const headerParameters: runtime.HTTPHeaders = {};
 
         headerParameters['Content-Type'] = 'application/json';
 
-        const response = await this.request({
-            path: `/fake/outer/boolean`,
+
+        let urlPath = `/fake/outer/boolean`;
+
+        return {
+            path: urlPath,
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters.body as any,
-        }, initOverrides);
-
-        return new runtime.TextApiResponse(response) as any;
+            body: requestParameters['body'] as any,
+        };
     }
 
     /**
      * Test serialization of outer boolean types
      */
-    async fakeOuterBooleanSerialize(requestParameters: FakeOuterBooleanSerializeRequest, initOverrides?: RequestInit): Promise<boolean> {
+    async fakeOuterBooleanSerializeRaw(requestParameters: FakeOuterBooleanSerializeRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<boolean>> {
+        const requestOptions = await this.fakeOuterBooleanSerializeRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
+
+        if (this.isJsonMime(response.headers.get('content-type'))) {
+            return new runtime.JSONApiResponse<boolean>(response);
+        } else {
+            return new runtime.TextApiResponse(response) as any;
+        }
+    }
+
+    /**
+     * Test serialization of outer boolean types
+     */
+    async fakeOuterBooleanSerialize(requestParameters: FakeOuterBooleanSerializeRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<boolean> {
         const response = await this.fakeOuterBooleanSerializeRaw(requestParameters, initOverrides);
         return await response.value();
     }
 
     /**
-     * Test serialization of object with outer number type
+     * Creates request options for fakeOuterCompositeSerialize without sending the request
      */
-    async fakeOuterCompositeSerializeRaw(requestParameters: FakeOuterCompositeSerializeRequest, initOverrides?: RequestInit): Promise<runtime.ApiResponse<OuterComposite>> {
+    async fakeOuterCompositeSerializeRequestOpts(requestParameters: FakeOuterCompositeSerializeRequest): Promise<runtime.RequestOpts> {
         const queryParameters: any = {};
 
         const headerParameters: runtime.HTTPHeaders = {};
 
         headerParameters['Content-Type'] = 'application/json';
 
-        const response = await this.request({
-            path: `/fake/outer/composite`,
+
+        let urlPath = `/fake/outer/composite`;
+
+        return {
+            path: urlPath,
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
-            body: OuterCompositeToJSON(requestParameters.outerComposite),
-        }, initOverrides);
+            body: OuterCompositeToJSON(requestParameters['outerComposite']),
+        };
+    }
+
+    /**
+     * Test serialization of object with outer number type
+     */
+    async fakeOuterCompositeSerializeRaw(requestParameters: FakeOuterCompositeSerializeRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<OuterComposite>> {
+        const requestOptions = await this.fakeOuterCompositeSerializeRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.JSONApiResponse(response, (jsonValue) => OuterCompositeFromJSON(jsonValue));
     }
@@ -261,75 +565,108 @@ export class FakeApi extends runtime.BaseAPI {
     /**
      * Test serialization of object with outer number type
      */
-    async fakeOuterCompositeSerialize(requestParameters: FakeOuterCompositeSerializeRequest, initOverrides?: RequestInit): Promise<OuterComposite> {
+    async fakeOuterCompositeSerialize(requestParameters: FakeOuterCompositeSerializeRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<OuterComposite> {
         const response = await this.fakeOuterCompositeSerializeRaw(requestParameters, initOverrides);
         return await response.value();
     }
 
     /**
-     * Test serialization of outer number types
+     * Creates request options for fakeOuterNumberSerialize without sending the request
      */
-    async fakeOuterNumberSerializeRaw(requestParameters: FakeOuterNumberSerializeRequest, initOverrides?: RequestInit): Promise<runtime.ApiResponse<number>> {
+    async fakeOuterNumberSerializeRequestOpts(requestParameters: FakeOuterNumberSerializeRequest): Promise<runtime.RequestOpts> {
         const queryParameters: any = {};
 
         const headerParameters: runtime.HTTPHeaders = {};
 
         headerParameters['Content-Type'] = 'application/json';
 
-        const response = await this.request({
-            path: `/fake/outer/number`,
+
+        let urlPath = `/fake/outer/number`;
+
+        return {
+            path: urlPath,
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters.body as any,
-        }, initOverrides);
-
-        return new runtime.TextApiResponse(response) as any;
+            body: requestParameters['body'] as any,
+        };
     }
 
     /**
      * Test serialization of outer number types
      */
-    async fakeOuterNumberSerialize(requestParameters: FakeOuterNumberSerializeRequest, initOverrides?: RequestInit): Promise<number> {
+    async fakeOuterNumberSerializeRaw(requestParameters: FakeOuterNumberSerializeRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<number>> {
+        const requestOptions = await this.fakeOuterNumberSerializeRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
+
+        if (this.isJsonMime(response.headers.get('content-type'))) {
+            return new runtime.JSONApiResponse<number>(response);
+        } else {
+            return new runtime.TextApiResponse(response) as any;
+        }
+    }
+
+    /**
+     * Test serialization of outer number types
+     */
+    async fakeOuterNumberSerialize(requestParameters: FakeOuterNumberSerializeRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<number> {
         const response = await this.fakeOuterNumberSerializeRaw(requestParameters, initOverrides);
         return await response.value();
     }
 
     /**
-     * Test serialization of outer string types
+     * Creates request options for fakeOuterStringSerialize without sending the request
      */
-    async fakeOuterStringSerializeRaw(requestParameters: FakeOuterStringSerializeRequest, initOverrides?: RequestInit): Promise<runtime.ApiResponse<string>> {
+    async fakeOuterStringSerializeRequestOpts(requestParameters: FakeOuterStringSerializeRequest): Promise<runtime.RequestOpts> {
         const queryParameters: any = {};
 
         const headerParameters: runtime.HTTPHeaders = {};
 
         headerParameters['Content-Type'] = 'application/json';
 
-        const response = await this.request({
-            path: `/fake/outer/string`,
+
+        let urlPath = `/fake/outer/string`;
+
+        return {
+            path: urlPath,
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters.body as any,
-        }, initOverrides);
-
-        return new runtime.TextApiResponse(response) as any;
+            body: requestParameters['body'] as any,
+        };
     }
 
     /**
      * Test serialization of outer string types
      */
-    async fakeOuterStringSerialize(requestParameters: FakeOuterStringSerializeRequest, initOverrides?: RequestInit): Promise<string> {
+    async fakeOuterStringSerializeRaw(requestParameters: FakeOuterStringSerializeRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<string>> {
+        const requestOptions = await this.fakeOuterStringSerializeRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
+
+        if (this.isJsonMime(response.headers.get('content-type'))) {
+            return new runtime.JSONApiResponse<string>(response);
+        } else {
+            return new runtime.TextApiResponse(response) as any;
+        }
+    }
+
+    /**
+     * Test serialization of outer string types
+     */
+    async fakeOuterStringSerialize(requestParameters: FakeOuterStringSerializeRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<string> {
         const response = await this.fakeOuterStringSerializeRaw(requestParameters, initOverrides);
         return await response.value();
     }
 
     /**
-     * Test serialization of enum (int) properties with examples
+     * Creates request options for fakePropertyEnumIntegerSerialize without sending the request
      */
-    async fakePropertyEnumIntegerSerializeRaw(requestParameters: FakePropertyEnumIntegerSerializeRequest, initOverrides?: RequestInit): Promise<runtime.ApiResponse<OuterObjectWithEnumProperty>> {
-        if (requestParameters.outerObjectWithEnumProperty === null || requestParameters.outerObjectWithEnumProperty === undefined) {
-            throw new runtime.RequiredError('outerObjectWithEnumProperty','Required parameter requestParameters.outerObjectWithEnumProperty was null or undefined when calling fakePropertyEnumIntegerSerialize.');
+    async fakePropertyEnumIntegerSerializeRequestOpts(requestParameters: FakePropertyEnumIntegerSerializeRequest): Promise<runtime.RequestOpts> {
+        if (requestParameters['outerObjectWithEnumProperty'] == null) {
+            throw new runtime.RequiredError(
+                'outerObjectWithEnumProperty',
+                'Required parameter "outerObjectWithEnumProperty" was null or undefined when calling fakePropertyEnumIntegerSerialize().'
+            );
         }
 
         const queryParameters: any = {};
@@ -338,13 +675,24 @@ export class FakeApi extends runtime.BaseAPI {
 
         headerParameters['Content-Type'] = 'application/json';
 
-        const response = await this.request({
-            path: `/fake/property/enum-int`,
+
+        let urlPath = `/fake/property/enum-int`;
+
+        return {
+            path: urlPath,
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
-            body: OuterObjectWithEnumPropertyToJSON(requestParameters.outerObjectWithEnumProperty),
-        }, initOverrides);
+            body: OuterObjectWithEnumPropertyToJSON(requestParameters['outerObjectWithEnumProperty']),
+        };
+    }
+
+    /**
+     * Test serialization of enum (int) properties with examples
+     */
+    async fakePropertyEnumIntegerSerializeRaw(requestParameters: FakePropertyEnumIntegerSerializeRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<OuterObjectWithEnumProperty>> {
+        const requestOptions = await this.fakePropertyEnumIntegerSerializeRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.JSONApiResponse(response, (jsonValue) => OuterObjectWithEnumPropertyFromJSON(jsonValue));
     }
@@ -352,17 +700,68 @@ export class FakeApi extends runtime.BaseAPI {
     /**
      * Test serialization of enum (int) properties with examples
      */
-    async fakePropertyEnumIntegerSerialize(requestParameters: FakePropertyEnumIntegerSerializeRequest, initOverrides?: RequestInit): Promise<OuterObjectWithEnumProperty> {
+    async fakePropertyEnumIntegerSerialize(requestParameters: FakePropertyEnumIntegerSerializeRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<OuterObjectWithEnumProperty> {
         const response = await this.fakePropertyEnumIntegerSerializeRaw(requestParameters, initOverrides);
         return await response.value();
     }
 
     /**
-     * For this test, the body has to be a binary file.
+     * Creates request options for testAdditionalPropertiesReference without sending the request
      */
-    async testBodyWithBinaryRaw(requestParameters: TestBodyWithBinaryRequest, initOverrides?: RequestInit): Promise<runtime.ApiResponse<void>> {
-        if (requestParameters.body === null || requestParameters.body === undefined) {
-            throw new runtime.RequiredError('body','Required parameter requestParameters.body was null or undefined when calling testBodyWithBinary.');
+    async testAdditionalPropertiesReferenceRequestOpts(requestParameters: TestAdditionalPropertiesReferenceRequest): Promise<runtime.RequestOpts> {
+        if (requestParameters['requestBody'] == null) {
+            throw new runtime.RequiredError(
+                'requestBody',
+                'Required parameter "requestBody" was null or undefined when calling testAdditionalPropertiesReference().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        headerParameters['Content-Type'] = 'application/json';
+
+
+        let urlPath = `/fake/additionalProperties-reference`;
+
+        return {
+            path: urlPath,
+            method: 'POST',
+            headers: headerParameters,
+            query: queryParameters,
+            body: requestParameters['requestBody'],
+        };
+    }
+
+    /**
+     * 
+     * test referenced additionalProperties
+     */
+    async testAdditionalPropertiesReferenceRaw(requestParameters: TestAdditionalPropertiesReferenceRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>> {
+        const requestOptions = await this.testAdditionalPropertiesReferenceRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
+
+        return new runtime.VoidApiResponse(response);
+    }
+
+    /**
+     * 
+     * test referenced additionalProperties
+     */
+    async testAdditionalPropertiesReference(requestParameters: TestAdditionalPropertiesReferenceRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void> {
+        await this.testAdditionalPropertiesReferenceRaw(requestParameters, initOverrides);
+    }
+
+    /**
+     * Creates request options for testBodyWithBinary without sending the request
+     */
+    async testBodyWithBinaryRequestOpts(requestParameters: TestBodyWithBinaryRequest): Promise<runtime.RequestOpts> {
+        if (requestParameters['body'] === undefined) {
+            throw new runtime.RequiredError(
+                'body',
+                'Required parameter "body" was undefined when calling testBodyWithBinary().'
+            );
         }
 
         const queryParameters: any = {};
@@ -371,13 +770,24 @@ export class FakeApi extends runtime.BaseAPI {
 
         headerParameters['Content-Type'] = 'image/png';
 
-        const response = await this.request({
-            path: `/fake/body-with-binary`,
+
+        let urlPath = `/fake/body-with-binary`;
+
+        return {
+            path: urlPath,
             method: 'PUT',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters.body as any,
-        }, initOverrides);
+            body: requestParameters['body'] as any,
+        };
+    }
+
+    /**
+     * For this test, the body has to be a binary file.
+     */
+    async testBodyWithBinaryRaw(requestParameters: TestBodyWithBinaryRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>> {
+        const requestOptions = await this.testBodyWithBinaryRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.VoidApiResponse(response);
     }
@@ -385,16 +795,19 @@ export class FakeApi extends runtime.BaseAPI {
     /**
      * For this test, the body has to be a binary file.
      */
-    async testBodyWithBinary(requestParameters: TestBodyWithBinaryRequest, initOverrides?: RequestInit): Promise<void> {
+    async testBodyWithBinary(requestParameters: TestBodyWithBinaryRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void> {
         await this.testBodyWithBinaryRaw(requestParameters, initOverrides);
     }
 
     /**
-     * For this test, the body for this request must reference a schema named `File`.
+     * Creates request options for testBodyWithFileSchema without sending the request
      */
-    async testBodyWithFileSchemaRaw(requestParameters: TestBodyWithFileSchemaRequest, initOverrides?: RequestInit): Promise<runtime.ApiResponse<void>> {
-        if (requestParameters.fileSchemaTestClass === null || requestParameters.fileSchemaTestClass === undefined) {
-            throw new runtime.RequiredError('fileSchemaTestClass','Required parameter requestParameters.fileSchemaTestClass was null or undefined when calling testBodyWithFileSchema.');
+    async testBodyWithFileSchemaRequestOpts(requestParameters: TestBodyWithFileSchemaRequest): Promise<runtime.RequestOpts> {
+        if (requestParameters['fileSchemaTestClass'] == null) {
+            throw new runtime.RequiredError(
+                'fileSchemaTestClass',
+                'Required parameter "fileSchemaTestClass" was null or undefined when calling testBodyWithFileSchema().'
+            );
         }
 
         const queryParameters: any = {};
@@ -403,13 +816,24 @@ export class FakeApi extends runtime.BaseAPI {
 
         headerParameters['Content-Type'] = 'application/json';
 
-        const response = await this.request({
-            path: `/fake/body-with-file-schema`,
+
+        let urlPath = `/fake/body-with-file-schema`;
+
+        return {
+            path: urlPath,
             method: 'PUT',
             headers: headerParameters,
             query: queryParameters,
-            body: FileSchemaTestClassToJSON(requestParameters.fileSchemaTestClass),
-        }, initOverrides);
+            body: FileSchemaTestClassToJSON(requestParameters['fileSchemaTestClass']),
+        };
+    }
+
+    /**
+     * For this test, the body for this request must reference a schema named `File`.
+     */
+    async testBodyWithFileSchemaRaw(requestParameters: TestBodyWithFileSchemaRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>> {
+        const requestOptions = await this.testBodyWithFileSchemaRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.VoidApiResponse(response);
     }
@@ -417,55 +841,74 @@ export class FakeApi extends runtime.BaseAPI {
     /**
      * For this test, the body for this request must reference a schema named `File`.
      */
-    async testBodyWithFileSchema(requestParameters: TestBodyWithFileSchemaRequest, initOverrides?: RequestInit): Promise<void> {
+    async testBodyWithFileSchema(requestParameters: TestBodyWithFileSchemaRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void> {
         await this.testBodyWithFileSchemaRaw(requestParameters, initOverrides);
     }
 
     /**
+     * Creates request options for testBodyWithQueryParams without sending the request
      */
-    async testBodyWithQueryParamsRaw(requestParameters: TestBodyWithQueryParamsRequest, initOverrides?: RequestInit): Promise<runtime.ApiResponse<void>> {
-        if (requestParameters.query === null || requestParameters.query === undefined) {
-            throw new runtime.RequiredError('query','Required parameter requestParameters.query was null or undefined when calling testBodyWithQueryParams.');
+    async testBodyWithQueryParamsRequestOpts(requestParameters: TestBodyWithQueryParamsRequest): Promise<runtime.RequestOpts> {
+        if (requestParameters['query'] == null) {
+            throw new runtime.RequiredError(
+                'query',
+                'Required parameter "query" was null or undefined when calling testBodyWithQueryParams().'
+            );
         }
 
-        if (requestParameters.user === null || requestParameters.user === undefined) {
-            throw new runtime.RequiredError('user','Required parameter requestParameters.user was null or undefined when calling testBodyWithQueryParams.');
+        if (requestParameters['user'] == null) {
+            throw new runtime.RequiredError(
+                'user',
+                'Required parameter "user" was null or undefined when calling testBodyWithQueryParams().'
+            );
         }
 
         const queryParameters: any = {};
 
-        if (requestParameters.query !== undefined) {
-            queryParameters['query'] = requestParameters.query;
+        if (requestParameters['query'] != null) {
+            queryParameters['query'] = requestParameters['query'];
         }
 
         const headerParameters: runtime.HTTPHeaders = {};
 
         headerParameters['Content-Type'] = 'application/json';
 
-        const response = await this.request({
-            path: `/fake/body-with-query-params`,
+
+        let urlPath = `/fake/body-with-query-params`;
+
+        return {
+            path: urlPath,
             method: 'PUT',
             headers: headerParameters,
             query: queryParameters,
-            body: UserToJSON(requestParameters.user),
-        }, initOverrides);
+            body: UserToJSON(requestParameters['user']),
+        };
+    }
+
+    /**
+     */
+    async testBodyWithQueryParamsRaw(requestParameters: TestBodyWithQueryParamsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>> {
+        const requestOptions = await this.testBodyWithQueryParamsRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.VoidApiResponse(response);
     }
 
     /**
      */
-    async testBodyWithQueryParams(requestParameters: TestBodyWithQueryParamsRequest, initOverrides?: RequestInit): Promise<void> {
+    async testBodyWithQueryParams(requestParameters: TestBodyWithQueryParamsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void> {
         await this.testBodyWithQueryParamsRaw(requestParameters, initOverrides);
     }
 
     /**
-     * To test \"client\" model
-     * To test \"client\" model
+     * Creates request options for testClientModel without sending the request
      */
-    async testClientModelRaw(requestParameters: TestClientModelRequest, initOverrides?: RequestInit): Promise<runtime.ApiResponse<Client>> {
-        if (requestParameters.client === null || requestParameters.client === undefined) {
-            throw new runtime.RequiredError('client','Required parameter requestParameters.client was null or undefined when calling testClientModel.');
+    async testClientModelRequestOpts(requestParameters: TestClientModelRequest): Promise<runtime.RequestOpts> {
+        if (requestParameters['client'] == null) {
+            throw new runtime.RequiredError(
+                'client',
+                'Required parameter "client" was null or undefined when calling testClientModel().'
+            );
         }
 
         const queryParameters: any = {};
@@ -474,13 +917,25 @@ export class FakeApi extends runtime.BaseAPI {
 
         headerParameters['Content-Type'] = 'application/json';
 
-        const response = await this.request({
-            path: `/fake`,
+
+        let urlPath = `/fake`;
+
+        return {
+            path: urlPath,
             method: 'PATCH',
             headers: headerParameters,
             query: queryParameters,
-            body: ClientToJSON(requestParameters.client),
-        }, initOverrides);
+            body: ClientToJSON(requestParameters['client']),
+        };
+    }
+
+    /**
+     * To test \"client\" model
+     * To test \"client\" model
+     */
+    async testClientModelRaw(requestParameters: TestClientModelRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Client>> {
+        const requestOptions = await this.testClientModelRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.JSONApiResponse(response, (jsonValue) => ClientFromJSON(jsonValue));
     }
@@ -489,30 +944,41 @@ export class FakeApi extends runtime.BaseAPI {
      * To test \"client\" model
      * To test \"client\" model
      */
-    async testClientModel(requestParameters: TestClientModelRequest, initOverrides?: RequestInit): Promise<Client> {
+    async testClientModel(requestParameters: TestClientModelRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Client> {
         const response = await this.testClientModelRaw(requestParameters, initOverrides);
         return await response.value();
     }
 
     /**
-     * Fake endpoint for testing various parameters 假端點 偽のエンドポイント 가짜 엔드 포인트 
-     * Fake endpoint for testing various parameters 假端點 偽のエンドポイント 가짜 엔드 포인트 
+     * Creates request options for testEndpointParameters without sending the request
      */
-    async testEndpointParametersRaw(requestParameters: TestEndpointParametersRequest, initOverrides?: RequestInit): Promise<runtime.ApiResponse<void>> {
-        if (requestParameters.number === null || requestParameters.number === undefined) {
-            throw new runtime.RequiredError('number','Required parameter requestParameters.number was null or undefined when calling testEndpointParameters.');
+    async testEndpointParametersRequestOpts(requestParameters: TestEndpointParametersRequest): Promise<runtime.RequestOpts> {
+        if (requestParameters['number'] == null) {
+            throw new runtime.RequiredError(
+                'number',
+                'Required parameter "number" was null or undefined when calling testEndpointParameters().'
+            );
         }
 
-        if (requestParameters._double === null || requestParameters._double === undefined) {
-            throw new runtime.RequiredError('_double','Required parameter requestParameters._double was null or undefined when calling testEndpointParameters.');
+        if (requestParameters['_double'] == null) {
+            throw new runtime.RequiredError(
+                '_double',
+                'Required parameter "_double" was null or undefined when calling testEndpointParameters().'
+            );
         }
 
-        if (requestParameters.patternWithoutDelimiter === null || requestParameters.patternWithoutDelimiter === undefined) {
-            throw new runtime.RequiredError('patternWithoutDelimiter','Required parameter requestParameters.patternWithoutDelimiter was null or undefined when calling testEndpointParameters.');
+        if (requestParameters['patternWithoutDelimiter'] == null) {
+            throw new runtime.RequiredError(
+                'patternWithoutDelimiter',
+                'Required parameter "patternWithoutDelimiter" was null or undefined when calling testEndpointParameters().'
+            );
         }
 
-        if (requestParameters._byte === null || requestParameters._byte === undefined) {
-            throw new runtime.RequiredError('_byte','Required parameter requestParameters._byte was null or undefined when calling testEndpointParameters.');
+        if (requestParameters['_byte'] == null) {
+            throw new runtime.RequiredError(
+                '_byte',
+                'Required parameter "_byte" was null or undefined when calling testEndpointParameters().'
+            );
         }
 
         const queryParameters: any = {};
@@ -520,7 +986,7 @@ export class FakeApi extends runtime.BaseAPI {
         const headerParameters: runtime.HTTPHeaders = {};
 
         if (this.configuration && (this.configuration.username !== undefined || this.configuration.password !== undefined)) {
-            headerParameters["Authorization"] = "Basic " + btoa(this.configuration.username + ":" + this.configuration.password);
+            headerParameters["Authorization"] = "Basic " + btoa((this.configuration.username || "") + ":" + (this.configuration.password || ""));
         }
         const consumes: runtime.Consume[] = [
             { contentType: 'application/x-www-form-urlencoded' },
@@ -538,69 +1004,81 @@ export class FakeApi extends runtime.BaseAPI {
             formParams = new URLSearchParams();
         }
 
-        if (requestParameters.integer !== undefined) {
-            formParams.append('integer', requestParameters.integer as any);
+        if (requestParameters['integer'] != null) {
+            formParams.append('integer', requestParameters['integer'] as any);
         }
 
-        if (requestParameters.int32 !== undefined) {
-            formParams.append('int32', requestParameters.int32 as any);
+        if (requestParameters['int32'] != null) {
+            formParams.append('int32', requestParameters['int32'] as any);
         }
 
-        if (requestParameters.int64 !== undefined) {
-            formParams.append('int64', requestParameters.int64 as any);
+        if (requestParameters['int64'] != null) {
+            formParams.append('int64', requestParameters['int64'] as any);
         }
 
-        if (requestParameters.number !== undefined) {
-            formParams.append('number', requestParameters.number as any);
+        if (requestParameters['number'] != null) {
+            formParams.append('number', requestParameters['number'] as any);
         }
 
-        if (requestParameters._float !== undefined) {
-            formParams.append('float', requestParameters._float as any);
+        if (requestParameters['_float'] != null) {
+            formParams.append('float', requestParameters['_float'] as any);
         }
 
-        if (requestParameters._double !== undefined) {
-            formParams.append('double', requestParameters._double as any);
+        if (requestParameters['_double'] != null) {
+            formParams.append('double', requestParameters['_double'] as any);
         }
 
-        if (requestParameters.string !== undefined) {
-            formParams.append('string', requestParameters.string as any);
+        if (requestParameters['string'] != null) {
+            formParams.append('string', requestParameters['string'] as any);
         }
 
-        if (requestParameters.patternWithoutDelimiter !== undefined) {
-            formParams.append('pattern_without_delimiter', requestParameters.patternWithoutDelimiter as any);
+        if (requestParameters['patternWithoutDelimiter'] != null) {
+            formParams.append('pattern_without_delimiter', requestParameters['patternWithoutDelimiter'] as any);
         }
 
-        if (requestParameters._byte !== undefined) {
-            formParams.append('byte', requestParameters._byte as any);
+        if (requestParameters['_byte'] != null) {
+            formParams.append('byte', requestParameters['_byte'] as any);
         }
 
-        if (requestParameters.binary !== undefined) {
-            formParams.append('binary', requestParameters.binary as any);
+        if (requestParameters['binary'] != null) {
+            formParams.append('binary', requestParameters['binary'] as any);
         }
 
-        if (requestParameters.date !== undefined) {
-            formParams.append('date', requestParameters.date as any);
+        if (requestParameters['date'] != null) {
+            formParams.append('date', runtime.serializeDate(requestParameters['date'] as any));
         }
 
-        if (requestParameters.dateTime !== undefined) {
-            formParams.append('dateTime', requestParameters.dateTime as any);
+        if (requestParameters['dateTime'] != null) {
+            formParams.append('dateTime', runtime.serializeDateTime(requestParameters['dateTime'] as any));
         }
 
-        if (requestParameters.password !== undefined) {
-            formParams.append('password', requestParameters.password as any);
+        if (requestParameters['password'] != null) {
+            formParams.append('password', requestParameters['password'] as any);
         }
 
-        if (requestParameters.callback !== undefined) {
-            formParams.append('callback', requestParameters.callback as any);
+        if (requestParameters['callback'] != null) {
+            formParams.append('callback', requestParameters['callback'] as any);
         }
 
-        const response = await this.request({
-            path: `/fake`,
+
+        let urlPath = `/fake`;
+
+        return {
+            path: urlPath,
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
             body: formParams,
-        }, initOverrides);
+        };
+    }
+
+    /**
+     * Fake endpoint for testing various parameters 假端點 偽のエンドポイント 가짜 엔드 포인트 
+     * Fake endpoint for testing various parameters 假端點 偽のエンドポイント 가짜 엔드 포인트 
+     */
+    async testEndpointParametersRaw(requestParameters: TestEndpointParametersRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>> {
+        const requestOptions = await this.testEndpointParametersRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.VoidApiResponse(response);
     }
@@ -609,41 +1087,44 @@ export class FakeApi extends runtime.BaseAPI {
      * Fake endpoint for testing various parameters 假端點 偽のエンドポイント 가짜 엔드 포인트 
      * Fake endpoint for testing various parameters 假端點 偽のエンドポイント 가짜 엔드 포인트 
      */
-    async testEndpointParameters(requestParameters: TestEndpointParametersRequest, initOverrides?: RequestInit): Promise<void> {
+    async testEndpointParameters(requestParameters: TestEndpointParametersRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void> {
         await this.testEndpointParametersRaw(requestParameters, initOverrides);
     }
 
     /**
-     * To test enum parameters
-     * To test enum parameters
+     * Creates request options for testEnumParameters without sending the request
      */
-    async testEnumParametersRaw(requestParameters: TestEnumParametersRequest, initOverrides?: RequestInit): Promise<runtime.ApiResponse<void>> {
+    async testEnumParametersRequestOpts(requestParameters: TestEnumParametersRequest): Promise<runtime.RequestOpts> {
         const queryParameters: any = {};
 
-        if (requestParameters.enumQueryStringArray) {
-            queryParameters['enum_query_string_array'] = requestParameters.enumQueryStringArray;
+        if (requestParameters['enumQueryStringArray'] != null) {
+            queryParameters['enum_query_string_array'] = requestParameters['enumQueryStringArray'];
         }
 
-        if (requestParameters.enumQueryString !== undefined) {
-            queryParameters['enum_query_string'] = requestParameters.enumQueryString;
+        if (requestParameters['enumQueryString'] != null) {
+            queryParameters['enum_query_string'] = requestParameters['enumQueryString'];
         }
 
-        if (requestParameters.enumQueryInteger !== undefined) {
-            queryParameters['enum_query_integer'] = requestParameters.enumQueryInteger;
+        if (requestParameters['enumQueryInteger'] != null) {
+            queryParameters['enum_query_integer'] = requestParameters['enumQueryInteger'];
         }
 
-        if (requestParameters.enumQueryDouble !== undefined) {
-            queryParameters['enum_query_double'] = requestParameters.enumQueryDouble;
+        if (requestParameters['enumQueryDouble'] != null) {
+            queryParameters['enum_query_double'] = requestParameters['enumQueryDouble'];
+        }
+
+        if (requestParameters['enumQueryModelArray'] != null) {
+            queryParameters['enum_query_model_array'] = requestParameters['enumQueryModelArray'];
         }
 
         const headerParameters: runtime.HTTPHeaders = {};
 
-        if (requestParameters.enumHeaderStringArray) {
-            headerParameters['enum_header_string_array'] = requestParameters.enumHeaderStringArray.join(runtime.COLLECTION_FORMATS["csv"]);
+        if (requestParameters['enumHeaderStringArray'] != null) {
+            headerParameters['enum_header_string_array'] = requestParameters['enumHeaderStringArray']!.join(runtime.COLLECTION_FORMATS["csv"]);
         }
 
-        if (requestParameters.enumHeaderString !== undefined && requestParameters.enumHeaderString !== null) {
-            headerParameters['enum_header_string'] = String(requestParameters.enumHeaderString);
+        if (requestParameters['enumHeaderString'] != null) {
+            headerParameters['enum_header_string'] = String(requestParameters['enumHeaderString']);
         }
 
         const consumes: runtime.Consume[] = [
@@ -660,21 +1141,33 @@ export class FakeApi extends runtime.BaseAPI {
             formParams = new URLSearchParams();
         }
 
-        if (requestParameters.enumFormStringArray) {
-            formParams.append('enum_form_string_array', requestParameters.enumFormStringArray.join(runtime.COLLECTION_FORMATS["csv"]));
+        if (requestParameters['enumFormStringArray'] != null) {
+            formParams.append('enum_form_string_array', requestParameters['enumFormStringArray']!.join(runtime.COLLECTION_FORMATS["csv"]));
         }
 
-        if (requestParameters.enumFormString !== undefined) {
-            formParams.append('enum_form_string', requestParameters.enumFormString as any);
+        if (requestParameters['enumFormString'] != null) {
+            formParams.append('enum_form_string', requestParameters['enumFormString'] as any);
         }
 
-        const response = await this.request({
-            path: `/fake`,
+
+        let urlPath = `/fake`;
+
+        return {
+            path: urlPath,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
             body: formParams,
-        }, initOverrides);
+        };
+    }
+
+    /**
+     * To test enum parameters
+     * To test enum parameters
+     */
+    async testEnumParametersRaw(requestParameters: TestEnumParametersRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>> {
+        const requestOptions = await this.testEnumParametersRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.VoidApiResponse(response);
     }
@@ -683,53 +1176,61 @@ export class FakeApi extends runtime.BaseAPI {
      * To test enum parameters
      * To test enum parameters
      */
-    async testEnumParameters(requestParameters: TestEnumParametersRequest, initOverrides?: RequestInit): Promise<void> {
+    async testEnumParameters(requestParameters: TestEnumParametersRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void> {
         await this.testEnumParametersRaw(requestParameters, initOverrides);
     }
 
     /**
-     * Fake endpoint to test group parameters (optional)
-     * Fake endpoint to test group parameters (optional)
+     * Creates request options for testGroupParameters without sending the request
      */
-    async testGroupParametersRaw(requestParameters: TestGroupParametersRequest, initOverrides?: RequestInit): Promise<runtime.ApiResponse<void>> {
-        if (requestParameters.requiredStringGroup === null || requestParameters.requiredStringGroup === undefined) {
-            throw new runtime.RequiredError('requiredStringGroup','Required parameter requestParameters.requiredStringGroup was null or undefined when calling testGroupParameters.');
+    async testGroupParametersRequestOpts(requestParameters: TestGroupParametersRequest): Promise<runtime.RequestOpts> {
+        if (requestParameters['requiredStringGroup'] == null) {
+            throw new runtime.RequiredError(
+                'requiredStringGroup',
+                'Required parameter "requiredStringGroup" was null or undefined when calling testGroupParameters().'
+            );
         }
 
-        if (requestParameters.requiredBooleanGroup === null || requestParameters.requiredBooleanGroup === undefined) {
-            throw new runtime.RequiredError('requiredBooleanGroup','Required parameter requestParameters.requiredBooleanGroup was null or undefined when calling testGroupParameters.');
+        if (requestParameters['requiredBooleanGroup'] == null) {
+            throw new runtime.RequiredError(
+                'requiredBooleanGroup',
+                'Required parameter "requiredBooleanGroup" was null or undefined when calling testGroupParameters().'
+            );
         }
 
-        if (requestParameters.requiredInt64Group === null || requestParameters.requiredInt64Group === undefined) {
-            throw new runtime.RequiredError('requiredInt64Group','Required parameter requestParameters.requiredInt64Group was null or undefined when calling testGroupParameters.');
+        if (requestParameters['requiredInt64Group'] == null) {
+            throw new runtime.RequiredError(
+                'requiredInt64Group',
+                'Required parameter "requiredInt64Group" was null or undefined when calling testGroupParameters().'
+            );
         }
 
         const queryParameters: any = {};
 
-        if (requestParameters.requiredStringGroup !== undefined) {
-            queryParameters['required_string_group'] = requestParameters.requiredStringGroup;
+        if (requestParameters['requiredStringGroup'] != null) {
+            queryParameters['required_string_group'] = requestParameters['requiredStringGroup'];
         }
 
-        if (requestParameters.requiredInt64Group !== undefined) {
-            queryParameters['required_int64_group'] = requestParameters.requiredInt64Group;
+        if (requestParameters['requiredInt64Group'] != null) {
+            queryParameters['required_int64_group'] = requestParameters['requiredInt64Group'];
         }
 
-        if (requestParameters.stringGroup !== undefined) {
-            queryParameters['string_group'] = requestParameters.stringGroup;
+        if (requestParameters['stringGroup'] != null) {
+            queryParameters['string_group'] = requestParameters['stringGroup'];
         }
 
-        if (requestParameters.int64Group !== undefined) {
-            queryParameters['int64_group'] = requestParameters.int64Group;
+        if (requestParameters['int64Group'] != null) {
+            queryParameters['int64_group'] = requestParameters['int64Group'];
         }
 
         const headerParameters: runtime.HTTPHeaders = {};
 
-        if (requestParameters.requiredBooleanGroup !== undefined && requestParameters.requiredBooleanGroup !== null) {
-            headerParameters['required_boolean_group'] = String(requestParameters.requiredBooleanGroup);
+        if (requestParameters['requiredBooleanGroup'] != null) {
+            headerParameters['required_boolean_group'] = String(requestParameters['requiredBooleanGroup']);
         }
 
-        if (requestParameters.booleanGroup !== undefined && requestParameters.booleanGroup !== null) {
-            headerParameters['boolean_group'] = String(requestParameters.booleanGroup);
+        if (requestParameters['booleanGroup'] != null) {
+            headerParameters['boolean_group'] = String(requestParameters['booleanGroup']);
         }
 
         if (this.configuration && this.configuration.accessToken) {
@@ -740,12 +1241,24 @@ export class FakeApi extends runtime.BaseAPI {
                 headerParameters["Authorization"] = `Bearer ${tokenString}`;
             }
         }
-        const response = await this.request({
-            path: `/fake`,
+
+        let urlPath = `/fake`;
+
+        return {
+            path: urlPath,
             method: 'DELETE',
             headers: headerParameters,
             query: queryParameters,
-        }, initOverrides);
+        };
+    }
+
+    /**
+     * Fake endpoint to test group parameters (optional)
+     * Fake endpoint to test group parameters (optional)
+     */
+    async testGroupParametersRaw(requestParameters: TestGroupParametersRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>> {
+        const requestOptions = await this.testGroupParametersRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.VoidApiResponse(response);
     }
@@ -754,16 +1267,19 @@ export class FakeApi extends runtime.BaseAPI {
      * Fake endpoint to test group parameters (optional)
      * Fake endpoint to test group parameters (optional)
      */
-    async testGroupParameters(requestParameters: TestGroupParametersRequest, initOverrides?: RequestInit): Promise<void> {
+    async testGroupParameters(requestParameters: TestGroupParametersRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void> {
         await this.testGroupParametersRaw(requestParameters, initOverrides);
     }
 
     /**
-     * test inline additionalProperties
+     * Creates request options for testInlineAdditionalProperties without sending the request
      */
-    async testInlineAdditionalPropertiesRaw(requestParameters: TestInlineAdditionalPropertiesRequest, initOverrides?: RequestInit): Promise<runtime.ApiResponse<void>> {
-        if (requestParameters.requestBody === null || requestParameters.requestBody === undefined) {
-            throw new runtime.RequiredError('requestBody','Required parameter requestParameters.requestBody was null or undefined when calling testInlineAdditionalProperties.');
+    async testInlineAdditionalPropertiesRequestOpts(requestParameters: TestInlineAdditionalPropertiesRequest): Promise<runtime.RequestOpts> {
+        if (requestParameters['requestBody'] == null) {
+            throw new runtime.RequiredError(
+                'requestBody',
+                'Required parameter "requestBody" was null or undefined when calling testInlineAdditionalProperties().'
+            );
         }
 
         const queryParameters: any = {};
@@ -772,34 +1288,101 @@ export class FakeApi extends runtime.BaseAPI {
 
         headerParameters['Content-Type'] = 'application/json';
 
-        const response = await this.request({
-            path: `/fake/inline-additionalProperties`,
+
+        let urlPath = `/fake/inline-additionalProperties`;
+
+        return {
+            path: urlPath,
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters.requestBody,
-        }, initOverrides);
+            body: requestParameters['requestBody'],
+        };
+    }
+
+    /**
+     * 
+     * test inline additionalProperties
+     */
+    async testInlineAdditionalPropertiesRaw(requestParameters: TestInlineAdditionalPropertiesRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>> {
+        const requestOptions = await this.testInlineAdditionalPropertiesRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.VoidApiResponse(response);
     }
 
     /**
+     * 
      * test inline additionalProperties
      */
-    async testInlineAdditionalProperties(requestParameters: TestInlineAdditionalPropertiesRequest, initOverrides?: RequestInit): Promise<void> {
+    async testInlineAdditionalProperties(requestParameters: TestInlineAdditionalPropertiesRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void> {
         await this.testInlineAdditionalPropertiesRaw(requestParameters, initOverrides);
     }
 
     /**
-     * test json serialization of form data
+     * Creates request options for testInlineFreeformAdditionalProperties without sending the request
      */
-    async testJsonFormDataRaw(requestParameters: TestJsonFormDataRequest, initOverrides?: RequestInit): Promise<runtime.ApiResponse<void>> {
-        if (requestParameters.param === null || requestParameters.param === undefined) {
-            throw new runtime.RequiredError('param','Required parameter requestParameters.param was null or undefined when calling testJsonFormData.');
+    async testInlineFreeformAdditionalPropertiesRequestOpts(requestParameters: TestInlineFreeformAdditionalPropertiesOperationRequest): Promise<runtime.RequestOpts> {
+        if (requestParameters['testInlineFreeformAdditionalPropertiesRequest'] == null) {
+            throw new runtime.RequiredError(
+                'testInlineFreeformAdditionalPropertiesRequest',
+                'Required parameter "testInlineFreeformAdditionalPropertiesRequest" was null or undefined when calling testInlineFreeformAdditionalProperties().'
+            );
         }
 
-        if (requestParameters.param2 === null || requestParameters.param2 === undefined) {
-            throw new runtime.RequiredError('param2','Required parameter requestParameters.param2 was null or undefined when calling testJsonFormData.');
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        headerParameters['Content-Type'] = 'application/json';
+
+
+        let urlPath = `/fake/inline-freeform-additionalProperties`;
+
+        return {
+            path: urlPath,
+            method: 'POST',
+            headers: headerParameters,
+            query: queryParameters,
+            body: TestInlineFreeformAdditionalPropertiesRequestToJSON(requestParameters['testInlineFreeformAdditionalPropertiesRequest']),
+        };
+    }
+
+    /**
+     * 
+     * test inline free-form additionalProperties
+     */
+    async testInlineFreeformAdditionalPropertiesRaw(requestParameters: TestInlineFreeformAdditionalPropertiesOperationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>> {
+        const requestOptions = await this.testInlineFreeformAdditionalPropertiesRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
+
+        return new runtime.VoidApiResponse(response);
+    }
+
+    /**
+     * 
+     * test inline free-form additionalProperties
+     */
+    async testInlineFreeformAdditionalProperties(requestParameters: TestInlineFreeformAdditionalPropertiesOperationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void> {
+        await this.testInlineFreeformAdditionalPropertiesRaw(requestParameters, initOverrides);
+    }
+
+    /**
+     * Creates request options for testJsonFormData without sending the request
+     */
+    async testJsonFormDataRequestOpts(requestParameters: TestJsonFormDataRequest): Promise<runtime.RequestOpts> {
+        if (requestParameters['param'] == null) {
+            throw new runtime.RequiredError(
+                'param',
+                'Required parameter "param" was null or undefined when calling testJsonFormData().'
+            );
+        }
+
+        if (requestParameters['param2'] == null) {
+            throw new runtime.RequiredError(
+                'param2',
+                'Required parameter "param2" was null or undefined when calling testJsonFormData().'
+            );
         }
 
         const queryParameters: any = {};
@@ -820,98 +1403,193 @@ export class FakeApi extends runtime.BaseAPI {
             formParams = new URLSearchParams();
         }
 
-        if (requestParameters.param !== undefined) {
-            formParams.append('param', requestParameters.param as any);
+        if (requestParameters['param'] != null) {
+            formParams.append('param', requestParameters['param'] as any);
         }
 
-        if (requestParameters.param2 !== undefined) {
-            formParams.append('param2', requestParameters.param2 as any);
+        if (requestParameters['param2'] != null) {
+            formParams.append('param2', requestParameters['param2'] as any);
         }
 
-        const response = await this.request({
-            path: `/fake/jsonFormData`,
+
+        let urlPath = `/fake/jsonFormData`;
+
+        return {
+            path: urlPath,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
             body: formParams,
-        }, initOverrides);
+        };
+    }
+
+    /**
+     * 
+     * test json serialization of form data
+     */
+    async testJsonFormDataRaw(requestParameters: TestJsonFormDataRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>> {
+        const requestOptions = await this.testJsonFormDataRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.VoidApiResponse(response);
     }
 
     /**
+     * 
      * test json serialization of form data
      */
-    async testJsonFormData(requestParameters: TestJsonFormDataRequest, initOverrides?: RequestInit): Promise<void> {
+    async testJsonFormData(requestParameters: TestJsonFormDataRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void> {
         await this.testJsonFormDataRaw(requestParameters, initOverrides);
     }
 
     /**
-     * To test the collection format in query parameters
+     * Creates request options for testNullable without sending the request
      */
-    async testQueryParameterCollectionFormatRaw(requestParameters: TestQueryParameterCollectionFormatRequest, initOverrides?: RequestInit): Promise<runtime.ApiResponse<void>> {
-        if (requestParameters.pipe === null || requestParameters.pipe === undefined) {
-            throw new runtime.RequiredError('pipe','Required parameter requestParameters.pipe was null or undefined when calling testQueryParameterCollectionFormat.');
-        }
-
-        if (requestParameters.ioutil === null || requestParameters.ioutil === undefined) {
-            throw new runtime.RequiredError('ioutil','Required parameter requestParameters.ioutil was null or undefined when calling testQueryParameterCollectionFormat.');
-        }
-
-        if (requestParameters.http === null || requestParameters.http === undefined) {
-            throw new runtime.RequiredError('http','Required parameter requestParameters.http was null or undefined when calling testQueryParameterCollectionFormat.');
-        }
-
-        if (requestParameters.url === null || requestParameters.url === undefined) {
-            throw new runtime.RequiredError('url','Required parameter requestParameters.url was null or undefined when calling testQueryParameterCollectionFormat.');
-        }
-
-        if (requestParameters.context === null || requestParameters.context === undefined) {
-            throw new runtime.RequiredError('context','Required parameter requestParameters.context was null or undefined when calling testQueryParameterCollectionFormat.');
-        }
-
-        if (requestParameters.allowEmpty === null || requestParameters.allowEmpty === undefined) {
-            throw new runtime.RequiredError('allowEmpty','Required parameter requestParameters.allowEmpty was null or undefined when calling testQueryParameterCollectionFormat.');
+    async testNullableRequestOpts(requestParameters: TestNullableRequest): Promise<runtime.RequestOpts> {
+        if (requestParameters['childWithNullable'] == null) {
+            throw new runtime.RequiredError(
+                'childWithNullable',
+                'Required parameter "childWithNullable" was null or undefined when calling testNullable().'
+            );
         }
 
         const queryParameters: any = {};
 
-        if (requestParameters.pipe) {
-            queryParameters['pipe'] = requestParameters.pipe.join(runtime.COLLECTION_FORMATS["pipes"]);
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        headerParameters['Content-Type'] = 'application/json';
+
+
+        let urlPath = `/fake/nullable`;
+
+        return {
+            path: urlPath,
+            method: 'POST',
+            headers: headerParameters,
+            query: queryParameters,
+            body: ChildWithNullableToJSON(requestParameters['childWithNullable']),
+        };
+    }
+
+    /**
+     * 
+     * test nullable parent property
+     */
+    async testNullableRaw(requestParameters: TestNullableRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>> {
+        const requestOptions = await this.testNullableRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
+
+        return new runtime.VoidApiResponse(response);
+    }
+
+    /**
+     * 
+     * test nullable parent property
+     */
+    async testNullable(requestParameters: TestNullableRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void> {
+        await this.testNullableRaw(requestParameters, initOverrides);
+    }
+
+    /**
+     * Creates request options for testQueryParameterCollectionFormat without sending the request
+     */
+    async testQueryParameterCollectionFormatRequestOpts(requestParameters: TestQueryParameterCollectionFormatRequest): Promise<runtime.RequestOpts> {
+        if (requestParameters['pipe'] == null) {
+            throw new runtime.RequiredError(
+                'pipe',
+                'Required parameter "pipe" was null or undefined when calling testQueryParameterCollectionFormat().'
+            );
         }
 
-        if (requestParameters.ioutil) {
-            queryParameters['ioutil'] = requestParameters.ioutil.join(runtime.COLLECTION_FORMATS["csv"]);
+        if (requestParameters['ioutil'] == null) {
+            throw new runtime.RequiredError(
+                'ioutil',
+                'Required parameter "ioutil" was null or undefined when calling testQueryParameterCollectionFormat().'
+            );
         }
 
-        if (requestParameters.http) {
-            queryParameters['http'] = requestParameters.http.join(runtime.COLLECTION_FORMATS["ssv"]);
+        if (requestParameters['http'] == null) {
+            throw new runtime.RequiredError(
+                'http',
+                'Required parameter "http" was null or undefined when calling testQueryParameterCollectionFormat().'
+            );
         }
 
-        if (requestParameters.url) {
-            queryParameters['url'] = requestParameters.url.join(runtime.COLLECTION_FORMATS["csv"]);
+        if (requestParameters['url'] == null) {
+            throw new runtime.RequiredError(
+                'url',
+                'Required parameter "url" was null or undefined when calling testQueryParameterCollectionFormat().'
+            );
         }
 
-        if (requestParameters.context) {
-            queryParameters['context'] = requestParameters.context;
+        if (requestParameters['context'] == null) {
+            throw new runtime.RequiredError(
+                'context',
+                'Required parameter "context" was null or undefined when calling testQueryParameterCollectionFormat().'
+            );
         }
 
-        if (requestParameters.language !== undefined) {
-            queryParameters['language'] = requestParameters.language;
+        if (requestParameters['allowEmpty'] == null) {
+            throw new runtime.RequiredError(
+                'allowEmpty',
+                'Required parameter "allowEmpty" was null or undefined when calling testQueryParameterCollectionFormat().'
+            );
         }
 
-        if (requestParameters.allowEmpty !== undefined) {
-            queryParameters['allowEmpty'] = requestParameters.allowEmpty;
+        const queryParameters: any = {};
+
+        if (requestParameters['pipe'] != null) {
+            queryParameters['pipe'] = requestParameters['pipe']!.join(runtime.COLLECTION_FORMATS["pipes"]);
+        }
+
+        if (requestParameters['ioutil'] != null) {
+            queryParameters['ioutil'] = requestParameters['ioutil']!.join(runtime.COLLECTION_FORMATS["csv"]);
+        }
+
+        if (requestParameters['http'] != null) {
+            queryParameters['http'] = requestParameters['http']!.join(runtime.COLLECTION_FORMATS["ssv"]);
+        }
+
+        if (requestParameters['url'] != null) {
+            queryParameters['url'] = requestParameters['url']!.join(runtime.COLLECTION_FORMATS["csv"]);
+        }
+
+        if (requestParameters['context'] != null) {
+            queryParameters['context'] = requestParameters['context'];
+        }
+
+        if (requestParameters['language'] != null) {
+            for (let key of Object.keys(requestParameters['language'])) {
+                const value = (requestParameters['language'] as any)[key];
+                if (value != null) {
+                    Object.defineProperty(queryParameters, key, { value, enumerable: true, writable: true, configurable: true });
+                }
+            }
+        }
+
+        if (requestParameters['allowEmpty'] != null) {
+            queryParameters['allowEmpty'] = requestParameters['allowEmpty'];
         }
 
         const headerParameters: runtime.HTTPHeaders = {};
 
-        const response = await this.request({
-            path: `/fake/test-query-parameters`,
+
+        let urlPath = `/fake/test-query-parameters`;
+
+        return {
+            path: urlPath,
             method: 'PUT',
             headers: headerParameters,
             query: queryParameters,
-        }, initOverrides);
+        };
+    }
+
+    /**
+     * To test the collection format in query parameters
+     */
+    async testQueryParameterCollectionFormatRaw(requestParameters: TestQueryParameterCollectionFormatRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>> {
+        const requestOptions = await this.testQueryParameterCollectionFormatRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.VoidApiResponse(response);
     }
@@ -919,76 +1597,124 @@ export class FakeApi extends runtime.BaseAPI {
     /**
      * To test the collection format in query parameters
      */
-    async testQueryParameterCollectionFormat(requestParameters: TestQueryParameterCollectionFormatRequest, initOverrides?: RequestInit): Promise<void> {
+    async testQueryParameterCollectionFormat(requestParameters: TestQueryParameterCollectionFormatRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void> {
         await this.testQueryParameterCollectionFormatRaw(requestParameters, initOverrides);
+    }
+
+    /**
+     * Creates request options for testStringMapReference without sending the request
+     */
+    async testStringMapReferenceRequestOpts(requestParameters: TestStringMapReferenceRequest): Promise<runtime.RequestOpts> {
+        if (requestParameters['requestBody'] == null) {
+            throw new runtime.RequiredError(
+                'requestBody',
+                'Required parameter "requestBody" was null or undefined when calling testStringMapReference().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        headerParameters['Content-Type'] = 'application/json';
+
+
+        let urlPath = `/fake/stringMap-reference`;
+
+        return {
+            path: urlPath,
+            method: 'POST',
+            headers: headerParameters,
+            query: queryParameters,
+            body: requestParameters['requestBody'],
+        };
+    }
+
+    /**
+     * 
+     * test referenced string map
+     */
+    async testStringMapReferenceRaw(requestParameters: TestStringMapReferenceRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>> {
+        const requestOptions = await this.testStringMapReferenceRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
+
+        return new runtime.VoidApiResponse(response);
+    }
+
+    /**
+     * 
+     * test referenced string map
+     */
+    async testStringMapReference(requestParameters: TestStringMapReferenceRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void> {
+        await this.testStringMapReferenceRaw(requestParameters, initOverrides);
     }
 
 }
 
 /**
-    * @export
-    * @enum {string}
-    */
-export enum TestEnumParametersEnumHeaderStringArrayEnum {
-    GreaterThan = '>',
-    Dollar = '$'
-}
+ * @export
+ */
+export const TestEnumParametersEnumHeaderStringArrayEnum = {
+    GreaterThan: '>',
+    Dollar: '$',
+} as const;
+export type TestEnumParametersEnumHeaderStringArrayEnum = typeof TestEnumParametersEnumHeaderStringArrayEnum[keyof typeof TestEnumParametersEnumHeaderStringArrayEnum];
 /**
-    * @export
-    * @enum {string}
-    */
-export enum TestEnumParametersEnumHeaderStringEnum {
-    Abc = '_abc',
-    Efg = '-efg',
-    Xyz = '(xyz)'
-}
+ * @export
+ */
+export const TestEnumParametersEnumHeaderStringEnum = {
+    Abc: '_abc',
+    Efg: '-efg',
+    Xyz: '(xyz)',
+} as const;
+export type TestEnumParametersEnumHeaderStringEnum = typeof TestEnumParametersEnumHeaderStringEnum[keyof typeof TestEnumParametersEnumHeaderStringEnum];
 /**
-    * @export
-    * @enum {string}
-    */
-export enum TestEnumParametersEnumQueryStringArrayEnum {
-    GreaterThan = '>',
-    Dollar = '$'
-}
+ * @export
+ */
+export const TestEnumParametersEnumQueryStringArrayEnum = {
+    GreaterThan: '>',
+    Dollar: '$',
+} as const;
+export type TestEnumParametersEnumQueryStringArrayEnum = typeof TestEnumParametersEnumQueryStringArrayEnum[keyof typeof TestEnumParametersEnumQueryStringArrayEnum];
 /**
-    * @export
-    * @enum {string}
-    */
-export enum TestEnumParametersEnumQueryStringEnum {
-    Abc = '_abc',
-    Efg = '-efg',
-    Xyz = '(xyz)'
-}
+ * @export
+ */
+export const TestEnumParametersEnumQueryStringEnum = {
+    Abc: '_abc',
+    Efg: '-efg',
+    Xyz: '(xyz)',
+} as const;
+export type TestEnumParametersEnumQueryStringEnum = typeof TestEnumParametersEnumQueryStringEnum[keyof typeof TestEnumParametersEnumQueryStringEnum];
 /**
-    * @export
-    * @enum {string}
-    */
-export enum TestEnumParametersEnumQueryIntegerEnum {
-    NUMBER_1 = 1,
-    NUMBER_MINUS_2 = -2
-}
+ * @export
+ */
+export const TestEnumParametersEnumQueryIntegerEnum = {
+    NUMBER_1: 1,
+    NUMBER_MINUS_2: -2,
+} as const;
+export type TestEnumParametersEnumQueryIntegerEnum = typeof TestEnumParametersEnumQueryIntegerEnum[keyof typeof TestEnumParametersEnumQueryIntegerEnum];
 /**
-    * @export
-    * @enum {string}
-    */
-export enum TestEnumParametersEnumQueryDoubleEnum {
-    NUMBER_1_DOT_1 = 1.1,
-    NUMBER_MINUS_1_DOT_2 = -1.2
-}
+ * @export
+ */
+export const TestEnumParametersEnumQueryDoubleEnum = {
+    NUMBER_1_DOT_1: 1.1,
+    NUMBER_MINUS_1_DOT_2: -1.2,
+} as const;
+export type TestEnumParametersEnumQueryDoubleEnum = typeof TestEnumParametersEnumQueryDoubleEnum[keyof typeof TestEnumParametersEnumQueryDoubleEnum];
 /**
-    * @export
-    * @enum {string}
-    */
-export enum TestEnumParametersEnumFormStringArrayEnum {
-    GreaterThan = '>',
-    Dollar = '$'
-}
+ * @export
+ */
+export const TestEnumParametersEnumFormStringArrayEnum = {
+    GreaterThan: '>',
+    Dollar: '$',
+} as const;
+export type TestEnumParametersEnumFormStringArrayEnum = typeof TestEnumParametersEnumFormStringArrayEnum[keyof typeof TestEnumParametersEnumFormStringArrayEnum];
 /**
-    * @export
-    * @enum {string}
-    */
-export enum TestEnumParametersEnumFormStringEnum {
-    Abc = '_abc',
-    Efg = '-efg',
-    Xyz = '(xyz)'
-}
+ * @export
+ */
+export const TestEnumParametersEnumFormStringEnum = {
+    Abc: '_abc',
+    Efg: '-efg',
+    Xyz: '(xyz)',
+} as const;
+export type TestEnumParametersEnumFormStringEnum = typeof TestEnumParametersEnumFormStringEnum[keyof typeof TestEnumParametersEnumFormStringEnum];

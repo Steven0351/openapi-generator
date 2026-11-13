@@ -24,6 +24,9 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.util.EnumSet;
 
+/**
+ * <p>Mustache templates are located in {@code src/main/resources/python-blueplanet/}.
+ */
 public class PythonBluePlanetServerCodegen extends AbstractPythonConnexionServerCodegen {
     private final Logger LOGGER = LoggerFactory.getLogger(PythonBluePlanetServerCodegen.class);
 
@@ -73,6 +76,13 @@ public class PythonBluePlanetServerCodegen extends AbstractPythonConnexionServer
     }
 
     @Override
+    protected boolean usesPythonicParams() {
+        // Generated blueplanet apps call add_api() without pythonic_params, so
+        // Connexion 1.x passes handler arguments under their original names.
+        return false;
+    }
+
+    @Override
     public void processOpts() {
         super.processOpts();
         //apiTemplateFiles.clear();
@@ -100,10 +110,6 @@ public class PythonBluePlanetServerCodegen extends AbstractPythonConnexionServer
         } else {
             this.defaultController = "default_controller";
             additionalProperties.put(DEFAULT_CONTROLLER, this.defaultController);
-        }
-        if (Boolean.TRUE.equals(additionalProperties.get(SUPPORT_PYTHON2))) {
-            additionalProperties.put(SUPPORT_PYTHON2, Boolean.TRUE);
-            typeMapping.put("long", "long");
         }
 
         String APP_PATH = "app" + File.separatorChar;
@@ -149,7 +155,7 @@ public class PythonBluePlanetServerCodegen extends AbstractPythonConnexionServer
         supportingFiles.add(new SupportingFile("app/{{packageName}}/controllers/__init__.mustache", CONTROLLER_PATH, "__init__.py"));
 
         supportingFiles.add(new SupportingFile("app/{{packageName}}/models/__init__.mustache", MODEL_PATH, "__init__.py"));
-        supportingFiles.add(new SupportingFile("app/{{packageName}}/models/base_model_.mustache", MODEL_PATH, "base_model_.py"));
+        supportingFiles.add(new SupportingFile("app/{{packageName}}/models/base_model.mustache", MODEL_PATH, "base_model.py"));
 
         supportingFiles.add(new SupportingFile("app/{{packageName}}/test/__init__.mustache", TEST_PATH, "__init__.py"));
 
@@ -224,7 +230,7 @@ public class PythonBluePlanetServerCodegen extends AbstractPythonConnexionServer
         supportingFiles.add(new SupportingFile("app/{{packageName}}/controllers/__init__.mustache", CONTROLLER_PATH, "__init__.py"));
 
         supportingFiles.add(new SupportingFile("app/{{packageName}}/models/__init__.mustache", MODEL_PATH, "__init__.py"));
-        supportingFiles.add(new SupportingFile("app/{{packageName}}/models/base_model_.mustache", MODEL_PATH, "base_model_.py"));
+        supportingFiles.add(new SupportingFile("app/{{packageName}}/models/base_model.mustache", MODEL_PATH, "base_model.py"));
 
         supportingFiles.add(new SupportingFile("app/{{packageName}}/test/__init__.mustache", TEST_PATH, "__init__.py"));
 
@@ -241,8 +247,8 @@ public class PythonBluePlanetServerCodegen extends AbstractPythonConnexionServer
     }
 
     @Override
-    public String toModelDocFilename( String name ) {
-        return toModelName( name ) + "_ResourceType";
+    public String toModelDocFilename(String name) {
+        return toModelName(name) + "_ResourceType";
     }
 
     @Override
@@ -265,4 +271,14 @@ public class PythonBluePlanetServerCodegen extends AbstractPythonConnexionServer
         return outputFolder + File.separator + apiPackage().replace('.', File.separatorChar);
     }
 
+    @Override
+    public String generatorLanguageVersion() {
+        return "3.5.2+";
+    }
+
+    @Override
+    protected boolean supportsObjectParameterParsing() {
+        // Connexion 1.x (Swagger 2.0) has no object-typed query/header parameters.
+        return false;
+    }
 }

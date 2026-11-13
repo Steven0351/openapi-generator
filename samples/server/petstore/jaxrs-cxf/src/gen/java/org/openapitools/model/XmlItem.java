@@ -2,106 +2,143 @@ package org.openapitools.model;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import javax.validation.constraints.*;
 import javax.validation.Valid;
 
 import io.swagger.annotations.ApiModelProperty;
+import java.util.Objects;
 import com.fasterxml.jackson.annotation.JsonProperty;
+
 
 public class XmlItem  {
   
   @ApiModelProperty(example = "string", value = "")
+
   private String attributeString;
 
   @ApiModelProperty(example = "1.234", value = "")
+
   @Valid
+
   private BigDecimal attributeNumber;
 
   @ApiModelProperty(example = "-2", value = "")
+
   private Integer attributeInteger;
 
   @ApiModelProperty(example = "true", value = "")
+
   private Boolean attributeBoolean;
 
   @ApiModelProperty(value = "")
-  private List<Integer> wrappedArray = null;
+
+  private List<Integer> wrappedArray = new ArrayList<>();
 
   @ApiModelProperty(example = "string", value = "")
+
   private String nameString;
 
   @ApiModelProperty(example = "1.234", value = "")
+
   @Valid
+
   private BigDecimal nameNumber;
 
   @ApiModelProperty(example = "-2", value = "")
+
   private Integer nameInteger;
 
   @ApiModelProperty(example = "true", value = "")
+
   private Boolean nameBoolean;
 
   @ApiModelProperty(value = "")
-  private List<Integer> nameArray = null;
+
+  private List<Integer> nameArray = new ArrayList<>();
 
   @ApiModelProperty(value = "")
-  private List<Integer> nameWrappedArray = null;
+
+  private List<Integer> nameWrappedArray = new ArrayList<>();
 
   @ApiModelProperty(example = "string", value = "")
+
   private String prefixString;
 
   @ApiModelProperty(example = "1.234", value = "")
+
   @Valid
+
   private BigDecimal prefixNumber;
 
   @ApiModelProperty(example = "-2", value = "")
+
   private Integer prefixInteger;
 
   @ApiModelProperty(example = "true", value = "")
+
   private Boolean prefixBoolean;
 
   @ApiModelProperty(value = "")
-  private List<Integer> prefixArray = null;
+
+  private List<Integer> prefixArray = new ArrayList<>();
 
   @ApiModelProperty(value = "")
-  private List<Integer> prefixWrappedArray = null;
+
+  private List<Integer> prefixWrappedArray = new ArrayList<>();
 
   @ApiModelProperty(example = "string", value = "")
+
   private String namespaceString;
 
   @ApiModelProperty(example = "1.234", value = "")
+
   @Valid
+
   private BigDecimal namespaceNumber;
 
   @ApiModelProperty(example = "-2", value = "")
+
   private Integer namespaceInteger;
 
   @ApiModelProperty(example = "true", value = "")
+
   private Boolean namespaceBoolean;
 
   @ApiModelProperty(value = "")
-  private List<Integer> namespaceArray = null;
+
+  private List<Integer> namespaceArray = new ArrayList<>();
 
   @ApiModelProperty(value = "")
-  private List<Integer> namespaceWrappedArray = null;
+
+  private List<Integer> namespaceWrappedArray = new ArrayList<>();
 
   @ApiModelProperty(example = "string", value = "")
+
   private String prefixNsString;
 
   @ApiModelProperty(example = "1.234", value = "")
+
   @Valid
+
   private BigDecimal prefixNsNumber;
 
   @ApiModelProperty(example = "-2", value = "")
+
   private Integer prefixNsInteger;
 
   @ApiModelProperty(example = "true", value = "")
+
   private Boolean prefixNsBoolean;
 
   @ApiModelProperty(value = "")
-  private List<Integer> prefixNsArray = null;
+
+  private List<Integer> prefixNsArray = new ArrayList<>();
 
   @ApiModelProperty(value = "")
-  private List<Integer> prefixNsWrappedArray = null;
+
+  private List<Integer> prefixNsWrappedArray = new ArrayList<>();
  /**
    * Get attributeString
    * @return attributeString
@@ -669,6 +706,50 @@ public class XmlItem  {
     return this;
   }
 
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    XmlItem xmlItem = (XmlItem) o;
+    return Objects.equals(this.attributeString, xmlItem.attributeString) &&
+        Objects.equals(this.attributeNumber, xmlItem.attributeNumber) &&
+        Objects.equals(this.attributeInteger, xmlItem.attributeInteger) &&
+        Objects.equals(this.attributeBoolean, xmlItem.attributeBoolean) &&
+        Objects.equals(this.wrappedArray, xmlItem.wrappedArray) &&
+        Objects.equals(this.nameString, xmlItem.nameString) &&
+        Objects.equals(this.nameNumber, xmlItem.nameNumber) &&
+        Objects.equals(this.nameInteger, xmlItem.nameInteger) &&
+        Objects.equals(this.nameBoolean, xmlItem.nameBoolean) &&
+        Objects.equals(this.nameArray, xmlItem.nameArray) &&
+        Objects.equals(this.nameWrappedArray, xmlItem.nameWrappedArray) &&
+        Objects.equals(this.prefixString, xmlItem.prefixString) &&
+        Objects.equals(this.prefixNumber, xmlItem.prefixNumber) &&
+        Objects.equals(this.prefixInteger, xmlItem.prefixInteger) &&
+        Objects.equals(this.prefixBoolean, xmlItem.prefixBoolean) &&
+        Objects.equals(this.prefixArray, xmlItem.prefixArray) &&
+        Objects.equals(this.prefixWrappedArray, xmlItem.prefixWrappedArray) &&
+        Objects.equals(this.namespaceString, xmlItem.namespaceString) &&
+        Objects.equals(this.namespaceNumber, xmlItem.namespaceNumber) &&
+        Objects.equals(this.namespaceInteger, xmlItem.namespaceInteger) &&
+        Objects.equals(this.namespaceBoolean, xmlItem.namespaceBoolean) &&
+        Objects.equals(this.namespaceArray, xmlItem.namespaceArray) &&
+        Objects.equals(this.namespaceWrappedArray, xmlItem.namespaceWrappedArray) &&
+        Objects.equals(this.prefixNsString, xmlItem.prefixNsString) &&
+        Objects.equals(this.prefixNsNumber, xmlItem.prefixNsNumber) &&
+        Objects.equals(this.prefixNsInteger, xmlItem.prefixNsInteger) &&
+        Objects.equals(this.prefixNsBoolean, xmlItem.prefixNsBoolean) &&
+        Objects.equals(this.prefixNsArray, xmlItem.prefixNsArray) &&
+        Objects.equals(this.prefixNsWrappedArray, xmlItem.prefixNsWrappedArray);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(attributeString, attributeNumber, attributeInteger, attributeBoolean, wrappedArray, nameString, nameNumber, nameInteger, nameBoolean, nameArray, nameWrappedArray, prefixString, prefixNumber, prefixInteger, prefixBoolean, prefixArray, prefixWrappedArray, namespaceString, namespaceNumber, namespaceInteger, namespaceBoolean, namespaceArray, namespaceWrappedArray, prefixNsString, prefixNsNumber, prefixNsInteger, prefixNsBoolean, prefixNsArray, prefixNsWrappedArray);
+  }
 
   @Override
   public String toString() {
@@ -713,10 +794,7 @@ public class XmlItem  {
    * (except the first line).
    */
   private static String toIndentedString(Object o) {
-    if (o == null) {
-      return "null";
-    }
-    return o.toString().replace("\n", "\n    ");
+    return o == null ? "null" : o.toString().replace("\n", "\n    ");
   }
 }
 

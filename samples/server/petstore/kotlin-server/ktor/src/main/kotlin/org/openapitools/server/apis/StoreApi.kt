@@ -11,68 +11,71 @@
 */
 package org.openapitools.server.apis
 
-import com.google.gson.Gson
-import io.ktor.application.*
-import io.ktor.auth.*
 import io.ktor.http.*
-import io.ktor.response.*
+import io.ktor.server.application.*
+import io.ktor.server.auth.*
+import io.ktor.server.response.*
 import org.openapitools.server.Paths
-import io.ktor.locations.*
-import io.ktor.routing.*
+import io.ktor.server.resources.options
+import io.ktor.server.resources.get
+import io.ktor.server.resources.post
+import io.ktor.server.resources.put
+import io.ktor.server.resources.delete
+import io.ktor.server.resources.head
+import io.ktor.server.resources.patch
+import io.ktor.server.routing.*
 import org.openapitools.server.infrastructure.ApiPrincipal
 import org.openapitools.server.models.Order
 
-@KtorExperimentalLocationsAPI
 fun Route.StoreApi() {
-    val gson = Gson()
-    val empty = mutableMapOf<String, Any?>()
-
-    delete<Paths.deleteOrder> {
+    delete<Paths.deleteOrder> { deleteOrder ->
         call.respond(HttpStatusCode.NotImplemented)
+        
     }
-
     authenticate("api_key") {
-    get<Paths.getInventory> {
-        val principal = call.authentication.principal<ApiPrincipal>()!!
+    get<Paths.getInventory> { getInventory ->
+        
+        val principal = call.authentication.principal<ApiPrincipal>()
+        
         
         call.respond(HttpStatusCode.NotImplemented)
+        
     }
     }
-
-    get<Paths.getOrderById> {
+    get<Paths.getOrderById> { getOrderById ->
         val exampleContentType = "application/json"
         val exampleContentString = """{
+          "id" : 0,
           "petId" : 6,
           "quantity" : 1,
-          "id" : 0,
           "shipDate" : "2000-01-23T04:56:07.000+00:00",
-          "complete" : false,
-          "status" : "placed"
+          "status" : "placed",
+          "complete" : false
         }"""
         
         when (exampleContentType) {
-            "application/json" -> call.respond(gson.fromJson(exampleContentString, empty::class.java))
+            "application/json" -> call.respondText(exampleContentType, ContentType.Application.Json)
             "application/xml" -> call.respondText(exampleContentString, ContentType.Text.Xml)
             else -> call.respondText(exampleContentString)
         }
+        
     }
-
-    post<Paths.placeOrder> {
+    post<Paths.placeOrder> { placeOrder ->
         val exampleContentType = "application/json"
         val exampleContentString = """{
+          "id" : 0,
           "petId" : 6,
           "quantity" : 1,
-          "id" : 0,
           "shipDate" : "2000-01-23T04:56:07.000+00:00",
-          "complete" : false,
-          "status" : "placed"
+          "status" : "placed",
+          "complete" : false
         }"""
         
         when (exampleContentType) {
-            "application/json" -> call.respond(gson.fromJson(exampleContentString, empty::class.java))
+            "application/json" -> call.respondText(exampleContentType, ContentType.Application.Json)
             "application/xml" -> call.respondText(exampleContentString, ContentType.Text.Xml)
             else -> call.respondText(exampleContentString)
         }
+        
     }
-
 }

@@ -1,3 +1,5 @@
+{{>licenseInfo}}
+
 package {{invokerPackage}};
 
 import {{apiPackage}}.*;
@@ -10,15 +12,7 @@ import org.openapitools.jackson.nullable.JsonNullableModule;
 {{#joda}}
 import com.fasterxml.jackson.datatype.joda.JodaModule;
 {{/joda}}
-{{#java8}}
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-{{/java8}}
-{{#threetenbp}}
-import com.fasterxml.jackson.datatype.threetenbp.ThreeTenModule;
-{{/threetenbp}}
-{{#threetenbp}}
-import org.threeten.bp.*;
-{{/threetenbp}}
 import com.google.api.client.googleapis.util.Utils;
 import com.google.api.client.http.AbstractHttpContent;
 import com.google.api.client.http.HttpRequestFactory;
@@ -30,32 +24,29 @@ import java.io.IOException;
 import java.io.OutputStream;
 
 {{>generatedAnnotation}}
-public class ApiClient {
-    private final String basePath;
-    private final HttpRequestFactory httpRequestFactory;
-    private final ObjectMapper objectMapper;
 
-    private static final String defaultBasePath = "{{basePath}}";
+public class ApiClient {
+    protected final String basePath;
+    protected final HttpRequestFactory httpRequestFactory;
+    protected final ObjectMapper objectMapper;
+
+    protected static final String defaultBasePath = "{{basePath}}";
 
     // A reasonable default object mapper. Client can pass in a chosen ObjectMapper anyway, this is just for reasonable defaults.
-    private static ObjectMapper createDefaultObjectMapper() {
+    protected static ObjectMapper createDefaultObjectMapper() {
         ObjectMapper objectMapper = new ObjectMapper()
+            {{#failOnUnknownProperties}}
+            .enable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+            {{/failOnUnknownProperties}}
+            {{^failOnUnknownProperties}}
             .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+            {{/failOnUnknownProperties}}
             .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
             .setDateFormat(new RFC3339DateFormat());
         {{#joda}}
         objectMapper.registerModule(new JodaModule());
         {{/joda}}
-        {{#java8}}
         objectMapper.registerModule(new JavaTimeModule());
-        {{/java8}}
-        {{#threetenbp}}
-        ThreeTenModule module = new ThreeTenModule();
-        module.addDeserializer(Instant.class, CustomInstantDeserializer.INSTANT);
-        module.addDeserializer(OffsetDateTime.class, CustomInstantDeserializer.OFFSET_DATE_TIME);
-        module.addDeserializer(ZonedDateTime.class, CustomInstantDeserializer.ZONED_DATE_TIME);
-        objectMapper.registerModule(module);
-        {{/threetenbp}}
         {{#openApiNullable}}
         JsonNullableModule jnm = new JsonNullableModule();
         objectMapper.registerModule(jnm);
@@ -94,7 +85,7 @@ public class ApiClient {
 
     public class JacksonJsonHttpContent extends AbstractHttpContent {
         /* A POJO that can be serialized with a com.fasterxml Jackson ObjectMapper */
-        private final Object data;
+        protected final Object data;
 
         public JacksonJsonHttpContent(Object data) {
             super(Json.MEDIA_TYPE);

@@ -4,7 +4,7 @@ from datetime import date, datetime
 
 from typing import List, Dict, Type
 
-from {{modelPackage}}.base_model_ import Model
+from {{modelPackage}}.base_model import Model
 {{#models}}
 {{#model}}
 {{#pyImports}}
@@ -46,7 +46,7 @@ class {{classname}}(Model):
 
         self.attribute_map = {
 {{#vars}}
-            '{{name}}': '{{baseName}}'{{^-last}},{{/-last}}
+            '{{name}}': '{{{vendorExtensions.x-python-connexion-quoted-base-name}}}'{{^-last}},{{/-last}}
 {{/vars}}
         }
 {{#vars}}{{#-first}}

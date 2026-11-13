@@ -32,7 +32,7 @@ class  Order
 {
 public:
     Order();
-    virtual ~Order() = default;
+    virtual ~Order();
 
 
     /// <summary>
@@ -101,8 +101,8 @@ public:
     bool completeIsSet() const;
     void unsetComplete();
 
-    friend void to_json(nlohmann::json& j, const Order& o);
-    friend void from_json(const nlohmann::json& j, Order& o);
+    friend  void to_json(nlohmann::json& j, const Order& o);
+    friend  void from_json(const nlohmann::json& j, Order& o);
 protected:
     int64_t m_Id;
     bool m_IdIsSet;

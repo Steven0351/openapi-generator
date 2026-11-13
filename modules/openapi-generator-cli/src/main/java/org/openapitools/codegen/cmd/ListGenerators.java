@@ -1,10 +1,8 @@
 package org.openapitools.codegen.cmd;
 
 import com.google.common.base.Objects;
-
 import io.airlift.airline.Command;
 import io.airlift.airline.Option;
-
 import org.apache.commons.lang3.StringUtils;
 import org.openapitools.codegen.CodegenConfig;
 import org.openapitools.codegen.CodegenConfigLoader;
@@ -20,18 +18,18 @@ import java.util.stream.Collectors;
 @Command(name = "list", description = "Lists the available generators")
 public class ListGenerators extends OpenApiGeneratorCommand {
 
-    @Option(name = {"-s", "--short" }, description = "shortened output (suitable for scripting)")
+    @Option(name = {"-s", "--short"}, description = "shortened output (suitable for scripting)")
     private Boolean shortened = false;
 
-    @Option(name = {"-d", "--docsite" }, description = "format for docusaurus site output", hidden = true)
+    @Option(name = {"-d", "--docsite"}, description = "format for docusaurus site output", hidden = true)
     private Boolean docusaurus = false;
 
-    @Option(name = {"--github-nested-index" }, description = "format for github index at docs/generators/README.md", hidden = true)
-    private Boolean  githubNestedIndex = false;
+    @Option(name = {"--github-nested-index"}, description = "format for github index at docs/generators/README.md", hidden = true)
+    private Boolean githubNestedIndex = false;
 
-    @Option(name = {"-i", "--include" },
+    @Option(name = {"-i", "--include"},
             description = "comma-separated list of stability indexes to include (value: all,beta,stable,experimental,deprecated). Excludes deprecated by default.",
-            allowedValues = { "all", "beta", "stable", "experimental", "deprecated" })
+            allowedValues = {"all", "beta", "stable", "experimental", "deprecated"})
     private String include = "stable,beta,experimental";
 
     @Override
@@ -88,13 +86,20 @@ public class ListGenerators extends OpenApiGeneratorCommand {
                 .sorted(Comparator.comparing(CodegenConfig::getName))
                 .collect(Collectors.toList());
 
-        if(!list.isEmpty()) {
+        if (!list.isEmpty()) {
             if (docusaurus || githubNestedIndex) {
                 sb.append("## ").append(typeName).append(" generators");
             } else {
                 sb.append(typeName).append(" generators:");
             }
             sb.append(System.lineSeparator());
+
+            if (docusaurus) {
+                sb.append(System.lineSeparator());
+                sb.append("<div className=\"generators-list\">");
+                sb.append(System.lineSeparator());
+                sb.append(System.lineSeparator());
+            }
 
             list.forEach(generator -> {
                 GeneratorMetadata meta = generator.getGeneratorMetadata();
@@ -122,6 +127,12 @@ public class ListGenerators extends OpenApiGeneratorCommand {
                 }
                 sb.append(System.lineSeparator());
             });
+
+            if (docusaurus) {
+                sb.append(System.lineSeparator());
+                sb.append("</div>");
+                sb.append(System.lineSeparator());
+            }
 
             sb.append(System.lineSeparator());
             sb.append(System.lineSeparator());

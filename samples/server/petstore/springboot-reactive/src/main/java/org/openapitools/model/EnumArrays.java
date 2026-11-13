@@ -1,22 +1,32 @@
 package org.openapitools.model;
 
+import java.net.URI;
 import java.util.Objects;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
-import io.swagger.annotations.ApiModel;
-import io.swagger.annotations.ApiModelProperty;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import org.springframework.lang.Nullable;
 import org.openapitools.jackson.nullable.JsonNullable;
-import javax.validation.Valid;
-import javax.validation.constraints.*;
+import java.time.OffsetDateTime;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.*;
+import io.swagger.v3.oas.annotations.media.Schema;
+
+
+import java.util.*;
+import jakarta.annotation.Generated;
 
 /**
  * EnumArrays
  */
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.SpringCodegen")
-public class EnumArrays   {
+
+@Generated(value = "org.openapitools.codegen.languages.SpringCodegen", comments = "Generator version: 7.28.0-SNAPSHOT")
+public class EnumArrays {
+
   /**
    * Gets or Sets justSymbol
    */
@@ -25,7 +35,7 @@ public class EnumArrays   {
     
     DOLLAR("$");
 
-    private String value;
+    private final String value;
 
     JustSymbolEnum(String value) {
       this.value = value;
@@ -52,8 +62,8 @@ public class EnumArrays   {
     }
   }
 
-  @JsonProperty("just_symbol")
-  private JustSymbolEnum justSymbol;
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private @Nullable JustSymbolEnum justSymbol;
 
   /**
    * Gets or Sets arrayEnum
@@ -63,7 +73,7 @@ public class EnumArrays   {
     
     CRAB("crab");
 
-    private String value;
+    private final String value;
 
     ArrayEnumEnum(String value) {
       this.value = value;
@@ -90,11 +100,10 @@ public class EnumArrays   {
     }
   }
 
-  @JsonProperty("array_enum")
-  @Valid
-  private List<ArrayEnumEnum> arrayEnum = null;
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private List<ArrayEnumEnum> arrayEnum = new ArrayList<>();
 
-  public EnumArrays justSymbol(JustSymbolEnum justSymbol) {
+  public EnumArrays justSymbol(@Nullable JustSymbolEnum justSymbol) {
     this.justSymbol = justSymbol;
     return this;
   }
@@ -102,15 +111,16 @@ public class EnumArrays   {
   /**
    * Get justSymbol
    * @return justSymbol
-  */
-  @ApiModelProperty(value = "")
-
-
-  public JustSymbolEnum getJustSymbol() {
+   */
+  
+  @Schema(name = "just_symbol", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+  @JsonProperty("just_symbol")
+  public @Nullable JustSymbolEnum getJustSymbol() {
     return justSymbol;
   }
 
-  public void setJustSymbol(JustSymbolEnum justSymbol) {
+  @JsonProperty("just_symbol")
+  public void setJustSymbol(@Nullable JustSymbolEnum justSymbol) {
     this.justSymbol = justSymbol;
   }
 
@@ -130,18 +140,18 @@ public class EnumArrays   {
   /**
    * Get arrayEnum
    * @return arrayEnum
-  */
-  @ApiModelProperty(value = "")
-
-
+   */
+  
+  @Schema(name = "array_enum", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+  @JsonProperty("array_enum")
   public List<ArrayEnumEnum> getArrayEnum() {
     return arrayEnum;
   }
 
+  @JsonProperty("array_enum")
   public void setArrayEnum(List<ArrayEnumEnum> arrayEnum) {
     this.arrayEnum = arrayEnum;
   }
-
 
   @Override
   public boolean equals(Object o) {
@@ -165,7 +175,6 @@ public class EnumArrays   {
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class EnumArrays {\n");
-    
     sb.append("    justSymbol: ").append(toIndentedString(justSymbol)).append("\n");
     sb.append("    arrayEnum: ").append(toIndentedString(arrayEnum)).append("\n");
     sb.append("}");
@@ -176,11 +185,8 @@ public class EnumArrays   {
    * Convert the given object to string with each line indented by 4 spaces
    * (except the first line).
    */
-  private String toIndentedString(Object o) {
-    if (o == null) {
-      return "null";
-    }
-    return o.toString().replace("\n", "\n    ");
+  private String toIndentedString(@Nullable Object o) {
+    return o == null ? "null" : o.toString().replace("\n", "\n    ");
   }
 }
 

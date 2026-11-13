@@ -12,13 +12,14 @@
  * Do not edit the class manually.
  */
 
-import { exists, mapValues } from '../runtime';
+import { mapValues } from '../runtime';
+import type { DeprecatedObject } from './DeprecatedObject';
 import {
-    DeprecatedObject,
     DeprecatedObjectFromJSON,
     DeprecatedObjectFromJSONTyped,
     DeprecatedObjectToJSON,
-} from './';
+    DeprecatedObjectToJSONTyped,
+} from './DeprecatedObject';
 
 /**
  * 
@@ -28,28 +29,30 @@ import {
 export interface ObjectWithDeprecatedFields {
     /**
      * 
-     * @type {string}
-     * @memberof ObjectWithDeprecatedFields
      */
     uuid?: string;
     /**
      * 
-     * @type {number}
-     * @memberof ObjectWithDeprecatedFields
+     * @deprecated
      */
     id?: number;
     /**
      * 
-     * @type {DeprecatedObject}
-     * @memberof ObjectWithDeprecatedFields
+     * @deprecated
      */
     deprecatedRef?: DeprecatedObject;
     /**
      * 
-     * @type {Array<string>}
-     * @memberof ObjectWithDeprecatedFields
+     * @deprecated
      */
     bars?: Array<string>;
+}
+
+/**
+ * Check if a given object implements the ObjectWithDeprecatedFields interface.
+ */
+export function instanceOfObjectWithDeprecatedFields(value: object): value is ObjectWithDeprecatedFields {
+    return true;
 }
 
 export function ObjectWithDeprecatedFieldsFromJSON(json: any): ObjectWithDeprecatedFields {
@@ -57,31 +60,33 @@ export function ObjectWithDeprecatedFieldsFromJSON(json: any): ObjectWithDepreca
 }
 
 export function ObjectWithDeprecatedFieldsFromJSONTyped(json: any, ignoreDiscriminator: boolean): ObjectWithDeprecatedFields {
-    if ((json === undefined) || (json === null)) {
+    if (json == null) {
         return json;
     }
     return {
         
-        'uuid': !exists(json, 'uuid') ? undefined : json['uuid'],
-        'id': !exists(json, 'id') ? undefined : json['id'],
-        'deprecatedRef': !exists(json, 'deprecatedRef') ? undefined : DeprecatedObjectFromJSON(json['deprecatedRef']),
-        'bars': !exists(json, 'bars') ? undefined : json['bars'],
+        'uuid': json['uuid'] == null ? undefined : json['uuid'],
+        'id': json['id'] == null ? undefined : json['id'],
+        'deprecatedRef': json['deprecatedRef'] == null ? undefined : DeprecatedObjectFromJSON(json['deprecatedRef']),
+        'bars': json['bars'] == null ? undefined : json['bars'],
     };
 }
 
-export function ObjectWithDeprecatedFieldsToJSON(value?: ObjectWithDeprecatedFields | null): any {
-    if (value === undefined) {
-        return undefined;
+export function ObjectWithDeprecatedFieldsToJSON(json: any): ObjectWithDeprecatedFields {
+    return ObjectWithDeprecatedFieldsToJSONTyped(json, false);
+}
+
+export function ObjectWithDeprecatedFieldsToJSONTyped(value?: ObjectWithDeprecatedFields | null, ignoreDiscriminator: boolean = false): any {
+    if (value == null) {
+        return value;
     }
-    if (value === null) {
-        return null;
-    }
+
     return {
         
-        'uuid': value.uuid,
-        'id': value.id,
-        'deprecatedRef': DeprecatedObjectToJSON(value.deprecatedRef),
-        'bars': value.bars,
+        'uuid': value['uuid'],
+        'id': value['id'],
+        'deprecatedRef': DeprecatedObjectToJSON(value['deprecatedRef']),
+        'bars': value['bars'],
     };
 }
 

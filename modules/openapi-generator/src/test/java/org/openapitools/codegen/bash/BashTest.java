@@ -22,10 +22,17 @@ import io.swagger.v3.oas.models.Operation;
 import org.openapitools.codegen.CodegenOperation;
 import org.openapitools.codegen.CodegenParameter;
 import org.openapitools.codegen.DefaultCodegen;
+import org.openapitools.codegen.DefaultGenerator;
 import org.openapitools.codegen.TestUtils;
+import org.openapitools.codegen.config.CodegenConfigurator;
 import org.openapitools.codegen.languages.BashClientCodegen;
 import org.testng.Assert;
 import org.testng.annotations.Test;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 
 @SuppressWarnings("static-method")
 public class BashTest {
@@ -34,25 +41,25 @@ public class BashTest {
     public void petstoreOperationTest() {
 
         final OpenAPI openAPI
-            = TestUtils.parseFlattenSpec("src/test/resources/2_0/petstore-bash.json");
+                = TestUtils.parseFlattenSpec("src/test/resources/2_0/petstore-bash.json");
         final DefaultCodegen codegen = new BashClientCodegen();
         codegen.setOpenAPI(openAPI);
         final Operation findPetsByStatusOperation
-            = openAPI.getPaths().get("/pet/findByStatus").getGet();
+                = openAPI.getPaths().get("/pet/findByStatus").getGet();
 
         final CodegenOperation op
-            = codegen.fromOperation(
+                = codegen.fromOperation(
                 "/pet/findByStatus",
                 "GET",
                 findPetsByStatusOperation,
                 null);
 
         Assert.assertTrue(
-            op.vendorExtensions.containsKey("x-code-samples"));
+                op.vendorExtensions.containsKey("x-code-samples"));
 
         Assert.assertEquals(
-            op.vendorExtensions.get("x-bash-codegen-description"),
-            "Multiple status 'values' can be provided with comma separated strings");
+                op.vendorExtensions.get("x-bash-codegen-description"),
+                "Multiple status 'values' can be provided with comma separated strings");
 
         Assert.assertEquals(op.allParams.size(), 1);
         CodegenParameter p = op.allParams.get(0);
@@ -63,14 +70,14 @@ public class BashTest {
     public void petstoreParameterExampleTest() {
 
         final OpenAPI openAPI
-            = TestUtils.parseFlattenSpec("src/test/resources/2_0/petstore-bash.json");
+                = TestUtils.parseFlattenSpec("src/test/resources/2_0/petstore-bash.json");
         final DefaultCodegen codegen = new BashClientCodegen();
         codegen.setOpenAPI(openAPI);
         final Operation addPetOperation
-            = openAPI.getPaths().get("/pet").getPost();
+                = openAPI.getPaths().get("/pet").getPost();
 
         final CodegenOperation op
-            = codegen.fromOperation(
+                = codegen.fromOperation(
                 "/pet",
                 "POST",
                 addPetOperation,
@@ -81,7 +88,7 @@ public class BashTest {
         CodegenParameter p = op.bodyParams.get(0);
 
         Assert.assertTrue(p.vendorExtensions
-                            .containsKey("x-codegen-body-example"));
+                .containsKey("x-codegen-body-example"));
         Assert.assertEquals(p.description, "Pet object that needs to be added to the store");
 
     }
@@ -97,47 +104,47 @@ public class BashTest {
         Assert.assertEquals(codegen.escapeText("\\"), "\\\\");
 
 
-        ((BashClientCodegen)codegen).setProcessMarkdown(false);
+        ((BashClientCodegen) codegen).setProcessMarkdown(false);
 
         Assert.assertEquals(codegen.escapeText("__Bold text__"),
-                            "__Bold text__");
+                "__Bold text__");
 
         Assert.assertEquals(codegen.escapeText("**Bold text**"),
-                            "**Bold text**");
+                "**Bold text**");
 
         Assert.assertEquals(codegen.escapeText("*Italic text*"),
-                            "*Italic text*");
+                "*Italic text*");
 
         Assert.assertEquals(codegen.escapeText("_Italic text_"),
-                            "_Italic text_");
+                "_Italic text_");
 
 
-        ((BashClientCodegen)codegen).setProcessMarkdown(true);
+        ((BashClientCodegen) codegen).setProcessMarkdown(true);
 
         Assert.assertEquals(codegen.escapeText("__Bold text__"),
-                            "$(tput bold) Bold text $(tput sgr0)");
+                "$(tput bold) Bold text $(tput sgr0)");
 
         Assert.assertEquals(codegen.escapeText("**Bold text**"),
-                            "$(tput bold) Bold text $(tput sgr0)");
+                "$(tput bold) Bold text $(tput sgr0)");
 
         Assert.assertEquals(codegen.escapeText("*Italic text*"),
-                            "$(tput dim) Italic text $(tput sgr0)");
+                "$(tput dim) Italic text $(tput sgr0)");
 
         Assert.assertEquals(codegen.escapeText("_Italic text_"),
-                            "$(tput dim) Italic text $(tput sgr0)");
+                "$(tput dim) Italic text $(tput sgr0)");
 
         Assert.assertEquals(codegen.escapeText("# SECTION NAME"),
-            "\n$(tput bold)$(tput setaf 7)SECTION NAME$(tput sgr0)");
+                "\n$(tput bold)$(tput setaf 7)SECTION NAME$(tput sgr0)");
 
         Assert.assertEquals(codegen.escapeText("## SECTION NAME"),
-            "\n$(tput bold)$(tput setaf 7)SECTION NAME$(tput sgr0)");
+                "\n$(tput bold)$(tput setaf 7)SECTION NAME$(tput sgr0)");
 
         Assert.assertEquals(codegen.escapeText("### SECTION NAME"),
-            "\n$(tput bold)$(tput setaf 7)SECTION NAME$(tput sgr0)");
+                "\n$(tput bold)$(tput setaf 7)SECTION NAME$(tput sgr0)");
 
         Assert.assertEquals(codegen.escapeText(
-                                "```\nnice -n 100 mvn test\n```"),
-                                "\n---\nnice -n 100 mvn test\n---");
+                        "```\nnice -n 100 mvn test\n```"),
+                "\n---\nnice -n 100 mvn test\n---");
     }
 
     @Test(description = "test Bash client codegen escapeUnsafeCharacters method")
@@ -145,7 +152,7 @@ public class BashTest {
         final DefaultCodegen codegen = new BashClientCodegen();
 
         Assert.assertEquals(codegen.escapeUnsafeCharacters("`no backticks`"),
-                                                          "'no backticks'");
+                "'no backticks'");
 
 
     }
@@ -157,5 +164,24 @@ public class BashTest {
         Assert.assertEquals(codegen.escapeReservedWord("case"), "_case");
     }
 
+    @Test(description = "test that a body read from stdin keeps the exit status of cURL")
+    public void bodyFromStdinKeepsCurlExitStatusTest() throws IOException {
+        File output = Files.createTempDirectory("test").toFile();
+        output.deleteOnExit();
 
+        final CodegenConfigurator configurator = new CodegenConfigurator()
+                .setGeneratorName("bash")
+                .setInputSpec("src/test/resources/2_0/petstore-bash.json")
+                .setOutputDir(output.getAbsolutePath().replace("\\", "/"));
+
+        new DefaultGenerator().opts(configurator.toClientOptInput()).generate();
+
+        // the temporary file must be removed without losing the status of cURL
+        TestUtils.assertFileContains(Paths.get(output + "/client.sh"),
+                "-d @-\"\n"
+                        + "        fi\n"
+                        + "        local curl_exit_code=$?\n"
+                        + "        rm \"${body_content_temp_file}\"\n"
+                        + "        return \"$curl_exit_code\"");
+    }
 }

@@ -13,7 +13,7 @@ Method | HTTP request | Description
 
 
 # **fooGet**
-> InlineResponseDefault fooGet()
+> FooGetDefaultResponse fooGet()
 
 
 
@@ -21,12 +21,12 @@ Method | HTTP request | Description
 ```dart
 import 'package:openapi/api.dart';
 
-var api_instance = new DefaultApi();
+final api = Openapi().getDefaultApi();
 
 try {
-    var result = api_instance.fooGet();
-    print(result);
-} catch (e) {
+    final response = api.fooGet();
+    print(response);
+} on DioException catch (e) {
     print('Exception when calling DefaultApi->fooGet: $e\n');
 }
 ```
@@ -36,7 +36,7 @@ This endpoint does not need any parameter.
 
 ### Return type
 
-[**InlineResponseDefault**](InlineResponseDefault.md)
+[**FooGetDefaultResponse**](FooGetDefaultResponse.md)
 
 ### Authorization
 

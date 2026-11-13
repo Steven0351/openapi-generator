@@ -12,14 +12,23 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.annotation.JsonTypeName;
+import org.openapitools.jackson.nullable.JsonNullable;
 
 
 
 @JsonTypeName("Tag")
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaJAXRSSpecServerCodegen")public class Tag  implements Serializable {
-  
-  private @Valid Long id;
-  private @Valid String name;
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaJAXRSSpecServerCodegen", comments = "Generator version: 7.28.0-SNAPSHOT")
+public class Tag  implements Serializable {
+  private Long id;
+  private String name;
+
+  protected Tag(TagBuilder<?, ?> b) {
+    this.id = b.id;
+    this.name = b.name;
+  }
+
+  public Tag() {
+  }
 
   /**
    **/
@@ -27,8 +36,6 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
     this.id = id;
     return this;
   }
-
-  
 
   
   @ApiModelProperty(value = "")
@@ -42,14 +49,12 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
     this.id = id;
   }
 
-/**
+  /**
    **/
   public Tag name(String name) {
     this.name = name;
     return this;
   }
-
-  
 
   
   @ApiModelProperty(value = "")
@@ -98,12 +103,41 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
    * (except the first line).
    */
   private String toIndentedString(Object o) {
-    if (o == null) {
-      return "null";
-    }
-    return o.toString().replace("\n", "\n    ");
+    return o == null ? "null" : o.toString().replace("\n", "\n    ");
   }
 
 
-}
+  public static TagBuilder<?, ?> builder() {
+    return new TagBuilderImpl();
+  }
 
+  private static final class TagBuilderImpl extends TagBuilder<Tag, TagBuilderImpl> {
+
+    @Override
+    protected TagBuilderImpl self() {
+      return this;
+    }
+
+    @Override
+    public Tag build() {
+      return new Tag(this);
+    }
+  }
+
+  public static abstract class TagBuilder<C extends Tag, B extends TagBuilder<C, B>>  {
+    private Long id;
+    private String name;
+    protected abstract B self();
+
+    public abstract C build();
+
+    public B id(Long id) {
+      this.id = id;
+      return self();
+    }
+    public B name(String name) {
+      this.name = name;
+      return self();
+    }
+  }
+}

@@ -10,10 +10,10 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 
 {{#useBeanValidation}}
-import javax.validation.ConstraintViolation;
-import javax.validation.Validation;
-import javax.validation.Validator;
-import javax.validation.ValidatorFactory;
+import {{javaxPackage}}.validation.ConstraintViolation;
+import {{javaxPackage}}.validation.Validation;
+import {{javaxPackage}}.validation.Validator;
+import {{javaxPackage}}.validation.ValidatorFactory;
 {{/useBeanValidation}}
 
 public class OpenAPIUtils {
@@ -34,7 +34,7 @@ public class OpenAPIUtils {
         if (constraintViolations.size() > 0) {
             StringBuilder errors = new StringBuilder();
             for (ConstraintViolation<T> constraints : constraintViolations) {
-                errors.append(String.format("%s.%s %s\n",
+                errors.append(String.format(java.util.Locale.ROOT, "%s.%s %s\n",
                 constraints.getRootBeanClass().getSimpleName(),
                 constraints.getPropertyPath(),
                 constraints.getMessage()));

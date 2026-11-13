@@ -12,11 +12,11 @@
  * Do not edit the class manually.
  */
 
-import {ApiRecordUtils, knownRecordFactories} from "../runtimeSagasAndRecords";
-import {getApiEntitiesState} from "../ApiEntitiesSelectors"
-import {List, Record, RecordOf, Map} from 'immutable';
-import {Schema, schema, NormalizedSchema} from "normalizr";
-import {select, call} from "redux-saga/effects";
+import { ApiRecordUtils, knownRecordFactories } from "../runtimeSagasAndRecords";
+import { getApiEntitiesState } from "../ApiEntitiesSelectors"
+import { List, Record, RecordOf, Map } from 'immutable';
+import { Schema, schema, NormalizedSchema } from "normalizr";
+import { select, call } from "redux-saga/effects";
 
 import {
     ModelError,
@@ -49,13 +49,13 @@ knownRecordFactories.set(ModelErrorRecordProps.recType, ModelErrorRecord);
 class ModelErrorRecordUtils extends ApiRecordUtils<ModelError, ModelErrorRecord> {
     public normalize(apiObject: ModelError, asEntity?: boolean): ModelError {
         (apiObject as any).recType = ModelErrorRecordProps.recType;
-        if (apiObject.itemInfo) { itemIdRecordUtils.normalize(apiObject.itemInfo); } 
+        if (apiObject['itemInfo']) { itemIdRecordUtils.normalize(apiObject['itemInfo']); } 
         return apiObject;
     }
 
     public toApi(record: ModelErrorRecord): ModelError {
         const apiObject = super.toApi(record);
-        if (record.itemInfo) { apiObject.itemInfo = itemIdRecordUtils.toApi(record.itemInfo); } 
+        if (record['itemInfo']) { apiObject['itemInfo'] = itemIdRecordUtils.toApi(record['itemInfo']); } 
         return apiObject;
     }
 }

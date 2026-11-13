@@ -5,11 +5,13 @@ import org.openapitools.client.ApiClient;
 
 import java.util.*;
 
+
 import rx.Single;
+
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
 
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.28.0-SNAPSHOT")
 public class StoreApi {
 
     private final org.openapitools.client.api.StoreApi delegate;
@@ -50,9 +52,11 @@ public class StoreApi {
     * @return Asynchronous result handler (RxJava Single)
     */
     public Single<Void> rxDeleteOrder(String orderId) {
+    
         return Single.create(new io.vertx.rx.java.SingleOnSubscribeAdapter<>(fut ->
             delegate.deleteOrder(orderId, fut)
         ));
+    
     }
 
     /**
@@ -63,9 +67,11 @@ public class StoreApi {
     * @return Asynchronous result handler (RxJava Single)
     */
     public Single<Void> rxDeleteOrder(String orderId, ApiClient.AuthInfo authInfo) {
+    
         return Single.create(new io.vertx.rx.java.SingleOnSubscribeAdapter<>(fut ->
             delegate.deleteOrder(orderId, authInfo, fut)
         ));
+    
     }
     /**
     * Returns pet inventories by status
@@ -92,9 +98,11 @@ public class StoreApi {
     * @return Asynchronous result handler (RxJava Single)
     */
     public Single<Map<String, Integer>> rxGetInventory() {
+    
         return Single.create(new io.vertx.rx.java.SingleOnSubscribeAdapter<>(fut ->
             delegate.getInventory(fut)
         ));
+    
     }
 
     /**
@@ -104,13 +112,15 @@ public class StoreApi {
     * @return Asynchronous result handler (RxJava Single)
     */
     public Single<Map<String, Integer>> rxGetInventory(ApiClient.AuthInfo authInfo) {
+    
         return Single.create(new io.vertx.rx.java.SingleOnSubscribeAdapter<>(fut ->
             delegate.getInventory(authInfo, fut)
         ));
+    
     }
     /**
     * Find purchase order by ID
-    * For valid response try integer IDs with value &lt;&#x3D; 5 or &gt; 10. Other values will generated exceptions
+    * For valid response try integer IDs with value &lt;&#x3D; 5 or &gt; 10. Other values will generate exceptions
     * @param orderId ID of pet that needs to be fetched (required)
     * @param resultHandler Asynchronous result handler
     */
@@ -120,7 +130,7 @@ public class StoreApi {
 
     /**
     * Find purchase order by ID
-    * For valid response try integer IDs with value &lt;&#x3D; 5 or &gt; 10. Other values will generated exceptions
+    * For valid response try integer IDs with value &lt;&#x3D; 5 or &gt; 10. Other values will generate exceptions
     * @param orderId ID of pet that needs to be fetched (required)
     * @param authInfo call specific auth overrides
     * @param resultHandler Asynchronous result handler
@@ -131,72 +141,80 @@ public class StoreApi {
 
     /**
     * Find purchase order by ID
-    * For valid response try integer IDs with value &lt;&#x3D; 5 or &gt; 10. Other values will generated exceptions
+    * For valid response try integer IDs with value &lt;&#x3D; 5 or &gt; 10. Other values will generate exceptions
     * @param orderId ID of pet that needs to be fetched (required)
     * @return Asynchronous result handler (RxJava Single)
     */
     public Single<Order> rxGetOrderById(Long orderId) {
+    
         return Single.create(new io.vertx.rx.java.SingleOnSubscribeAdapter<>(fut ->
             delegate.getOrderById(orderId, fut)
         ));
+    
     }
 
     /**
     * Find purchase order by ID
-    * For valid response try integer IDs with value &lt;&#x3D; 5 or &gt; 10. Other values will generated exceptions
+    * For valid response try integer IDs with value &lt;&#x3D; 5 or &gt; 10. Other values will generate exceptions
     * @param orderId ID of pet that needs to be fetched (required)
     * @param authInfo call specific auth overrides
     * @return Asynchronous result handler (RxJava Single)
     */
     public Single<Order> rxGetOrderById(Long orderId, ApiClient.AuthInfo authInfo) {
+    
         return Single.create(new io.vertx.rx.java.SingleOnSubscribeAdapter<>(fut ->
             delegate.getOrderById(orderId, authInfo, fut)
         ));
+    
     }
     /**
     * Place an order for a pet
     * 
-    * @param body order placed for purchasing the pet (required)
+    * @param order order placed for purchasing the pet (required)
     * @param resultHandler Asynchronous result handler
     */
-    public void placeOrder(Order body, Handler<AsyncResult<Order>> resultHandler) {
-        delegate.placeOrder(body, resultHandler);
+    public void placeOrder(Order order, Handler<AsyncResult<Order>> resultHandler) {
+        delegate.placeOrder(order, resultHandler);
     }
 
     /**
     * Place an order for a pet
     * 
-    * @param body order placed for purchasing the pet (required)
+    * @param order order placed for purchasing the pet (required)
     * @param authInfo call specific auth overrides
     * @param resultHandler Asynchronous result handler
     */
-    public void placeOrder(Order body, ApiClient.AuthInfo authInfo, Handler<AsyncResult<Order>> resultHandler) {
-        delegate.placeOrder(body, authInfo, resultHandler);
+    public void placeOrder(Order order, ApiClient.AuthInfo authInfo, Handler<AsyncResult<Order>> resultHandler) {
+        delegate.placeOrder(order, authInfo, resultHandler);
     }
 
     /**
     * Place an order for a pet
     * 
-    * @param body order placed for purchasing the pet (required)
+    * @param order order placed for purchasing the pet (required)
     * @return Asynchronous result handler (RxJava Single)
     */
-    public Single<Order> rxPlaceOrder(Order body) {
+    public Single<Order> rxPlaceOrder(Order order) {
+    
         return Single.create(new io.vertx.rx.java.SingleOnSubscribeAdapter<>(fut ->
-            delegate.placeOrder(body, fut)
+            delegate.placeOrder(order, fut)
         ));
+    
     }
 
     /**
     * Place an order for a pet
     * 
-    * @param body order placed for purchasing the pet (required)
+    * @param order order placed for purchasing the pet (required)
     * @param authInfo call specific auth overrides
     * @return Asynchronous result handler (RxJava Single)
     */
-    public Single<Order> rxPlaceOrder(Order body, ApiClient.AuthInfo authInfo) {
+    public Single<Order> rxPlaceOrder(Order order, ApiClient.AuthInfo authInfo) {
+    
         return Single.create(new io.vertx.rx.java.SingleOnSubscribeAdapter<>(fut ->
-            delegate.placeOrder(body, authInfo, fut)
+            delegate.placeOrder(order, authInfo, fut)
         ));
+    
     }
 
     public static StoreApi newInstance(org.openapitools.client.api.StoreApi arg) {

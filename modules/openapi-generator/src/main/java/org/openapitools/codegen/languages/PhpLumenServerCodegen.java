@@ -21,10 +21,19 @@ import org.openapitools.codegen.CodegenOperation;
 import org.openapitools.codegen.CodegenType;
 import org.openapitools.codegen.SupportingFile;
 import org.openapitools.codegen.meta.features.*;
+import org.openapitools.codegen.model.ModelMap;
+import org.openapitools.codegen.model.OperationMap;
+import org.openapitools.codegen.model.OperationsMap;
 
 import java.io.File;
-import java.util.*;
+import java.util.Comparator;
+import java.util.EnumSet;
+import java.util.List;
+import java.util.Locale;
 
+/**
+ * <p>Mustache templates are located in {@code src/main/resources/php-lumen/}.
+ */
 public class PhpLumenServerCodegen extends AbstractPhpCodegen {
     @SuppressWarnings("hiding")
     protected String apiVersion = "1.0.0";
@@ -35,6 +44,7 @@ public class PhpLumenServerCodegen extends AbstractPhpCodegen {
      * @return the CodegenType for this generator
      * @see org.openapitools.codegen.CodegenType
      */
+    @Override
     public CodegenType getTag() {
         return CodegenType.SERVER;
     }
@@ -45,6 +55,7 @@ public class PhpLumenServerCodegen extends AbstractPhpCodegen {
      *
      * @return the friendly name for the generator
      */
+    @Override
     public String getName() {
         return "php-lumen";
     }
@@ -55,6 +66,7 @@ public class PhpLumenServerCodegen extends AbstractPhpCodegen {
      *
      * @return A string value for the help message
      */
+    @Override
     public String getHelp() {
         return "Generates a PHP Lumen server library.";
     }
@@ -165,23 +177,16 @@ public class PhpLumenServerCodegen extends AbstractPhpCodegen {
 
     // override with any special post-processing
     @Override
-    public Map<String, Object> postProcessOperationsWithModels(Map<String, Object> objs, List<Object> allModels) {
-        @SuppressWarnings("unchecked")
-        Map<String, Object> objectMap = (Map<String, Object>) objs.get("operations");
-        @SuppressWarnings("unchecked")
-        List<CodegenOperation> operations = (List<CodegenOperation>) objectMap.get("operation");
+    public OperationsMap postProcessOperationsWithModels(OperationsMap objs, List<ModelMap> allModels) {
+        OperationMap objectMap = objs.getOperations();
+        List<CodegenOperation> operations = objectMap.getOperation();
 
         for (CodegenOperation op : operations) {
             op.httpMethod = op.httpMethod.toLowerCase(Locale.ROOT);
         }
 
         // sort the endpoints in ascending to avoid the route priority issue.
-        Collections.sort(operations, new Comparator<CodegenOperation>() {
-            @Override
-            public int compare(CodegenOperation lhs, CodegenOperation rhs) {
-                return lhs.path.compareTo(rhs.path);
-            }
-        });
+        operations.sort(Comparator.comparing(lhs -> lhs.path));
 
         escapeMediaType(operations);
 

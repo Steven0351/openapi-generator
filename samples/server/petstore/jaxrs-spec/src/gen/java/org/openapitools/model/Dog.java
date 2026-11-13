@@ -3,7 +3,6 @@ package org.openapitools.model;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import org.openapitools.model.Animal;
-import org.openapitools.model.DogAllOf;
 import java.io.Serializable;
 import javax.validation.constraints.*;
 import javax.validation.Valid;
@@ -14,13 +13,31 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.annotation.JsonTypeName;
+import org.openapitools.jackson.nullable.JsonNullable;
 
 
 
-@JsonTypeName("Dog")
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaJAXRSSpecServerCodegen")public class Dog extends Animal implements Serializable {
-  
-  private @Valid String breed;
+@JsonTypeName("DOG")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaJAXRSSpecServerCodegen", comments = "Generator version: 7.28.0-SNAPSHOT")
+public class Dog extends Animal implements Serializable {
+  private String breed;
+
+  protected Dog(DogBuilder<?, ?> b) {
+    super(b);
+    this.breed = b.breed;
+  }
+
+  public Dog() {
+  }
+
+  @JsonCreator
+  public Dog(
+    @JsonProperty(required = true, value = "className") String className
+  ) {
+    super(
+      className
+    );
+  }
 
   /**
    **/
@@ -28,8 +45,6 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
     this.breed = breed;
     return this;
   }
-
-  
 
   
   @ApiModelProperty(value = "")
@@ -77,12 +92,33 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
    * (except the first line).
    */
   private String toIndentedString(Object o) {
-    if (o == null) {
-      return "null";
-    }
-    return o.toString().replace("\n", "\n    ");
+    return o == null ? "null" : o.toString().replace("\n", "\n    ");
   }
 
 
-}
+  public static DogBuilder<?, ?> builder() {
+    return new DogBuilderImpl();
+  }
 
+  private static final class DogBuilderImpl extends DogBuilder<Dog, DogBuilderImpl> {
+
+    @Override
+    protected DogBuilderImpl self() {
+      return this;
+    }
+
+    @Override
+    public Dog build() {
+      return new Dog(this);
+    }
+  }
+
+  public static abstract class DogBuilder<C extends Dog, B extends DogBuilder<C, B>> extends AnimalBuilder<C, B> {
+    private String breed;
+
+    public B breed(String breed) {
+      this.breed = breed;
+      return self();
+    }
+  }
+}

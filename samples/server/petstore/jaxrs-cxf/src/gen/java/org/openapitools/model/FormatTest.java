@@ -1,5 +1,6 @@
 package org.openapitools.model;
 
+import com.fasterxml.jackson.annotation.JsonTypeName;
 import java.io.File;
 import java.math.BigDecimal;
 import java.util.Date;
@@ -9,52 +10,70 @@ import javax.validation.constraints.*;
 import javax.validation.Valid;
 
 import io.swagger.annotations.ApiModelProperty;
+import java.util.Objects;
 import com.fasterxml.jackson.annotation.JsonProperty;
+
 
 public class FormatTest  {
   
   @ApiModelProperty(value = "")
+
   private Integer integer;
 
   @ApiModelProperty(value = "")
+
   private Integer int32;
 
   @ApiModelProperty(value = "")
+
   private Long int64;
 
   @ApiModelProperty(required = true, value = "")
+
   @Valid
+
   private BigDecimal number;
 
   @ApiModelProperty(value = "")
+
   private Float _float;
 
   @ApiModelProperty(value = "")
+
   private Double _double;
 
   @ApiModelProperty(value = "")
+
   private String string;
 
   @ApiModelProperty(required = true, value = "")
+
   private byte[] _byte;
 
   @ApiModelProperty(value = "")
+
   private File binary;
 
   @ApiModelProperty(required = true, value = "")
+
   private LocalDate date;
 
   @ApiModelProperty(value = "")
+
   private Date dateTime;
 
   @ApiModelProperty(example = "72f98069-206d-4f12-9f12-3d1e525a8e84", value = "")
+
   private UUID uuid;
 
   @ApiModelProperty(required = true, value = "")
+
   private String password;
 
   @ApiModelProperty(value = "")
+
   @Valid
+
   private BigDecimal bigDecimal;
  /**
    * Get integer
@@ -322,6 +341,35 @@ public class FormatTest  {
     return this;
   }
 
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    FormatTest formatTest = (FormatTest) o;
+    return Objects.equals(this.integer, formatTest.integer) &&
+        Objects.equals(this.int32, formatTest.int32) &&
+        Objects.equals(this.int64, formatTest.int64) &&
+        Objects.equals(this.number, formatTest.number) &&
+        Objects.equals(this._float, formatTest._float) &&
+        Objects.equals(this._double, formatTest._double) &&
+        Objects.equals(this.string, formatTest.string) &&
+        Objects.equals(this._byte, formatTest._byte) &&
+        Objects.equals(this.binary, formatTest.binary) &&
+        Objects.equals(this.date, formatTest.date) &&
+        Objects.equals(this.dateTime, formatTest.dateTime) &&
+        Objects.equals(this.uuid, formatTest.uuid) &&
+        Objects.equals(this.password, formatTest.password) &&
+        Objects.equals(this.bigDecimal, formatTest.bigDecimal);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(integer, int32, int64, number, _float, _double, string, _byte, binary, date, dateTime, uuid, password, bigDecimal);
+  }
 
   @Override
   public String toString() {
@@ -340,7 +388,7 @@ public class FormatTest  {
     sb.append("    date: ").append(toIndentedString(date)).append("\n");
     sb.append("    dateTime: ").append(toIndentedString(dateTime)).append("\n");
     sb.append("    uuid: ").append(toIndentedString(uuid)).append("\n");
-    sb.append("    password: ").append(toIndentedString(password)).append("\n");
+    sb.append("    password: ").append("*").append("\n");
     sb.append("    bigDecimal: ").append(toIndentedString(bigDecimal)).append("\n");
     sb.append("}");
     return sb.toString();
@@ -351,10 +399,7 @@ public class FormatTest  {
    * (except the first line).
    */
   private static String toIndentedString(Object o) {
-    if (o == null) {
-      return "null";
-    }
-    return o.toString().replace("\n", "\n    ");
+    return o == null ? "null" : o.toString().replace("\n", "\n    ");
   }
 }
 

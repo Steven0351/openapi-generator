@@ -60,7 +60,7 @@ export class {{classname}} {
     { response: JQueryXHR; {{#returnType}}body: {{{.}}}; {{/returnType}}{{^returnType}}body?: any; {{/returnType}} },
     { response: JQueryXHR; errorThrown: string }
     > {
-        let localVarPath = this.basePath + '{{{path}}}'{{#pathParams}}.replace('{' + '{{baseName}}' + '}', encodeURIComponent(String({{paramName}}))){{/pathParams}};
+        let localVarPath = this.basePath + '{{{path}}}'{{#pathParams}}.replace({{=<< >>=}}'{<<baseName>>}'<<={{ }}=>>, encodeURIComponent(String({{paramName}}))){{/pathParams}};
 
         let queryParameters: any = {};
         let headerParams: any = {};
@@ -176,13 +176,13 @@ export class {{classname}} {
 
 {{/isKeyInQuery}}
 {{/isApiKey}}
-{{#isBasic}}
+{{#isBasicBasic}}
         // http basic authentication required
         if (this.configuration.username || this.configuration.password) {
-            headerParams['Authorization'] = 'Basic ' + btoa(this.configuration.username + ':' + this.configuration.password);
+            headerParams['Authorization'] = 'Basic ' + btoa((this.configuration.username || '') + ':' + (this.configuration.password || ''));
         }
 
-{{/isBasic}}
+{{/isBasicBasic}}
 {{#isOAuth}}
         // oauth required
         if (this.configuration.accessToken) {

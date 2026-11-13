@@ -131,7 +131,7 @@ export class PetApi {
     { response: JQueryXHR; body?: any;  },
     { response: JQueryXHR; errorThrown: string }
     > {
-        let localVarPath = this.basePath + '/pet/{petId}'.replace('{' + 'petId' + '}', encodeURIComponent(String(petId)));
+        let localVarPath = this.basePath + '/pet/{petId}'.replace('{petId}', encodeURIComponent(String(petId)));
 
         let queryParameters: any = {};
         let headerParams: any = {};
@@ -353,7 +353,7 @@ export class PetApi {
     { response: JQueryXHR; body: models.Pet;  },
     { response: JQueryXHR; errorThrown: string }
     > {
-        let localVarPath = this.basePath + '/pet/{petId}'.replace('{' + 'petId' + '}', encodeURIComponent(String(petId)));
+        let localVarPath = this.basePath + '/pet/{petId}'.replace('{petId}', encodeURIComponent(String(petId)));
 
         let queryParameters: any = {};
         let headerParams: any = {};
@@ -498,7 +498,7 @@ export class PetApi {
     { response: JQueryXHR; body?: any;  },
     { response: JQueryXHR; errorThrown: string }
     > {
-        let localVarPath = this.basePath + '/pet/{petId}'.replace('{' + 'petId' + '}', encodeURIComponent(String(petId)));
+        let localVarPath = this.basePath + '/pet/{petId}'.replace('{petId}', encodeURIComponent(String(petId)));
 
         let queryParameters: any = {};
         let headerParams: any = {};
@@ -584,11 +584,11 @@ export class PetApi {
      * @param additionalMetadata Additional data to pass to server
      * @param file file to upload
      */
-    public uploadFile(petId: number, additionalMetadata?: string, file?: any, extraJQueryAjaxSettings?: JQueryAjaxSettings): JQuery.Promise<
+    public uploadFile(petId: number, additionalMetadata?: string, file?: File, extraJQueryAjaxSettings?: JQueryAjaxSettings): JQuery.Promise<
     { response: JQueryXHR; body: models.ApiResponse;  },
     { response: JQueryXHR; errorThrown: string }
     > {
-        let localVarPath = this.basePath + '/pet/{petId}/uploadImage'.replace('{' + 'petId' + '}', encodeURIComponent(String(petId)));
+        let localVarPath = this.basePath + '/pet/{petId}/uploadImage'.replace('{petId}', encodeURIComponent(String(petId)));
 
         let queryParameters: any = {};
         let headerParams: any = {};

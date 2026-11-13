@@ -1,29 +1,39 @@
 package org.openapitools.model;
 
+import java.net.URI;
 import java.util.Objects;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
-import io.swagger.annotations.ApiModel;
-import io.swagger.annotations.ApiModelProperty;
+import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import org.springframework.lang.Nullable;
 import org.openapitools.jackson.nullable.JsonNullable;
+import java.time.OffsetDateTime;
 import javax.validation.Valid;
 import javax.validation.constraints.*;
+import io.swagger.v3.oas.annotations.media.Schema;
+
+
+import java.util.*;
+import javax.annotation.Generated;
 
 /**
  * FileSchemaTestClass
  */
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.SpringCodegen")
-public class FileSchemaTestClass   {
-  @JsonProperty("file")
-  private java.io.File file;
 
-  @JsonProperty("files")
-  @Valid
-  private List<java.io.File> files = null;
+@Generated(value = "org.openapitools.codegen.languages.SpringCodegen", comments = "Generator version: 7.28.0-SNAPSHOT")
+public class FileSchemaTestClass {
 
-  public FileSchemaTestClass file(java.io.File file) {
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private @Nullable File file;
+
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private List<@Valid File> files = new ArrayList<>();
+
+  public FileSchemaTestClass file(@Nullable File file) {
     this.file = file;
     return this;
   }
@@ -31,25 +41,25 @@ public class FileSchemaTestClass   {
   /**
    * Get file
    * @return file
-  */
-  @ApiModelProperty(value = "")
-
-  @Valid
-
-  public java.io.File getFile() {
+   */
+  @Valid 
+  @Schema(name = "file", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+  @JsonProperty("file")
+  public @Nullable File getFile() {
     return file;
   }
 
-  public void setFile(java.io.File file) {
+  @JsonProperty("file")
+  public void setFile(@Nullable File file) {
     this.file = file;
   }
 
-  public FileSchemaTestClass files(List<java.io.File> files) {
+  public FileSchemaTestClass files(List<@Valid File> files) {
     this.files = files;
     return this;
   }
 
-  public FileSchemaTestClass addFilesItem(java.io.File filesItem) {
+  public FileSchemaTestClass addFilesItem(File filesItem) {
     if (this.files == null) {
       this.files = new ArrayList<>();
     }
@@ -60,19 +70,18 @@ public class FileSchemaTestClass   {
   /**
    * Get files
    * @return files
-  */
-  @ApiModelProperty(value = "")
-
-  @Valid
-
-  public List<java.io.File> getFiles() {
+   */
+  
+  @Schema(name = "files", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+  @JsonProperty("files")
+  public List<@Valid File> getFiles() {
     return files;
   }
 
-  public void setFiles(List<java.io.File> files) {
+  @JsonProperty("files")
+  public void setFiles(List<@Valid File> files) {
     this.files = files;
   }
-
 
   @Override
   public boolean equals(Object o) {
@@ -96,7 +105,6 @@ public class FileSchemaTestClass   {
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class FileSchemaTestClass {\n");
-    
     sb.append("    file: ").append(toIndentedString(file)).append("\n");
     sb.append("    files: ").append(toIndentedString(files)).append("\n");
     sb.append("}");
@@ -107,11 +115,8 @@ public class FileSchemaTestClass   {
    * Convert the given object to string with each line indented by 4 spaces
    * (except the first line).
    */
-  private String toIndentedString(Object o) {
-    if (o == null) {
-      return "null";
-    }
-    return o.toString().replace("\n", "\n    ");
+  private String toIndentedString(@Nullable Object o) {
+    return o == null ? "null" : o.toString().replace("\n", "\n    ");
   }
 }
 

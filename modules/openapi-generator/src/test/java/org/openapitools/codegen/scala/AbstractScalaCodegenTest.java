@@ -1,9 +1,11 @@
 package org.openapitools.codegen.scala;
 
-import io.swagger.v3.oas.models.media.ObjectSchema;
-import io.swagger.v3.oas.models.media.Schema;
+import io.swagger.v3.oas.models.Components;
+import io.swagger.v3.oas.models.OpenAPI;
+import io.swagger.v3.oas.models.media.*;
 import org.openapitools.codegen.CodegenConstants;
 import org.openapitools.codegen.languages.AbstractScalaCodegen;
+import org.openapitools.codegen.utils.ModelUtils;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -99,19 +101,49 @@ public class AbstractScalaCodegenTest {
     }
 
     @Test
-    void checkScalaTypeDeclaration() {
+    void checkDateTimeLocalTypeMappingJava8() {
+        P_AbstractScalaCodegen codegen = new P_AbstractScalaCodegen();
+        codegen.processOpts();
+        Assert.assertEquals(codegen.typeMapping().get("date-time-local"), "LocalDateTime",
+                "date-time-local format should map to LocalDateTime");
+        Assert.assertEquals(codegen.importMapping().get("LocalDateTime"), "java.time.LocalDateTime",
+                "LocalDateTime should import from java.time when using java8 date library");
+    }
 
-        final AbstractScalaCodegen codegen = new P_AbstractScalaCodegen();
+    @Test
+    void checkDateTimeLocalTypeDeclaration() {
+        P_AbstractScalaCodegen codegen = new P_AbstractScalaCodegen();
+        codegen.processOpts();
+        Schema<?> schema = new ObjectSchema();
+        schema.setType("string");
+        schema.setFormat("date-time-local");
+        Assert.assertEquals(codegen.getTypeDeclaration(schema), "LocalDateTime",
+                "Schema with date-time-local format should produce LocalDateTime type");
+    }
 
+    @Test
+    void checkTypeDeclarationWithByteString() {
         Schema<?> byteArraySchema = new ObjectSchema();
         byteArraySchema.setType("string");
         byteArraySchema.setFormat("byte");
         byteArraySchema.setDescription("Schema with byte string");
 
-        Assert.assertEquals(codegen.getTypeDeclaration(byteArraySchema), "Array[Byte]",
+        Assert.assertEquals(fakeScalaCodegen.getTypeDeclaration(byteArraySchema), "Array[Byte]",
                 "OpenApi File type represented as byte string should be represented as Array[Byte] scala type");
-
     }
 
+    @Test
+    void checkTypeDeclarationWithStringToArrayModelMapping() {
+        // Create an alias to an array schema
+        final Schema<?> nestedArraySchema = new ArraySchema().items(new StringSchema());
+        // Create a map schema with additionalProperties type set to array alias
+        final Schema<?> mapSchema = new MapSchema().additionalProperties(new Schema().$ref("#/components/schemas/NestedArray"));
+        fakeScalaCodegen.setOpenAPI(new OpenAPI().components(new Components().addSchemas("NestedArray", nestedArraySchema)));
 
+        ModelUtils.setGenerateAliasAsModel(false);
+        Assert.assertEquals(fakeScalaCodegen.getTypeDeclaration(mapSchema), "Map[String, List[String]]");
+
+        ModelUtils.setGenerateAliasAsModel(true);
+        Assert.assertEquals(fakeScalaCodegen.getTypeDeclaration(mapSchema), "Map[String, NestedArray]");
+    }
 }

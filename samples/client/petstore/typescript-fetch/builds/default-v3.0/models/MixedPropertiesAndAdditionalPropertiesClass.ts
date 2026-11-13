@@ -12,13 +12,14 @@
  * Do not edit the class manually.
  */
 
-import { exists, mapValues } from '../runtime';
+import { mapValues, parseDate, parseDateTime, serializeDate, serializeDateTime } from '../runtime';
+import type { Animal } from './Animal';
 import {
-    Animal,
     AnimalFromJSON,
     AnimalFromJSONTyped,
     AnimalToJSON,
-} from './';
+    AnimalToJSONTyped,
+} from './Animal';
 
 /**
  * 
@@ -28,22 +29,23 @@ import {
 export interface MixedPropertiesAndAdditionalPropertiesClass {
     /**
      * 
-     * @type {string}
-     * @memberof MixedPropertiesAndAdditionalPropertiesClass
      */
     uuid?: string;
     /**
      * 
-     * @type {Date}
-     * @memberof MixedPropertiesAndAdditionalPropertiesClass
      */
     dateTime?: Date;
     /**
      * 
-     * @type {{ [key: string]: Animal; }}
-     * @memberof MixedPropertiesAndAdditionalPropertiesClass
      */
     map?: { [key: string]: Animal; };
+}
+
+/**
+ * Check if a given object implements the MixedPropertiesAndAdditionalPropertiesClass interface.
+ */
+export function instanceOfMixedPropertiesAndAdditionalPropertiesClass(value: object): value is MixedPropertiesAndAdditionalPropertiesClass {
+    return true;
 }
 
 export function MixedPropertiesAndAdditionalPropertiesClassFromJSON(json: any): MixedPropertiesAndAdditionalPropertiesClass {
@@ -51,29 +53,31 @@ export function MixedPropertiesAndAdditionalPropertiesClassFromJSON(json: any): 
 }
 
 export function MixedPropertiesAndAdditionalPropertiesClassFromJSONTyped(json: any, ignoreDiscriminator: boolean): MixedPropertiesAndAdditionalPropertiesClass {
-    if ((json === undefined) || (json === null)) {
+    if (json == null) {
         return json;
     }
     return {
         
-        'uuid': !exists(json, 'uuid') ? undefined : json['uuid'],
-        'dateTime': !exists(json, 'dateTime') ? undefined : (new Date(json['dateTime'])),
-        'map': !exists(json, 'map') ? undefined : (mapValues(json['map'], AnimalFromJSON)),
+        'uuid': json['uuid'] == null ? undefined : json['uuid'],
+        'dateTime': json['dateTime'] == null ? undefined : (parseDateTime(json['dateTime'])),
+        'map': json['map'] == null ? undefined : (mapValues(json['map'], AnimalFromJSON)),
     };
 }
 
-export function MixedPropertiesAndAdditionalPropertiesClassToJSON(value?: MixedPropertiesAndAdditionalPropertiesClass | null): any {
-    if (value === undefined) {
-        return undefined;
+export function MixedPropertiesAndAdditionalPropertiesClassToJSON(json: any): MixedPropertiesAndAdditionalPropertiesClass {
+    return MixedPropertiesAndAdditionalPropertiesClassToJSONTyped(json, false);
+}
+
+export function MixedPropertiesAndAdditionalPropertiesClassToJSONTyped(value?: MixedPropertiesAndAdditionalPropertiesClass | null, ignoreDiscriminator: boolean = false): any {
+    if (value == null) {
+        return value;
     }
-    if (value === null) {
-        return null;
-    }
+
     return {
         
-        'uuid': value.uuid,
-        'dateTime': value.dateTime === undefined ? undefined : (value.dateTime.toISOString()),
-        'map': value.map === undefined ? undefined : (mapValues(value.map, AnimalToJSON)),
+        'uuid': value['uuid'],
+        'dateTime': value['dateTime'] == null ? value['dateTime'] : serializeDateTime(value['dateTime']),
+        'map': value['map'] == null ? undefined : (mapValues(value['map'], AnimalToJSON)),
     };
 }
 

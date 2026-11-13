@@ -26,7 +26,9 @@ import io.restassured.builder.RequestSpecBuilder;
 import io.restassured.builder.ResponseSpecBuilder;
 import io.restassured.http.Method;
 import io.restassured.response.Response;
-import io.swagger.annotations.*;
+
+import javax.validation.constraints.*;
+import javax.validation.Valid;
 
 import java.lang.reflect.Type;
 import java.util.function.Consumer;
@@ -35,7 +37,6 @@ import java.util.function.Supplier;
 import org.openapitools.client.JSON;
 import static io.restassured.http.Method.*;
 
-@Api(value = "FakeClassnameTags123")
 public class FakeClassnameTags123Api {
 
     private Supplier<RequestSpecBuilder> reqSpecSupplier;
@@ -63,12 +64,6 @@ public class FakeClassnameTags123Api {
         );
     }
 
-    @ApiOperation(value = "To test class name in snake case",
-            notes = "To test class name in snake case",
-            nickname = "testClassname",
-            tags = { "fake_classname_tags 123#$%^" })
-    @ApiResponses(value = { 
-            @ApiResponse(code = 200, message = "successful operation")  })
     public TestClassnameOper testClassname() {
         return new TestClassnameOper(createReqSpec());
     }
@@ -130,7 +125,7 @@ public class FakeClassnameTags123Api {
          * @param body (Client) client model (required)
          * @return operation
          */
-        public TestClassnameOper body(Client body) {
+        public TestClassnameOper body(@javax.annotation.Nonnull Client body) {
             reqSpec.setBody(body);
             return this;
         }

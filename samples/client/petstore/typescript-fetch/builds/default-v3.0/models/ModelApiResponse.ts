@@ -12,7 +12,7 @@
  * Do not edit the class manually.
  */
 
-import { exists, mapValues } from '../runtime';
+import { mapValues } from '../runtime';
 /**
  * 
  * @export
@@ -21,22 +21,23 @@ import { exists, mapValues } from '../runtime';
 export interface ModelApiResponse {
     /**
      * 
-     * @type {number}
-     * @memberof ModelApiResponse
      */
     code?: number;
     /**
      * 
-     * @type {string}
-     * @memberof ModelApiResponse
      */
     type?: string;
     /**
      * 
-     * @type {string}
-     * @memberof ModelApiResponse
      */
     message?: string;
+}
+
+/**
+ * Check if a given object implements the ModelApiResponse interface.
+ */
+export function instanceOfModelApiResponse(value: object): value is ModelApiResponse {
+    return true;
 }
 
 export function ModelApiResponseFromJSON(json: any): ModelApiResponse {
@@ -44,29 +45,31 @@ export function ModelApiResponseFromJSON(json: any): ModelApiResponse {
 }
 
 export function ModelApiResponseFromJSONTyped(json: any, ignoreDiscriminator: boolean): ModelApiResponse {
-    if ((json === undefined) || (json === null)) {
+    if (json == null) {
         return json;
     }
     return {
         
-        'code': !exists(json, 'code') ? undefined : json['code'],
-        'type': !exists(json, 'type') ? undefined : json['type'],
-        'message': !exists(json, 'message') ? undefined : json['message'],
+        'code': json['code'] == null ? undefined : json['code'],
+        'type': json['type'] == null ? undefined : json['type'],
+        'message': json['message'] == null ? undefined : json['message'],
     };
 }
 
-export function ModelApiResponseToJSON(value?: ModelApiResponse | null): any {
-    if (value === undefined) {
-        return undefined;
+export function ModelApiResponseToJSON(json: any): ModelApiResponse {
+    return ModelApiResponseToJSONTyped(json, false);
+}
+
+export function ModelApiResponseToJSONTyped(value?: ModelApiResponse | null, ignoreDiscriminator: boolean = false): any {
+    if (value == null) {
+        return value;
     }
-    if (value === null) {
-        return null;
-    }
+
     return {
         
-        'code': value.code,
-        'type': value.type,
-        'message': value.message,
+        'code': value['code'],
+        'type': value['type'],
+        'message': value['message'],
     };
 }
 

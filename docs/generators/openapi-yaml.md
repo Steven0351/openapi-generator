@@ -1,20 +1,24 @@
 ---
-title: Config Options for openapi-yaml
-sidebar_label: openapi-yaml
+title: Documentation for the openapi-yaml Generator
 ---
 
+## METADATA
+
+| Property | Value | Notes |
+| -------- | ----- | ----- |
+| generator name | openapi-yaml | pass this to the generate command after -g |
+| generator stability | STABLE | |
+| generator type | DOCUMENTATION | |
+| generator default templating engine | mustache | |
+| helpTxt | Creates a static openapi.yaml file (OpenAPI spec v3). | |
+
+## CONFIG OPTIONS
 These options may be applied as additional-properties (cli) or configOptions (plugins). Refer to [configuration docs](https://openapi-generator.tech/docs/configuration) for more details.
 
 | Option | Description | Values | Default |
 | ------ | ----------- | ------ | ------- |
-|allowUnicodeIdentifiers|boolean, toggles whether unicode identifiers are allowed in names or not, default is false| |false|
-|disallowAdditionalPropertiesIfNotPresent|If false, the 'additionalProperties' implementation (set to true by default) is compliant with the OAS and JSON schema specifications. If true (default), keep the old (incorrect) behaviour that 'additionalProperties' is set to false by default.|<dl><dt>**false**</dt><dd>The 'additionalProperties' implementation is compliant with the OAS and JSON schema specifications.</dd><dt>**true**</dt><dd>Keep the old (incorrect) behaviour that 'additionalProperties' is set to false by default.</dd></dl>|true|
-|ensureUniqueParams|Whether to ensure parameter names are unique in an operation (rename parameters that are not).| |true|
-|legacyDiscriminatorBehavior|Set to false for generators with better support for discriminators. (Python, Java, Go, PowerShell, C#have this enabled by default).|<dl><dt>**true**</dt><dd>The mapping in the discriminator includes descendent schemas that allOf inherit from self and the discriminator mapping schemas in the OAS document.</dd><dt>**false**</dt><dd>The mapping in the discriminator includes any descendent schemas that allOf inherit from self, any oneOf schemas, any anyOf schemas, any x-discriminator-values, and the discriminator mapping schemas in the OAS document AND Codegen validates that oneOf and anyOf schemas contain the required discriminator and throws an error if the discriminator is missing.</dd></dl>|true|
 |outputFile|Output filename| |openapi/openapi.yaml|
-|prependFormOrBodyParameters|Add form or body parameters to the beginning of the parameter list.| |false|
-|sortModelPropertiesByRequiredFlag|Sort model properties to place required parameters before optional parameters.| |true|
-|sortParamsByRequiredFlag|Sort method arguments to place required parameters before optional parameters.| |true|
+|sortOutput|Sort paths alphabetically, component maps (schemas, parameters, requestBodies, responses, headers, examples, links, callbacks, securitySchemes) by name, and HTTP methods in classical order (GET, PUT, POST, DELETE, OPTIONS, HEAD, PATCH, TRACE).| |false|
 
 ## IMPORT MAPPING
 
@@ -66,7 +70,11 @@ These options may be applied as additional-properties (cli) or configOptions (pl
 |DateTime|✓|OAS2,OAS3
 |Password|✓|OAS2,OAS3
 |File|✓|OAS2
+|Uuid|✓|
 |Array|✓|OAS2,OAS3
+|Null|✓|OAS3
+|AnyType|✓|OAS2,OAS3
+|Object|✓|OAS2,OAS3
 |Maps|✓|ToolingExtension
 |CollectionFormat|✓|OAS2
 |CollectionFormatMulti|✓|OAS2
@@ -126,6 +134,10 @@ These options may be applied as additional-properties (cli) or configOptions (pl
 |Composite|✓|OAS2,OAS3
 |Polymorphism|✓|OAS2,OAS3
 |Union|✓|OAS3
+|allOf|✓|OAS2,OAS3
+|anyOf|✓|OAS3
+|oneOf|✓|OAS3
+|not|✓|OAS3
 
 ### Security Feature
 | Name | Supported | Defined By |
@@ -138,6 +150,8 @@ These options may be applied as additional-properties (cli) or configOptions (pl
 |OAuth2_Password|✓|OAS2,OAS3
 |OAuth2_ClientCredentials|✓|OAS2,OAS3
 |OAuth2_AuthorizationCode|✓|OAS2,OAS3
+|SignatureAuth|✓|OAS3
+|AWSV4Signature|✓|ToolingExtension
 
 ### Wire Format Feature
 | Name | Supported | Defined By |

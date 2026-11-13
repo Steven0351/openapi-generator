@@ -1,20 +1,21 @@
 package org.openapitools.api
 
 import org.openapitools.model.User
-import kotlinx.coroutines.flow.Flow;
+import javax.validation.Valid
+import kotlinx.coroutines.flow.Flow
 import org.springframework.stereotype.Service
 @Service
 class UserApiServiceImpl : UserApiService {
 
-    override suspend fun createUser(body: User): Unit {
+    override suspend fun createUser(user: User): Unit {
         TODO("Implement me")
     }
 
-    override suspend fun createUsersWithArrayInput(body: Flow<User>): Unit {
+    override suspend fun createUsersWithArrayInput(user: Flow<User>): Unit {
         TODO("Implement me")
     }
 
-    override suspend fun createUsersWithListInput(body: Flow<User>): Unit {
+    override suspend fun createUsersWithListInput(user: Flow<User>): Unit {
         TODO("Implement me")
     }
 
@@ -34,7 +35,7 @@ class UserApiServiceImpl : UserApiService {
         TODO("Implement me")
     }
 
-    override suspend fun updateUser(username: kotlin.String, body: User): Unit {
+    override suspend fun updateUser(username: kotlin.String, user: User): Unit {
         TODO("Implement me")
     }
 }

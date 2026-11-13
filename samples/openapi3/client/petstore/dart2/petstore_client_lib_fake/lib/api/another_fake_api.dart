@@ -1,7 +1,7 @@
 //
 // AUTO-GENERATED FILE, DO NOT MODIFY!
 //
-// @dart=2.0
+// @dart=2.18
 
 // ignore_for_file: unused_element, unused_import
 // ignore_for_file: always_put_required_named_parameters_first
@@ -12,7 +12,7 @@ part of openapi.api;
 
 
 class AnotherFakeApi {
-  AnotherFakeApi([ApiClient apiClient]) : apiClient = apiClient ?? defaultApiClient;
+  AnotherFakeApi([ApiClient? apiClient]) : apiClient = apiClient ?? defaultApiClient;
 
   final ApiClient apiClient;
 
@@ -26,23 +26,17 @@ class AnotherFakeApi {
   ///
   /// * [ModelClient] modelClient (required):
   ///   client model
-  Future<Response> call123testSpecialTagsWithHttpInfo(ModelClient modelClient,) async {
-    // Verify required params are set.
-    if (modelClient == null) {
-     throw ApiException(HttpStatus.badRequest, 'Missing required param: modelClient');
-    }
-
+  Future<Response> call123testSpecialTagsWithHttpInfo(ModelClient modelClient, { Future<void>? abortTrigger, }) async {
     // ignore: prefer_const_declarations
     final path = r'/another-fake/dummy';
 
     // ignore: prefer_final_locals
-    Object postBody = modelClient;
+    Object? postBody = modelClient;
 
     final queryParams = <QueryParam>[];
     final headerParams = <String, String>{};
     final formParams = <String, String>{};
 
-    const authNames = <String>[];
     const contentTypes = <String>['application/json'];
 
 
@@ -53,8 +47,8 @@ class AnotherFakeApi {
       postBody,
       headerParams,
       formParams,
-      contentTypes.isEmpty ? null : contentTypes[0],
-      authNames,
+      contentTypes.isEmpty ? null : contentTypes.first,
+      abortTrigger: abortTrigger,
     );
   }
 
@@ -66,18 +60,18 @@ class AnotherFakeApi {
   ///
   /// * [ModelClient] modelClient (required):
   ///   client model
-  Future<ModelClient> call123testSpecialTags(ModelClient modelClient,) async {
-    final response = await call123testSpecialTagsWithHttpInfo(modelClient,);
+  Future<ModelClient?> call123testSpecialTags(ModelClient modelClient, { Future<void>? abortTrigger, }) async {
+    final response = await call123testSpecialTagsWithHttpInfo(modelClient, abortTrigger: abortTrigger,);
     if (response.statusCode >= HttpStatus.badRequest) {
       throw ApiException(response.statusCode, await _decodeBodyBytes(response));
     }
     // When a remote server returns no body with a status of 204, we shall not decode it.
     // At the time of writing this, `dart:convert` will throw an "Unexpected end of input"
     // FormatException when trying to decode an empty string.
-    if (response.body != null && response.statusCode != HttpStatus.noContent) {
+    if (response.body.isNotEmpty && response.statusCode != HttpStatus.noContent) {
       return await apiClient.deserializeAsync(await _decodeBodyBytes(response), 'ModelClient',) as ModelClient;
     
     }
-    return Future<ModelClient>.value();
+    return null;
   }
 }

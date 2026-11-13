@@ -1,5 +1,6 @@
 package org.openapitools.model;
 
+import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import java.io.Serializable;
@@ -12,13 +13,21 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.annotation.JsonTypeName;
+import org.openapitools.jackson.nullable.JsonNullable;
 
 
 
-@JsonTypeName("$special[model.name]")
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaJAXRSSpecServerCodegen")public class SpecialModelName  implements Serializable {
-  
-  private @Valid Long $specialPropertyName;
+@JsonTypeName("_special_model.name_")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaJAXRSSpecServerCodegen", comments = "Generator version: 7.28.0-SNAPSHOT")
+public class SpecialModelName  implements Serializable {
+  private Long $specialPropertyName;
+
+  protected SpecialModelName(SpecialModelNameBuilder<?, ?> b) {
+    this.$specialPropertyName = b.$specialPropertyName;
+  }
+
+  public SpecialModelName() {
+  }
 
   /**
    **/
@@ -26,8 +35,6 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
     this.$specialPropertyName = $specialPropertyName;
     return this;
   }
-
-  
 
   
   @ApiModelProperty(value = "")
@@ -50,8 +57,8 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    SpecialModelName $specialModelName = (SpecialModelName) o;
-    return Objects.equals(this.$specialPropertyName, $specialModelName.$specialPropertyName);
+    SpecialModelName specialModelName = (SpecialModelName) o;
+    return Objects.equals(this.$specialPropertyName, specialModelName.$specialPropertyName);
   }
 
   @Override
@@ -74,12 +81,36 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
    * (except the first line).
    */
   private String toIndentedString(Object o) {
-    if (o == null) {
-      return "null";
-    }
-    return o.toString().replace("\n", "\n    ");
+    return o == null ? "null" : o.toString().replace("\n", "\n    ");
   }
 
 
-}
+  public static SpecialModelNameBuilder<?, ?> builder() {
+    return new SpecialModelNameBuilderImpl();
+  }
 
+  private static final class SpecialModelNameBuilderImpl extends SpecialModelNameBuilder<SpecialModelName, SpecialModelNameBuilderImpl> {
+
+    @Override
+    protected SpecialModelNameBuilderImpl self() {
+      return this;
+    }
+
+    @Override
+    public SpecialModelName build() {
+      return new SpecialModelName(this);
+    }
+  }
+
+  public static abstract class SpecialModelNameBuilder<C extends SpecialModelName, B extends SpecialModelNameBuilder<C, B>>  {
+    private Long $specialPropertyName;
+    protected abstract B self();
+
+    public abstract C build();
+
+    public B $specialPropertyName(Long $specialPropertyName) {
+      this.$specialPropertyName = $specialPropertyName;
+      return self();
+    }
+  }
+}

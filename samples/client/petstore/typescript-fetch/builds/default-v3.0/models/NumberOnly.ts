@@ -12,7 +12,7 @@
  * Do not edit the class manually.
  */
 
-import { exists, mapValues } from '../runtime';
+import { mapValues } from '../runtime';
 /**
  * 
  * @export
@@ -21,10 +21,15 @@ import { exists, mapValues } from '../runtime';
 export interface NumberOnly {
     /**
      * 
-     * @type {number}
-     * @memberof NumberOnly
      */
     justNumber?: number;
+}
+
+/**
+ * Check if a given object implements the NumberOnly interface.
+ */
+export function instanceOfNumberOnly(value: object): value is NumberOnly {
+    return true;
 }
 
 export function NumberOnlyFromJSON(json: any): NumberOnly {
@@ -32,25 +37,27 @@ export function NumberOnlyFromJSON(json: any): NumberOnly {
 }
 
 export function NumberOnlyFromJSONTyped(json: any, ignoreDiscriminator: boolean): NumberOnly {
-    if ((json === undefined) || (json === null)) {
+    if (json == null) {
         return json;
     }
     return {
         
-        'justNumber': !exists(json, 'JustNumber') ? undefined : json['JustNumber'],
+        'justNumber': json['JustNumber'] == null ? undefined : json['JustNumber'],
     };
 }
 
-export function NumberOnlyToJSON(value?: NumberOnly | null): any {
-    if (value === undefined) {
-        return undefined;
+export function NumberOnlyToJSON(json: any): NumberOnly {
+    return NumberOnlyToJSONTyped(json, false);
+}
+
+export function NumberOnlyToJSONTyped(value?: NumberOnly | null, ignoreDiscriminator: boolean = false): any {
+    if (value == null) {
+        return value;
     }
-    if (value === null) {
-        return null;
-    }
+
     return {
         
-        'JustNumber': value.justNumber,
+        'JustNumber': value['justNumber'],
     };
 }
 

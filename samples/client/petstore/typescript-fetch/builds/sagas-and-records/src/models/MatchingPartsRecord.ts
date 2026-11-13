@@ -12,11 +12,11 @@
  * Do not edit the class manually.
  */
 
-import {ApiRecordUtils, knownRecordFactories} from "../runtimeSagasAndRecords";
-import {getApiEntitiesState} from "../ApiEntitiesSelectors"
-import {List, Record, RecordOf, Map} from 'immutable';
-import {Schema, schema, NormalizedSchema} from "normalizr";
-import {select, call} from "redux-saga/effects";
+import { ApiRecordUtils, knownRecordFactories } from "../runtimeSagasAndRecords";
+import { getApiEntitiesState } from "../ApiEntitiesSelectors"
+import { List, Record, RecordOf, Map } from 'immutable';
+import { Schema, schema, NormalizedSchema } from "normalizr";
+import { select, call } from "redux-saga/effects";
 
 import {
     MatchingParts,
@@ -47,15 +47,15 @@ knownRecordFactories.set(MatchingPartsRecordProps.recType, MatchingPartsRecord);
 class MatchingPartsRecordUtils extends ApiRecordUtils<MatchingParts, MatchingPartsRecord> {
     public normalize(apiObject: MatchingParts, asEntity?: boolean): MatchingParts {
         (apiObject as any).recType = MatchingPartsRecordProps.recType;
-        partRecordUtils.normalizeArray(apiObject.connected);
-        partRecordUtils.normalizeArray(apiObject.related);
+        partRecordUtils.normalizeArray(apiObject['connected']);
+        partRecordUtils.normalizeArray(apiObject['related']);
         return apiObject;
     }
 
     public toApi(record: MatchingPartsRecord): MatchingParts {
         const apiObject = super.toApi(record);
-        apiObject.connected = partRecordUtils.toApiArray(record.connected);
-        apiObject.related = partRecordUtils.toApiArray(record.related);
+        apiObject['connected'] = partRecordUtils.toApiArray(record['connected']);
+        apiObject['related'] = partRecordUtils.toApiArray(record['related']);
         return apiObject;
     }
 }

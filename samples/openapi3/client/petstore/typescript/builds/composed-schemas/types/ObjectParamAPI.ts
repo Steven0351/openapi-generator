@@ -1,14 +1,14 @@
-import { ResponseContext, RequestContext, HttpFile } from '../http/http';
-import * as models from '../models/all';
-import { Configuration} from '../configuration'
+import { ResponseContext, RequestContext, HttpFile, HttpInfo } from '../http/http';
+import { Configuration, ConfigurationOptions } from '../configuration'
+import type { Middleware } from '../middleware';
 
 import { Cat } from '../models/Cat';
-import { CatAllOf } from '../models/CatAllOf';
 import { Dog } from '../models/Dog';
-import { DogAllOf } from '../models/DogAllOf';
-import { InlineObject } from '../models/InlineObject';
+import { FilePostRequest } from '../models/FilePostRequest';
 import { PetByAge } from '../models/PetByAge';
 import { PetByType } from '../models/PetByType';
+import { PetsFilteredPatchRequest } from '../models/PetsFilteredPatchRequest';
+import { PetsPatchRequest } from '../models/PetsPatchRequest';
 
 import { ObservableDefaultApi } from "./ObservableAPI";
 import { DefaultApiRequestFactory, DefaultApiResponseProcessor} from "../apis/DefaultApi";
@@ -16,28 +16,28 @@ import { DefaultApiRequestFactory, DefaultApiResponseProcessor} from "../apis/De
 export interface DefaultApiFilePostRequest {
     /**
      * 
-     * @type InlineObject
+     * @type FilePostRequest
      * @memberof DefaultApifilePost
      */
-    inlineObject?: InlineObject
+    filePostRequest?: FilePostRequest
 }
 
 export interface DefaultApiPetsFilteredPatchRequest {
     /**
      * 
-     * @type PetByAge | PetByType
+     * @type PetsFilteredPatchRequest
      * @memberof DefaultApipetsFilteredPatch
      */
-    petByAgePetByType?: PetByAge | PetByType
+    petsFilteredPatchRequest?: PetsFilteredPatchRequest
 }
 
 export interface DefaultApiPetsPatchRequest {
     /**
      * 
-     * @type Cat | Dog
+     * @type PetsPatchRequest
      * @memberof DefaultApipetsPatch
      */
-    catDog?: Cat | Dog
+    petsPatchRequest?: PetsPatchRequest
 }
 
 export class ObjectDefaultApi {
@@ -50,22 +50,43 @@ export class ObjectDefaultApi {
     /**
      * @param param the request object
      */
-    public filePost(param: DefaultApiFilePostRequest, options?: Configuration): Promise<void> {
-        return this.api.filePost(param.inlineObject,  options).toPromise();
+    public filePostWithHttpInfo(param: DefaultApiFilePostRequest = {}, options?: ConfigurationOptions): Promise<HttpInfo<void>> {
+        return this.api.filePostWithHttpInfo(param.filePostRequest,  options).toPromise();
     }
 
     /**
      * @param param the request object
      */
-    public petsFilteredPatch(param: DefaultApiPetsFilteredPatchRequest, options?: Configuration): Promise<void> {
-        return this.api.petsFilteredPatch(param.petByAgePetByType,  options).toPromise();
+    public filePost(param: DefaultApiFilePostRequest = {}, options?: ConfigurationOptions): Promise<void> {
+        return this.api.filePost(param.filePostRequest,  options).toPromise();
     }
 
     /**
      * @param param the request object
      */
-    public petsPatch(param: DefaultApiPetsPatchRequest, options?: Configuration): Promise<void> {
-        return this.api.petsPatch(param.catDog,  options).toPromise();
+    public petsFilteredPatchWithHttpInfo(param: DefaultApiPetsFilteredPatchRequest = {}, options?: ConfigurationOptions): Promise<HttpInfo<void>> {
+        return this.api.petsFilteredPatchWithHttpInfo(param.petsFilteredPatchRequest,  options).toPromise();
+    }
+
+    /**
+     * @param param the request object
+     */
+    public petsFilteredPatch(param: DefaultApiPetsFilteredPatchRequest = {}, options?: ConfigurationOptions): Promise<void> {
+        return this.api.petsFilteredPatch(param.petsFilteredPatchRequest,  options).toPromise();
+    }
+
+    /**
+     * @param param the request object
+     */
+    public petsPatchWithHttpInfo(param: DefaultApiPetsPatchRequest = {}, options?: ConfigurationOptions): Promise<HttpInfo<void>> {
+        return this.api.petsPatchWithHttpInfo(param.petsPatchRequest,  options).toPromise();
+    }
+
+    /**
+     * @param param the request object
+     */
+    public petsPatch(param: DefaultApiPetsPatchRequest = {}, options?: ConfigurationOptions): Promise<void> {
+        return this.api.petsPatch(param.petsPatchRequest,  options).toPromise();
     }
 
 }

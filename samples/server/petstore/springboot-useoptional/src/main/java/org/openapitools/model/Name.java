@@ -1,31 +1,51 @@
 package org.openapitools.model;
 
+import java.net.URI;
 import java.util.Objects;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
-import io.swagger.annotations.ApiModel;
-import io.swagger.annotations.ApiModelProperty;
+import org.springframework.lang.Nullable;
 import org.openapitools.jackson.nullable.JsonNullable;
-import javax.validation.Valid;
-import javax.validation.constraints.*;
+import java.time.OffsetDateTime;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.*;
+import io.swagger.v3.oas.annotations.media.Schema;
+
+
+import java.util.*;
+import jakarta.annotation.Generated;
 
 /**
  * Model for testing model name same as property name
  */
-@ApiModel(description = "Model for testing model name same as property name")
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.SpringCodegen")
-public class Name   {
-  @JsonProperty("name")
+
+@Schema(name = "Name", description = "Model for testing model name same as property name")
+@Generated(value = "org.openapitools.codegen.languages.SpringCodegen", comments = "Generator version: 7.28.0-SNAPSHOT")
+public class Name {
+
+  @JsonInclude(JsonInclude.Include.NON_NULL)
   private Integer name;
 
-  @JsonProperty("snake_case")
-  private Integer snakeCase;
+  @JsonInclude(JsonInclude.Include.NON_DEFAULT)
+  private Optional<Integer> snakeCase = Optional.empty();
 
-  @JsonProperty("property")
-  private String property;
+  @JsonInclude(JsonInclude.Include.NON_DEFAULT)
+  private Optional<String> property = Optional.empty();
 
-  @JsonProperty("123Number")
-  private Integer _123number;
+  @JsonInclude(JsonInclude.Include.NON_DEFAULT)
+  private Optional<Integer> _123number = Optional.empty();
+
+  public Name() {
+    super();
+  }
+
+  /**
+   * Constructor with only required parameters
+   */
+  public Name(Integer name) {
+    this.name = name;
+  }
 
   public Name name(Integer name) {
     this.name = name;
@@ -35,79 +55,81 @@ public class Name   {
   /**
    * Get name
    * @return name
-  */
-  @ApiModelProperty(required = true, value = "")
-  @NotNull
-
-
+   */
+  @NotNull 
+  @Schema(name = "name", requiredMode = Schema.RequiredMode.REQUIRED)
+  @JsonProperty("name")
   public Integer getName() {
     return name;
   }
 
+  @JsonProperty("name")
   public void setName(Integer name) {
     this.name = name;
   }
 
   public Name snakeCase(Integer snakeCase) {
-    this.snakeCase = snakeCase;
+    this.snakeCase = Optional.ofNullable(snakeCase);
     return this;
   }
 
   /**
    * Get snakeCase
    * @return snakeCase
-  */
-  @ApiModelProperty(readOnly = true, value = "")
-
-
-  public Integer getSnakeCase() {
+   */
+  
+  @Schema(name = "snake_case", accessMode = Schema.AccessMode.READ_ONLY, requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+  @JsonProperty("snake_case")
+  public Optional<Integer> getSnakeCase() {
     return snakeCase;
   }
 
-  public void setSnakeCase(Integer snakeCase) {
+  @JsonProperty("snake_case")
+  public void setSnakeCase(Optional<Integer> snakeCase) {
     this.snakeCase = snakeCase;
   }
 
   public Name property(String property) {
-    this.property = property;
+    this.property = Optional.ofNullable(property);
     return this;
   }
 
   /**
    * Get property
    * @return property
-  */
-  @ApiModelProperty(value = "")
-
-
-  public String getProperty() {
+   */
+  
+  @Schema(name = "property", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+  @JsonProperty("property")
+  public Optional<String> getProperty() {
     return property;
   }
 
-  public void setProperty(String property) {
+  @JsonProperty("property")
+  public void setProperty(Optional<String> property) {
     this.property = property;
   }
 
   public Name _123number(Integer _123number) {
-    this._123number = _123number;
+    this._123number = Optional.ofNullable(_123number);
     return this;
   }
 
   /**
    * Get _123number
    * @return _123number
-  */
-  @ApiModelProperty(readOnly = true, value = "")
-
-
-  public Integer get123number() {
+   */
+  
+  @Schema(name = "123Number", accessMode = Schema.AccessMode.READ_ONLY, requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+  @JsonProperty("123Number")
+  public Optional<Integer> get123number() {
     return _123number;
   }
 
-  public void set123number(Integer _123number) {
+  @JsonProperty("123Number")
+  public void set123number(Optional<Integer> _123number) {
     this._123number = _123number;
   }
-
 
   @Override
   public boolean equals(Object o) {
@@ -133,7 +155,6 @@ public class Name   {
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class Name {\n");
-    
     sb.append("    name: ").append(toIndentedString(name)).append("\n");
     sb.append("    snakeCase: ").append(toIndentedString(snakeCase)).append("\n");
     sb.append("    property: ").append(toIndentedString(property)).append("\n");
@@ -146,11 +167,84 @@ public class Name   {
    * Convert the given object to string with each line indented by 4 spaces
    * (except the first line).
    */
-  private String toIndentedString(Object o) {
-    if (o == null) {
-      return "null";
-    }
-    return o.toString().replace("\n", "\n    ");
+  private String toIndentedString(@Nullable Object o) {
+    return o == null ? "null" : o.toString().replace("\n", "\n    ");
   }
+  
+  public static class Builder {
+
+    private Name instance;
+
+    public Builder() {
+      this(new Name());
+    }
+
+    protected Builder(Name instance) {
+      this.instance = instance;
+    }
+
+    protected Builder copyOf(Name value) { 
+      this.instance.setName(value.name);
+      this.instance.setSnakeCase(value.snakeCase);
+      this.instance.setProperty(value.property);
+      this.instance.set123number(value._123number);
+      return this;
+    }
+
+    public Name.Builder name(Integer name) {
+      this.instance.name(name);
+      return this;
+    }
+    
+    public Name.Builder snakeCase(Integer snakeCase) {
+      this.instance.snakeCase(snakeCase);
+      return this;
+    }
+    
+    public Name.Builder property(String property) {
+      this.instance.property(property);
+      return this;
+    }
+    
+    public Name.Builder _123number(Integer _123number) {
+      this.instance._123number(_123number);
+      return this;
+    }
+    
+    /**
+    * returns a built Name instance.
+    *
+    * The builder is not reusable (NullPointerException)
+    */
+    public Name build() {
+      try {
+        return this.instance;
+      } finally {
+        // ensure that this.instance is not reused
+        this.instance = null;
+      }
+    }
+
+    @Override
+    public String toString() {
+      return getClass() + "=(" + instance + ")";
+    }
+  }
+
+  /**
+  * Create a builder with no initialized field (except for the default values).
+  */
+  public static Name.Builder builder() {
+    return new Name.Builder();
+  }
+
+  /**
+  * Create a builder with a shallow copy of this instance.
+  */
+  public Name.Builder toBuilder() {
+    Name.Builder builder = new Name.Builder();
+    return builder.copyOf(this);
+  }
+
 }
 

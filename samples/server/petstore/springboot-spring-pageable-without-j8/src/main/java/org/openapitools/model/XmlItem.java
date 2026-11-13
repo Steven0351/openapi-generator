@@ -1,119 +1,120 @@
 package org.openapitools.model;
 
+import java.net.URI;
 import java.util.Objects;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
-import io.swagger.annotations.ApiModel;
-import io.swagger.annotations.ApiModelProperty;
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import org.springframework.lang.Nullable;
 import org.openapitools.jackson.nullable.JsonNullable;
-import javax.validation.Valid;
-import javax.validation.constraints.*;
+import java.time.OffsetDateTime;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.*;
+import io.swagger.v3.oas.annotations.media.Schema;
+
+
+import java.util.*;
+import jakarta.annotation.Generated;
 
 /**
  * XmlItem
  */
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.SpringCodegen")
-public class XmlItem   {
-  @JsonProperty("attribute_string")
-  private String attributeString;
 
-  @JsonProperty("attribute_number")
-  private BigDecimal attributeNumber;
+@Generated(value = "org.openapitools.codegen.languages.SpringCodegen", comments = "Generator version: 7.28.0-SNAPSHOT")
+public class XmlItem {
 
-  @JsonProperty("attribute_integer")
-  private Integer attributeInteger;
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private @Nullable String attributeString;
 
-  @JsonProperty("attribute_boolean")
-  private Boolean attributeBoolean;
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private @Nullable BigDecimal attributeNumber;
 
-  @JsonProperty("wrapped_array")
-  @Valid
-  private List<Integer> wrappedArray = null;
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private @Nullable Integer attributeInteger;
 
-  @JsonProperty("name_string")
-  private String nameString;
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private @Nullable Boolean attributeBoolean;
 
-  @JsonProperty("name_number")
-  private BigDecimal nameNumber;
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private List<Integer> wrappedArray = new ArrayList<>();
 
-  @JsonProperty("name_integer")
-  private Integer nameInteger;
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private @Nullable String nameString;
 
-  @JsonProperty("name_boolean")
-  private Boolean nameBoolean;
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private @Nullable BigDecimal nameNumber;
 
-  @JsonProperty("name_array")
-  @Valid
-  private List<Integer> nameArray = null;
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private @Nullable Integer nameInteger;
 
-  @JsonProperty("name_wrapped_array")
-  @Valid
-  private List<Integer> nameWrappedArray = null;
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private @Nullable Boolean nameBoolean;
 
-  @JsonProperty("prefix_string")
-  private String prefixString;
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private List<Integer> nameArray = new ArrayList<>();
 
-  @JsonProperty("prefix_number")
-  private BigDecimal prefixNumber;
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private List<Integer> nameWrappedArray = new ArrayList<>();
 
-  @JsonProperty("prefix_integer")
-  private Integer prefixInteger;
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private @Nullable String prefixString;
 
-  @JsonProperty("prefix_boolean")
-  private Boolean prefixBoolean;
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private @Nullable BigDecimal prefixNumber;
 
-  @JsonProperty("prefix_array")
-  @Valid
-  private List<Integer> prefixArray = null;
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private @Nullable Integer prefixInteger;
 
-  @JsonProperty("prefix_wrapped_array")
-  @Valid
-  private List<Integer> prefixWrappedArray = null;
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private @Nullable Boolean prefixBoolean;
 
-  @JsonProperty("namespace_string")
-  private String namespaceString;
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private List<Integer> prefixArray = new ArrayList<>();
 
-  @JsonProperty("namespace_number")
-  private BigDecimal namespaceNumber;
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private List<Integer> prefixWrappedArray = new ArrayList<>();
 
-  @JsonProperty("namespace_integer")
-  private Integer namespaceInteger;
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private @Nullable String namespaceString;
 
-  @JsonProperty("namespace_boolean")
-  private Boolean namespaceBoolean;
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private @Nullable BigDecimal namespaceNumber;
 
-  @JsonProperty("namespace_array")
-  @Valid
-  private List<Integer> namespaceArray = null;
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private @Nullable Integer namespaceInteger;
 
-  @JsonProperty("namespace_wrapped_array")
-  @Valid
-  private List<Integer> namespaceWrappedArray = null;
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private @Nullable Boolean namespaceBoolean;
 
-  @JsonProperty("prefix_ns_string")
-  private String prefixNsString;
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private List<Integer> namespaceArray = new ArrayList<>();
 
-  @JsonProperty("prefix_ns_number")
-  private BigDecimal prefixNsNumber;
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private List<Integer> namespaceWrappedArray = new ArrayList<>();
 
-  @JsonProperty("prefix_ns_integer")
-  private Integer prefixNsInteger;
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private @Nullable String prefixNsString;
 
-  @JsonProperty("prefix_ns_boolean")
-  private Boolean prefixNsBoolean;
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private @Nullable BigDecimal prefixNsNumber;
 
-  @JsonProperty("prefix_ns_array")
-  @Valid
-  private List<Integer> prefixNsArray = null;
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private @Nullable Integer prefixNsInteger;
 
-  @JsonProperty("prefix_ns_wrapped_array")
-  @Valid
-  private List<Integer> prefixNsWrappedArray = null;
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private @Nullable Boolean prefixNsBoolean;
 
-  public XmlItem attributeString(String attributeString) {
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private List<Integer> prefixNsArray = new ArrayList<>();
+
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private List<Integer> prefixNsWrappedArray = new ArrayList<>();
+
+  public XmlItem attributeString(@Nullable String attributeString) {
     this.attributeString = attributeString;
     return this;
   }
@@ -121,19 +122,20 @@ public class XmlItem   {
   /**
    * Get attributeString
    * @return attributeString
-  */
-  @ApiModelProperty(example = "string", value = "")
-
-
-  public String getAttributeString() {
+   */
+  
+  @Schema(name = "attribute_string", example = "string", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+  @JsonProperty("attribute_string")
+  public @Nullable String getAttributeString() {
     return attributeString;
   }
 
-  public void setAttributeString(String attributeString) {
+  @JsonProperty("attribute_string")
+  public void setAttributeString(@Nullable String attributeString) {
     this.attributeString = attributeString;
   }
 
-  public XmlItem attributeNumber(BigDecimal attributeNumber) {
+  public XmlItem attributeNumber(@Nullable BigDecimal attributeNumber) {
     this.attributeNumber = attributeNumber;
     return this;
   }
@@ -141,20 +143,20 @@ public class XmlItem   {
   /**
    * Get attributeNumber
    * @return attributeNumber
-  */
-  @ApiModelProperty(example = "1.234", value = "")
-
-  @Valid
-
-  public BigDecimal getAttributeNumber() {
+   */
+  @Valid 
+  @Schema(name = "attribute_number", example = "1.234", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+  @JsonProperty("attribute_number")
+  public @Nullable BigDecimal getAttributeNumber() {
     return attributeNumber;
   }
 
-  public void setAttributeNumber(BigDecimal attributeNumber) {
+  @JsonProperty("attribute_number")
+  public void setAttributeNumber(@Nullable BigDecimal attributeNumber) {
     this.attributeNumber = attributeNumber;
   }
 
-  public XmlItem attributeInteger(Integer attributeInteger) {
+  public XmlItem attributeInteger(@Nullable Integer attributeInteger) {
     this.attributeInteger = attributeInteger;
     return this;
   }
@@ -162,19 +164,20 @@ public class XmlItem   {
   /**
    * Get attributeInteger
    * @return attributeInteger
-  */
-  @ApiModelProperty(example = "-2", value = "")
-
-
-  public Integer getAttributeInteger() {
+   */
+  
+  @Schema(name = "attribute_integer", example = "-2", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+  @JsonProperty("attribute_integer")
+  public @Nullable Integer getAttributeInteger() {
     return attributeInteger;
   }
 
-  public void setAttributeInteger(Integer attributeInteger) {
+  @JsonProperty("attribute_integer")
+  public void setAttributeInteger(@Nullable Integer attributeInteger) {
     this.attributeInteger = attributeInteger;
   }
 
-  public XmlItem attributeBoolean(Boolean attributeBoolean) {
+  public XmlItem attributeBoolean(@Nullable Boolean attributeBoolean) {
     this.attributeBoolean = attributeBoolean;
     return this;
   }
@@ -182,15 +185,16 @@ public class XmlItem   {
   /**
    * Get attributeBoolean
    * @return attributeBoolean
-  */
-  @ApiModelProperty(example = "true", value = "")
-
-
-  public Boolean getAttributeBoolean() {
+   */
+  
+  @Schema(name = "attribute_boolean", example = "true", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+  @JsonProperty("attribute_boolean")
+  public @Nullable Boolean getAttributeBoolean() {
     return attributeBoolean;
   }
 
-  public void setAttributeBoolean(Boolean attributeBoolean) {
+  @JsonProperty("attribute_boolean")
+  public void setAttributeBoolean(@Nullable Boolean attributeBoolean) {
     this.attributeBoolean = attributeBoolean;
   }
 
@@ -201,7 +205,7 @@ public class XmlItem   {
 
   public XmlItem addWrappedArrayItem(Integer wrappedArrayItem) {
     if (this.wrappedArray == null) {
-      this.wrappedArray = new ArrayList<Integer>();
+      this.wrappedArray = new ArrayList<>();
     }
     this.wrappedArray.add(wrappedArrayItem);
     return this;
@@ -210,19 +214,20 @@ public class XmlItem   {
   /**
    * Get wrappedArray
    * @return wrappedArray
-  */
-  @ApiModelProperty(value = "")
-
-
+   */
+  
+  @Schema(name = "wrapped_array", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+  @JsonProperty("wrapped_array")
   public List<Integer> getWrappedArray() {
     return wrappedArray;
   }
 
+  @JsonProperty("wrapped_array")
   public void setWrappedArray(List<Integer> wrappedArray) {
     this.wrappedArray = wrappedArray;
   }
 
-  public XmlItem nameString(String nameString) {
+  public XmlItem nameString(@Nullable String nameString) {
     this.nameString = nameString;
     return this;
   }
@@ -230,19 +235,20 @@ public class XmlItem   {
   /**
    * Get nameString
    * @return nameString
-  */
-  @ApiModelProperty(example = "string", value = "")
-
-
-  public String getNameString() {
+   */
+  
+  @Schema(name = "name_string", example = "string", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+  @JsonProperty("name_string")
+  public @Nullable String getNameString() {
     return nameString;
   }
 
-  public void setNameString(String nameString) {
+  @JsonProperty("name_string")
+  public void setNameString(@Nullable String nameString) {
     this.nameString = nameString;
   }
 
-  public XmlItem nameNumber(BigDecimal nameNumber) {
+  public XmlItem nameNumber(@Nullable BigDecimal nameNumber) {
     this.nameNumber = nameNumber;
     return this;
   }
@@ -250,20 +256,20 @@ public class XmlItem   {
   /**
    * Get nameNumber
    * @return nameNumber
-  */
-  @ApiModelProperty(example = "1.234", value = "")
-
-  @Valid
-
-  public BigDecimal getNameNumber() {
+   */
+  @Valid 
+  @Schema(name = "name_number", example = "1.234", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+  @JsonProperty("name_number")
+  public @Nullable BigDecimal getNameNumber() {
     return nameNumber;
   }
 
-  public void setNameNumber(BigDecimal nameNumber) {
+  @JsonProperty("name_number")
+  public void setNameNumber(@Nullable BigDecimal nameNumber) {
     this.nameNumber = nameNumber;
   }
 
-  public XmlItem nameInteger(Integer nameInteger) {
+  public XmlItem nameInteger(@Nullable Integer nameInteger) {
     this.nameInteger = nameInteger;
     return this;
   }
@@ -271,19 +277,20 @@ public class XmlItem   {
   /**
    * Get nameInteger
    * @return nameInteger
-  */
-  @ApiModelProperty(example = "-2", value = "")
-
-
-  public Integer getNameInteger() {
+   */
+  
+  @Schema(name = "name_integer", example = "-2", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+  @JsonProperty("name_integer")
+  public @Nullable Integer getNameInteger() {
     return nameInteger;
   }
 
-  public void setNameInteger(Integer nameInteger) {
+  @JsonProperty("name_integer")
+  public void setNameInteger(@Nullable Integer nameInteger) {
     this.nameInteger = nameInteger;
   }
 
-  public XmlItem nameBoolean(Boolean nameBoolean) {
+  public XmlItem nameBoolean(@Nullable Boolean nameBoolean) {
     this.nameBoolean = nameBoolean;
     return this;
   }
@@ -291,15 +298,16 @@ public class XmlItem   {
   /**
    * Get nameBoolean
    * @return nameBoolean
-  */
-  @ApiModelProperty(example = "true", value = "")
-
-
-  public Boolean getNameBoolean() {
+   */
+  
+  @Schema(name = "name_boolean", example = "true", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+  @JsonProperty("name_boolean")
+  public @Nullable Boolean getNameBoolean() {
     return nameBoolean;
   }
 
-  public void setNameBoolean(Boolean nameBoolean) {
+  @JsonProperty("name_boolean")
+  public void setNameBoolean(@Nullable Boolean nameBoolean) {
     this.nameBoolean = nameBoolean;
   }
 
@@ -310,7 +318,7 @@ public class XmlItem   {
 
   public XmlItem addNameArrayItem(Integer nameArrayItem) {
     if (this.nameArray == null) {
-      this.nameArray = new ArrayList<Integer>();
+      this.nameArray = new ArrayList<>();
     }
     this.nameArray.add(nameArrayItem);
     return this;
@@ -319,14 +327,15 @@ public class XmlItem   {
   /**
    * Get nameArray
    * @return nameArray
-  */
-  @ApiModelProperty(value = "")
-
-
+   */
+  
+  @Schema(name = "name_array", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+  @JsonProperty("name_array")
   public List<Integer> getNameArray() {
     return nameArray;
   }
 
+  @JsonProperty("name_array")
   public void setNameArray(List<Integer> nameArray) {
     this.nameArray = nameArray;
   }
@@ -338,7 +347,7 @@ public class XmlItem   {
 
   public XmlItem addNameWrappedArrayItem(Integer nameWrappedArrayItem) {
     if (this.nameWrappedArray == null) {
-      this.nameWrappedArray = new ArrayList<Integer>();
+      this.nameWrappedArray = new ArrayList<>();
     }
     this.nameWrappedArray.add(nameWrappedArrayItem);
     return this;
@@ -347,19 +356,20 @@ public class XmlItem   {
   /**
    * Get nameWrappedArray
    * @return nameWrappedArray
-  */
-  @ApiModelProperty(value = "")
-
-
+   */
+  
+  @Schema(name = "name_wrapped_array", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+  @JsonProperty("name_wrapped_array")
   public List<Integer> getNameWrappedArray() {
     return nameWrappedArray;
   }
 
+  @JsonProperty("name_wrapped_array")
   public void setNameWrappedArray(List<Integer> nameWrappedArray) {
     this.nameWrappedArray = nameWrappedArray;
   }
 
-  public XmlItem prefixString(String prefixString) {
+  public XmlItem prefixString(@Nullable String prefixString) {
     this.prefixString = prefixString;
     return this;
   }
@@ -367,19 +377,20 @@ public class XmlItem   {
   /**
    * Get prefixString
    * @return prefixString
-  */
-  @ApiModelProperty(example = "string", value = "")
-
-
-  public String getPrefixString() {
+   */
+  
+  @Schema(name = "prefix_string", example = "string", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+  @JsonProperty("prefix_string")
+  public @Nullable String getPrefixString() {
     return prefixString;
   }
 
-  public void setPrefixString(String prefixString) {
+  @JsonProperty("prefix_string")
+  public void setPrefixString(@Nullable String prefixString) {
     this.prefixString = prefixString;
   }
 
-  public XmlItem prefixNumber(BigDecimal prefixNumber) {
+  public XmlItem prefixNumber(@Nullable BigDecimal prefixNumber) {
     this.prefixNumber = prefixNumber;
     return this;
   }
@@ -387,20 +398,20 @@ public class XmlItem   {
   /**
    * Get prefixNumber
    * @return prefixNumber
-  */
-  @ApiModelProperty(example = "1.234", value = "")
-
-  @Valid
-
-  public BigDecimal getPrefixNumber() {
+   */
+  @Valid 
+  @Schema(name = "prefix_number", example = "1.234", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+  @JsonProperty("prefix_number")
+  public @Nullable BigDecimal getPrefixNumber() {
     return prefixNumber;
   }
 
-  public void setPrefixNumber(BigDecimal prefixNumber) {
+  @JsonProperty("prefix_number")
+  public void setPrefixNumber(@Nullable BigDecimal prefixNumber) {
     this.prefixNumber = prefixNumber;
   }
 
-  public XmlItem prefixInteger(Integer prefixInteger) {
+  public XmlItem prefixInteger(@Nullable Integer prefixInteger) {
     this.prefixInteger = prefixInteger;
     return this;
   }
@@ -408,19 +419,20 @@ public class XmlItem   {
   /**
    * Get prefixInteger
    * @return prefixInteger
-  */
-  @ApiModelProperty(example = "-2", value = "")
-
-
-  public Integer getPrefixInteger() {
+   */
+  
+  @Schema(name = "prefix_integer", example = "-2", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+  @JsonProperty("prefix_integer")
+  public @Nullable Integer getPrefixInteger() {
     return prefixInteger;
   }
 
-  public void setPrefixInteger(Integer prefixInteger) {
+  @JsonProperty("prefix_integer")
+  public void setPrefixInteger(@Nullable Integer prefixInteger) {
     this.prefixInteger = prefixInteger;
   }
 
-  public XmlItem prefixBoolean(Boolean prefixBoolean) {
+  public XmlItem prefixBoolean(@Nullable Boolean prefixBoolean) {
     this.prefixBoolean = prefixBoolean;
     return this;
   }
@@ -428,15 +440,16 @@ public class XmlItem   {
   /**
    * Get prefixBoolean
    * @return prefixBoolean
-  */
-  @ApiModelProperty(example = "true", value = "")
-
-
-  public Boolean getPrefixBoolean() {
+   */
+  
+  @Schema(name = "prefix_boolean", example = "true", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+  @JsonProperty("prefix_boolean")
+  public @Nullable Boolean getPrefixBoolean() {
     return prefixBoolean;
   }
 
-  public void setPrefixBoolean(Boolean prefixBoolean) {
+  @JsonProperty("prefix_boolean")
+  public void setPrefixBoolean(@Nullable Boolean prefixBoolean) {
     this.prefixBoolean = prefixBoolean;
   }
 
@@ -447,7 +460,7 @@ public class XmlItem   {
 
   public XmlItem addPrefixArrayItem(Integer prefixArrayItem) {
     if (this.prefixArray == null) {
-      this.prefixArray = new ArrayList<Integer>();
+      this.prefixArray = new ArrayList<>();
     }
     this.prefixArray.add(prefixArrayItem);
     return this;
@@ -456,14 +469,15 @@ public class XmlItem   {
   /**
    * Get prefixArray
    * @return prefixArray
-  */
-  @ApiModelProperty(value = "")
-
-
+   */
+  
+  @Schema(name = "prefix_array", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+  @JsonProperty("prefix_array")
   public List<Integer> getPrefixArray() {
     return prefixArray;
   }
 
+  @JsonProperty("prefix_array")
   public void setPrefixArray(List<Integer> prefixArray) {
     this.prefixArray = prefixArray;
   }
@@ -475,7 +489,7 @@ public class XmlItem   {
 
   public XmlItem addPrefixWrappedArrayItem(Integer prefixWrappedArrayItem) {
     if (this.prefixWrappedArray == null) {
-      this.prefixWrappedArray = new ArrayList<Integer>();
+      this.prefixWrappedArray = new ArrayList<>();
     }
     this.prefixWrappedArray.add(prefixWrappedArrayItem);
     return this;
@@ -484,19 +498,20 @@ public class XmlItem   {
   /**
    * Get prefixWrappedArray
    * @return prefixWrappedArray
-  */
-  @ApiModelProperty(value = "")
-
-
+   */
+  
+  @Schema(name = "prefix_wrapped_array", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+  @JsonProperty("prefix_wrapped_array")
   public List<Integer> getPrefixWrappedArray() {
     return prefixWrappedArray;
   }
 
+  @JsonProperty("prefix_wrapped_array")
   public void setPrefixWrappedArray(List<Integer> prefixWrappedArray) {
     this.prefixWrappedArray = prefixWrappedArray;
   }
 
-  public XmlItem namespaceString(String namespaceString) {
+  public XmlItem namespaceString(@Nullable String namespaceString) {
     this.namespaceString = namespaceString;
     return this;
   }
@@ -504,19 +519,20 @@ public class XmlItem   {
   /**
    * Get namespaceString
    * @return namespaceString
-  */
-  @ApiModelProperty(example = "string", value = "")
-
-
-  public String getNamespaceString() {
+   */
+  
+  @Schema(name = "namespace_string", example = "string", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+  @JsonProperty("namespace_string")
+  public @Nullable String getNamespaceString() {
     return namespaceString;
   }
 
-  public void setNamespaceString(String namespaceString) {
+  @JsonProperty("namespace_string")
+  public void setNamespaceString(@Nullable String namespaceString) {
     this.namespaceString = namespaceString;
   }
 
-  public XmlItem namespaceNumber(BigDecimal namespaceNumber) {
+  public XmlItem namespaceNumber(@Nullable BigDecimal namespaceNumber) {
     this.namespaceNumber = namespaceNumber;
     return this;
   }
@@ -524,20 +540,20 @@ public class XmlItem   {
   /**
    * Get namespaceNumber
    * @return namespaceNumber
-  */
-  @ApiModelProperty(example = "1.234", value = "")
-
-  @Valid
-
-  public BigDecimal getNamespaceNumber() {
+   */
+  @Valid 
+  @Schema(name = "namespace_number", example = "1.234", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+  @JsonProperty("namespace_number")
+  public @Nullable BigDecimal getNamespaceNumber() {
     return namespaceNumber;
   }
 
-  public void setNamespaceNumber(BigDecimal namespaceNumber) {
+  @JsonProperty("namespace_number")
+  public void setNamespaceNumber(@Nullable BigDecimal namespaceNumber) {
     this.namespaceNumber = namespaceNumber;
   }
 
-  public XmlItem namespaceInteger(Integer namespaceInteger) {
+  public XmlItem namespaceInteger(@Nullable Integer namespaceInteger) {
     this.namespaceInteger = namespaceInteger;
     return this;
   }
@@ -545,19 +561,20 @@ public class XmlItem   {
   /**
    * Get namespaceInteger
    * @return namespaceInteger
-  */
-  @ApiModelProperty(example = "-2", value = "")
-
-
-  public Integer getNamespaceInteger() {
+   */
+  
+  @Schema(name = "namespace_integer", example = "-2", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+  @JsonProperty("namespace_integer")
+  public @Nullable Integer getNamespaceInteger() {
     return namespaceInteger;
   }
 
-  public void setNamespaceInteger(Integer namespaceInteger) {
+  @JsonProperty("namespace_integer")
+  public void setNamespaceInteger(@Nullable Integer namespaceInteger) {
     this.namespaceInteger = namespaceInteger;
   }
 
-  public XmlItem namespaceBoolean(Boolean namespaceBoolean) {
+  public XmlItem namespaceBoolean(@Nullable Boolean namespaceBoolean) {
     this.namespaceBoolean = namespaceBoolean;
     return this;
   }
@@ -565,15 +582,16 @@ public class XmlItem   {
   /**
    * Get namespaceBoolean
    * @return namespaceBoolean
-  */
-  @ApiModelProperty(example = "true", value = "")
-
-
-  public Boolean getNamespaceBoolean() {
+   */
+  
+  @Schema(name = "namespace_boolean", example = "true", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+  @JsonProperty("namespace_boolean")
+  public @Nullable Boolean getNamespaceBoolean() {
     return namespaceBoolean;
   }
 
-  public void setNamespaceBoolean(Boolean namespaceBoolean) {
+  @JsonProperty("namespace_boolean")
+  public void setNamespaceBoolean(@Nullable Boolean namespaceBoolean) {
     this.namespaceBoolean = namespaceBoolean;
   }
 
@@ -584,7 +602,7 @@ public class XmlItem   {
 
   public XmlItem addNamespaceArrayItem(Integer namespaceArrayItem) {
     if (this.namespaceArray == null) {
-      this.namespaceArray = new ArrayList<Integer>();
+      this.namespaceArray = new ArrayList<>();
     }
     this.namespaceArray.add(namespaceArrayItem);
     return this;
@@ -593,14 +611,15 @@ public class XmlItem   {
   /**
    * Get namespaceArray
    * @return namespaceArray
-  */
-  @ApiModelProperty(value = "")
-
-
+   */
+  
+  @Schema(name = "namespace_array", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+  @JsonProperty("namespace_array")
   public List<Integer> getNamespaceArray() {
     return namespaceArray;
   }
 
+  @JsonProperty("namespace_array")
   public void setNamespaceArray(List<Integer> namespaceArray) {
     this.namespaceArray = namespaceArray;
   }
@@ -612,7 +631,7 @@ public class XmlItem   {
 
   public XmlItem addNamespaceWrappedArrayItem(Integer namespaceWrappedArrayItem) {
     if (this.namespaceWrappedArray == null) {
-      this.namespaceWrappedArray = new ArrayList<Integer>();
+      this.namespaceWrappedArray = new ArrayList<>();
     }
     this.namespaceWrappedArray.add(namespaceWrappedArrayItem);
     return this;
@@ -621,19 +640,20 @@ public class XmlItem   {
   /**
    * Get namespaceWrappedArray
    * @return namespaceWrappedArray
-  */
-  @ApiModelProperty(value = "")
-
-
+   */
+  
+  @Schema(name = "namespace_wrapped_array", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+  @JsonProperty("namespace_wrapped_array")
   public List<Integer> getNamespaceWrappedArray() {
     return namespaceWrappedArray;
   }
 
+  @JsonProperty("namespace_wrapped_array")
   public void setNamespaceWrappedArray(List<Integer> namespaceWrappedArray) {
     this.namespaceWrappedArray = namespaceWrappedArray;
   }
 
-  public XmlItem prefixNsString(String prefixNsString) {
+  public XmlItem prefixNsString(@Nullable String prefixNsString) {
     this.prefixNsString = prefixNsString;
     return this;
   }
@@ -641,19 +661,20 @@ public class XmlItem   {
   /**
    * Get prefixNsString
    * @return prefixNsString
-  */
-  @ApiModelProperty(example = "string", value = "")
-
-
-  public String getPrefixNsString() {
+   */
+  
+  @Schema(name = "prefix_ns_string", example = "string", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+  @JsonProperty("prefix_ns_string")
+  public @Nullable String getPrefixNsString() {
     return prefixNsString;
   }
 
-  public void setPrefixNsString(String prefixNsString) {
+  @JsonProperty("prefix_ns_string")
+  public void setPrefixNsString(@Nullable String prefixNsString) {
     this.prefixNsString = prefixNsString;
   }
 
-  public XmlItem prefixNsNumber(BigDecimal prefixNsNumber) {
+  public XmlItem prefixNsNumber(@Nullable BigDecimal prefixNsNumber) {
     this.prefixNsNumber = prefixNsNumber;
     return this;
   }
@@ -661,20 +682,20 @@ public class XmlItem   {
   /**
    * Get prefixNsNumber
    * @return prefixNsNumber
-  */
-  @ApiModelProperty(example = "1.234", value = "")
-
-  @Valid
-
-  public BigDecimal getPrefixNsNumber() {
+   */
+  @Valid 
+  @Schema(name = "prefix_ns_number", example = "1.234", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+  @JsonProperty("prefix_ns_number")
+  public @Nullable BigDecimal getPrefixNsNumber() {
     return prefixNsNumber;
   }
 
-  public void setPrefixNsNumber(BigDecimal prefixNsNumber) {
+  @JsonProperty("prefix_ns_number")
+  public void setPrefixNsNumber(@Nullable BigDecimal prefixNsNumber) {
     this.prefixNsNumber = prefixNsNumber;
   }
 
-  public XmlItem prefixNsInteger(Integer prefixNsInteger) {
+  public XmlItem prefixNsInteger(@Nullable Integer prefixNsInteger) {
     this.prefixNsInteger = prefixNsInteger;
     return this;
   }
@@ -682,19 +703,20 @@ public class XmlItem   {
   /**
    * Get prefixNsInteger
    * @return prefixNsInteger
-  */
-  @ApiModelProperty(example = "-2", value = "")
-
-
-  public Integer getPrefixNsInteger() {
+   */
+  
+  @Schema(name = "prefix_ns_integer", example = "-2", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+  @JsonProperty("prefix_ns_integer")
+  public @Nullable Integer getPrefixNsInteger() {
     return prefixNsInteger;
   }
 
-  public void setPrefixNsInteger(Integer prefixNsInteger) {
+  @JsonProperty("prefix_ns_integer")
+  public void setPrefixNsInteger(@Nullable Integer prefixNsInteger) {
     this.prefixNsInteger = prefixNsInteger;
   }
 
-  public XmlItem prefixNsBoolean(Boolean prefixNsBoolean) {
+  public XmlItem prefixNsBoolean(@Nullable Boolean prefixNsBoolean) {
     this.prefixNsBoolean = prefixNsBoolean;
     return this;
   }
@@ -702,15 +724,16 @@ public class XmlItem   {
   /**
    * Get prefixNsBoolean
    * @return prefixNsBoolean
-  */
-  @ApiModelProperty(example = "true", value = "")
-
-
-  public Boolean getPrefixNsBoolean() {
+   */
+  
+  @Schema(name = "prefix_ns_boolean", example = "true", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+  @JsonProperty("prefix_ns_boolean")
+  public @Nullable Boolean getPrefixNsBoolean() {
     return prefixNsBoolean;
   }
 
-  public void setPrefixNsBoolean(Boolean prefixNsBoolean) {
+  @JsonProperty("prefix_ns_boolean")
+  public void setPrefixNsBoolean(@Nullable Boolean prefixNsBoolean) {
     this.prefixNsBoolean = prefixNsBoolean;
   }
 
@@ -721,7 +744,7 @@ public class XmlItem   {
 
   public XmlItem addPrefixNsArrayItem(Integer prefixNsArrayItem) {
     if (this.prefixNsArray == null) {
-      this.prefixNsArray = new ArrayList<Integer>();
+      this.prefixNsArray = new ArrayList<>();
     }
     this.prefixNsArray.add(prefixNsArrayItem);
     return this;
@@ -730,14 +753,15 @@ public class XmlItem   {
   /**
    * Get prefixNsArray
    * @return prefixNsArray
-  */
-  @ApiModelProperty(value = "")
-
-
+   */
+  
+  @Schema(name = "prefix_ns_array", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+  @JsonProperty("prefix_ns_array")
   public List<Integer> getPrefixNsArray() {
     return prefixNsArray;
   }
 
+  @JsonProperty("prefix_ns_array")
   public void setPrefixNsArray(List<Integer> prefixNsArray) {
     this.prefixNsArray = prefixNsArray;
   }
@@ -749,7 +773,7 @@ public class XmlItem   {
 
   public XmlItem addPrefixNsWrappedArrayItem(Integer prefixNsWrappedArrayItem) {
     if (this.prefixNsWrappedArray == null) {
-      this.prefixNsWrappedArray = new ArrayList<Integer>();
+      this.prefixNsWrappedArray = new ArrayList<>();
     }
     this.prefixNsWrappedArray.add(prefixNsWrappedArrayItem);
     return this;
@@ -758,18 +782,18 @@ public class XmlItem   {
   /**
    * Get prefixNsWrappedArray
    * @return prefixNsWrappedArray
-  */
-  @ApiModelProperty(value = "")
-
-
+   */
+  
+  @Schema(name = "prefix_ns_wrapped_array", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+  @JsonProperty("prefix_ns_wrapped_array")
   public List<Integer> getPrefixNsWrappedArray() {
     return prefixNsWrappedArray;
   }
 
+  @JsonProperty("prefix_ns_wrapped_array")
   public void setPrefixNsWrappedArray(List<Integer> prefixNsWrappedArray) {
     this.prefixNsWrappedArray = prefixNsWrappedArray;
   }
-
 
   @Override
   public boolean equals(Object o) {
@@ -820,7 +844,6 @@ public class XmlItem   {
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class XmlItem {\n");
-    
     sb.append("    attributeString: ").append(toIndentedString(attributeString)).append("\n");
     sb.append("    attributeNumber: ").append(toIndentedString(attributeNumber)).append("\n");
     sb.append("    attributeInteger: ").append(toIndentedString(attributeInteger)).append("\n");
@@ -858,11 +881,8 @@ public class XmlItem   {
    * Convert the given object to string with each line indented by 4 spaces
    * (except the first line).
    */
-  private String toIndentedString(Object o) {
-    if (o == null) {
-      return "null";
-    }
-    return o.toString().replace("\n", "\n    ");
+  private String toIndentedString(@Nullable Object o) {
+    return o == null ? "null" : o.toString().replace("\n", "\n    ");
   }
 }
 

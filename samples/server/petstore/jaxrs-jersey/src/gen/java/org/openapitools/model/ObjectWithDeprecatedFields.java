@@ -20,6 +20,7 @@ import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import org.openapitools.model.DeprecatedObject;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -35,7 +36,7 @@ import javax.validation.Valid;
   ObjectWithDeprecatedFields.JSON_PROPERTY_DEPRECATED_REF,
   ObjectWithDeprecatedFields.JSON_PROPERTY_BARS
 })
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaJerseyServerCodegen")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaJerseyServerCodegen", comments = "Generator version: 7.28.0-SNAPSHOT")
 public class ObjectWithDeprecatedFields   {
   public static final String JSON_PROPERTY_UUID = "uuid";
   @JsonProperty(JSON_PROPERTY_UUID)
@@ -51,7 +52,7 @@ public class ObjectWithDeprecatedFields   {
 
   public static final String JSON_PROPERTY_BARS = "bars";
   @JsonProperty(JSON_PROPERTY_BARS)
-  private List<String> bars = null;
+  private List<String> bars = new ArrayList<>();
 
   public ObjectWithDeprecatedFields uuid(String uuid) {
     this.uuid = uuid;
@@ -120,7 +121,7 @@ public class ObjectWithDeprecatedFields   {
 
   public ObjectWithDeprecatedFields addBarsItem(String barsItem) {
     if (this.bars == null) {
-      this.bars = new ArrayList<String>();
+      this.bars = new ArrayList<>();
     }
     this.bars.add(barsItem);
     return this;
@@ -162,7 +163,6 @@ public class ObjectWithDeprecatedFields   {
     return Objects.hash(uuid, id, deprecatedRef, bars);
   }
 
-
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
@@ -181,10 +181,7 @@ public class ObjectWithDeprecatedFields   {
    * (except the first line).
    */
   private String toIndentedString(Object o) {
-    if (o == null) {
-      return "null";
-    }
-    return o.toString().replace("\n", "\n    ");
+    return o == null ? "null" : o.toString().replace("\n", "\n    ");
   }
 }
 

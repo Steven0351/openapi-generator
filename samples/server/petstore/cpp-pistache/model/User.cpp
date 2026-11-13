@@ -40,6 +40,8 @@ User::User()
     
 }
 
+User::~User() = default;
+
 void User::validate() const
 {
     std::stringstream msg;
@@ -102,7 +104,7 @@ bool User::operator!=(const User& rhs) const
 
 void to_json(nlohmann::json& j, const User& o)
 {
-    j = nlohmann::json();
+    j = nlohmann::json::object();
     if(o.idIsSet())
         j["id"] = o.m_Id;
     if(o.usernameIsSet())

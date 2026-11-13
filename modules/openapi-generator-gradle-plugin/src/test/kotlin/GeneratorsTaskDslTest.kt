@@ -4,11 +4,12 @@ import org.gradle.testkit.runner.GradleRunner
 import org.gradle.testkit.runner.TaskOutcome
 import org.testng.annotations.Test
 import java.io.File
+import kotlin.io.path.createTempDirectory
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class GeneratorsTaskDslTest : TestBase() {
-    override var temp: File = createTempDir(javaClass.simpleName)
+    override var temp: File = createTempDirectory(javaClass.simpleName).toFile()
 
     @Test
     fun `openApiGenerators should list generators available to the user`() {
@@ -27,7 +28,7 @@ class GeneratorsTaskDslTest : TestBase() {
                 .build()
 
         // Assert
-        assertTrue(result.output.contains("The following generators are available:"), "User friendly generator notice is missing.")
+        assertTrue(result.output.contains("The following generators are available:"), "User-friendly generator notice is missing.")
         assertTrue(result.output.contains("CLIENT generators:"), "Expected client generator header is missing.")
         assertTrue(result.output.contains("android"), "Spot-checking listed client generators is missing a client generator.")
         assertTrue(result.output.contains("SERVER generators:"), "Expected server generator header is missing.")

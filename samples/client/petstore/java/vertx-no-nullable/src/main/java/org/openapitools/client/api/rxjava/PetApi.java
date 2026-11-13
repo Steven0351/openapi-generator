@@ -8,11 +8,13 @@ import org.openapitools.client.ApiClient;
 
 import java.util.*;
 
+
 import rx.Single;
+
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
 
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.28.0-SNAPSHOT")
 public class PetApi {
 
     private final org.openapitools.client.api.PetApi delegate;
@@ -53,9 +55,11 @@ public class PetApi {
     * @return Asynchronous result handler (RxJava Single)
     */
     public Single<Void> rxAddPet(Pet body) {
+    
         return Single.create(new io.vertx.rx.java.SingleOnSubscribeAdapter<>(fut ->
             delegate.addPet(body, fut)
         ));
+    
     }
 
     /**
@@ -66,9 +70,11 @@ public class PetApi {
     * @return Asynchronous result handler (RxJava Single)
     */
     public Single<Void> rxAddPet(Pet body, ApiClient.AuthInfo authInfo) {
+    
         return Single.create(new io.vertx.rx.java.SingleOnSubscribeAdapter<>(fut ->
             delegate.addPet(body, authInfo, fut)
         ));
+    
     }
     /**
     * Deletes a pet
@@ -101,9 +107,11 @@ public class PetApi {
     * @return Asynchronous result handler (RxJava Single)
     */
     public Single<Void> rxDeletePet(Long petId, String apiKey) {
+    
         return Single.create(new io.vertx.rx.java.SingleOnSubscribeAdapter<>(fut ->
             delegate.deletePet(petId, apiKey, fut)
         ));
+    
     }
 
     /**
@@ -115,9 +123,11 @@ public class PetApi {
     * @return Asynchronous result handler (RxJava Single)
     */
     public Single<Void> rxDeletePet(Long petId, String apiKey, ApiClient.AuthInfo authInfo) {
+    
         return Single.create(new io.vertx.rx.java.SingleOnSubscribeAdapter<>(fut ->
             delegate.deletePet(petId, apiKey, authInfo, fut)
         ));
+    
     }
     /**
     * Finds Pets by status
@@ -147,9 +157,11 @@ public class PetApi {
     * @return Asynchronous result handler (RxJava Single)
     */
     public Single<List<Pet>> rxFindPetsByStatus(List<String> status) {
+    
         return Single.create(new io.vertx.rx.java.SingleOnSubscribeAdapter<>(fut ->
             delegate.findPetsByStatus(status, fut)
         ));
+    
     }
 
     /**
@@ -160,9 +172,11 @@ public class PetApi {
     * @return Asynchronous result handler (RxJava Single)
     */
     public Single<List<Pet>> rxFindPetsByStatus(List<String> status, ApiClient.AuthInfo authInfo) {
+    
         return Single.create(new io.vertx.rx.java.SingleOnSubscribeAdapter<>(fut ->
             delegate.findPetsByStatus(status, authInfo, fut)
         ));
+    
     }
     /**
     * Finds Pets by tags
@@ -192,9 +206,11 @@ public class PetApi {
     * @return Asynchronous result handler (RxJava Single)
     */
     public Single<Set<Pet>> rxFindPetsByTags(Set<String> tags) {
+    
         return Single.create(new io.vertx.rx.java.SingleOnSubscribeAdapter<>(fut ->
             delegate.findPetsByTags(tags, fut)
         ));
+    
     }
 
     /**
@@ -205,9 +221,11 @@ public class PetApi {
     * @return Asynchronous result handler (RxJava Single)
     */
     public Single<Set<Pet>> rxFindPetsByTags(Set<String> tags, ApiClient.AuthInfo authInfo) {
+    
         return Single.create(new io.vertx.rx.java.SingleOnSubscribeAdapter<>(fut ->
             delegate.findPetsByTags(tags, authInfo, fut)
         ));
+    
     }
     /**
     * Find pet by ID
@@ -237,9 +255,11 @@ public class PetApi {
     * @return Asynchronous result handler (RxJava Single)
     */
     public Single<Pet> rxGetPetById(Long petId) {
+    
         return Single.create(new io.vertx.rx.java.SingleOnSubscribeAdapter<>(fut ->
             delegate.getPetById(petId, fut)
         ));
+    
     }
 
     /**
@@ -250,9 +270,11 @@ public class PetApi {
     * @return Asynchronous result handler (RxJava Single)
     */
     public Single<Pet> rxGetPetById(Long petId, ApiClient.AuthInfo authInfo) {
+    
         return Single.create(new io.vertx.rx.java.SingleOnSubscribeAdapter<>(fut ->
             delegate.getPetById(petId, authInfo, fut)
         ));
+    
     }
     /**
     * Update an existing pet
@@ -282,9 +304,11 @@ public class PetApi {
     * @return Asynchronous result handler (RxJava Single)
     */
     public Single<Void> rxUpdatePet(Pet body) {
+    
         return Single.create(new io.vertx.rx.java.SingleOnSubscribeAdapter<>(fut ->
             delegate.updatePet(body, fut)
         ));
+    
     }
 
     /**
@@ -295,9 +319,11 @@ public class PetApi {
     * @return Asynchronous result handler (RxJava Single)
     */
     public Single<Void> rxUpdatePet(Pet body, ApiClient.AuthInfo authInfo) {
+    
         return Single.create(new io.vertx.rx.java.SingleOnSubscribeAdapter<>(fut ->
             delegate.updatePet(body, authInfo, fut)
         ));
+    
     }
     /**
     * Updates a pet in the store with form data
@@ -333,9 +359,11 @@ public class PetApi {
     * @return Asynchronous result handler (RxJava Single)
     */
     public Single<Void> rxUpdatePetWithForm(Long petId, String name, String status) {
+    
         return Single.create(new io.vertx.rx.java.SingleOnSubscribeAdapter<>(fut ->
             delegate.updatePetWithForm(petId, name, status, fut)
         ));
+    
     }
 
     /**
@@ -348,20 +376,22 @@ public class PetApi {
     * @return Asynchronous result handler (RxJava Single)
     */
     public Single<Void> rxUpdatePetWithForm(Long petId, String name, String status, ApiClient.AuthInfo authInfo) {
+    
         return Single.create(new io.vertx.rx.java.SingleOnSubscribeAdapter<>(fut ->
             delegate.updatePetWithForm(petId, name, status, authInfo, fut)
         ));
+    
     }
     /**
     * uploads an image
     * 
     * @param petId ID of pet to update (required)
     * @param additionalMetadata Additional data to pass to server (optional)
-    * @param file file to upload (optional)
+    * @param _file file to upload (optional)
     * @param resultHandler Asynchronous result handler
     */
-    public void uploadFile(Long petId, String additionalMetadata, AsyncFile file, Handler<AsyncResult<ModelApiResponse>> resultHandler) {
-        delegate.uploadFile(petId, additionalMetadata, file, resultHandler);
+    public void uploadFile(Long petId, String additionalMetadata, AsyncFile _file, Handler<AsyncResult<ModelApiResponse>> resultHandler) {
+        delegate.uploadFile(petId, additionalMetadata, _file, resultHandler);
     }
 
     /**
@@ -369,12 +399,12 @@ public class PetApi {
     * 
     * @param petId ID of pet to update (required)
     * @param additionalMetadata Additional data to pass to server (optional)
-    * @param file file to upload (optional)
+    * @param _file file to upload (optional)
     * @param authInfo call specific auth overrides
     * @param resultHandler Asynchronous result handler
     */
-    public void uploadFile(Long petId, String additionalMetadata, AsyncFile file, ApiClient.AuthInfo authInfo, Handler<AsyncResult<ModelApiResponse>> resultHandler) {
-        delegate.uploadFile(petId, additionalMetadata, file, authInfo, resultHandler);
+    public void uploadFile(Long petId, String additionalMetadata, AsyncFile _file, ApiClient.AuthInfo authInfo, Handler<AsyncResult<ModelApiResponse>> resultHandler) {
+        delegate.uploadFile(petId, additionalMetadata, _file, authInfo, resultHandler);
     }
 
     /**
@@ -382,13 +412,15 @@ public class PetApi {
     * 
     * @param petId ID of pet to update (required)
     * @param additionalMetadata Additional data to pass to server (optional)
-    * @param file file to upload (optional)
+    * @param _file file to upload (optional)
     * @return Asynchronous result handler (RxJava Single)
     */
-    public Single<ModelApiResponse> rxUploadFile(Long petId, String additionalMetadata, AsyncFile file) {
+    public Single<ModelApiResponse> rxUploadFile(Long petId, String additionalMetadata, AsyncFile _file) {
+    
         return Single.create(new io.vertx.rx.java.SingleOnSubscribeAdapter<>(fut ->
-            delegate.uploadFile(petId, additionalMetadata, file, fut)
+            delegate.uploadFile(petId, additionalMetadata, _file, fut)
         ));
+    
     }
 
     /**
@@ -396,14 +428,16 @@ public class PetApi {
     * 
     * @param petId ID of pet to update (required)
     * @param additionalMetadata Additional data to pass to server (optional)
-    * @param file file to upload (optional)
+    * @param _file file to upload (optional)
     * @param authInfo call specific auth overrides
     * @return Asynchronous result handler (RxJava Single)
     */
-    public Single<ModelApiResponse> rxUploadFile(Long petId, String additionalMetadata, AsyncFile file, ApiClient.AuthInfo authInfo) {
+    public Single<ModelApiResponse> rxUploadFile(Long petId, String additionalMetadata, AsyncFile _file, ApiClient.AuthInfo authInfo) {
+    
         return Single.create(new io.vertx.rx.java.SingleOnSubscribeAdapter<>(fut ->
-            delegate.uploadFile(petId, additionalMetadata, file, authInfo, fut)
+            delegate.uploadFile(petId, additionalMetadata, _file, authInfo, fut)
         ));
+    
     }
     /**
     * uploads an image (required)
@@ -439,9 +473,11 @@ public class PetApi {
     * @return Asynchronous result handler (RxJava Single)
     */
     public Single<ModelApiResponse> rxUploadFileWithRequiredFile(Long petId, AsyncFile requiredFile, String additionalMetadata) {
+    
         return Single.create(new io.vertx.rx.java.SingleOnSubscribeAdapter<>(fut ->
             delegate.uploadFileWithRequiredFile(petId, requiredFile, additionalMetadata, fut)
         ));
+    
     }
 
     /**
@@ -454,9 +490,11 @@ public class PetApi {
     * @return Asynchronous result handler (RxJava Single)
     */
     public Single<ModelApiResponse> rxUploadFileWithRequiredFile(Long petId, AsyncFile requiredFile, String additionalMetadata, ApiClient.AuthInfo authInfo) {
+    
         return Single.create(new io.vertx.rx.java.SingleOnSubscribeAdapter<>(fut ->
             delegate.uploadFileWithRequiredFile(petId, requiredFile, additionalMetadata, authInfo, fut)
         ));
+    
     }
 
     public static PetApi newInstance(org.openapitools.client.api.PetApi arg) {

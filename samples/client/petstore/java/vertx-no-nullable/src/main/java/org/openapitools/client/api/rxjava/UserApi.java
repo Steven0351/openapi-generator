@@ -1,15 +1,18 @@
 package org.openapitools.client.api.rxjava;
 
+import java.time.OffsetDateTime;
 import org.openapitools.client.model.User;
 import org.openapitools.client.ApiClient;
 
 import java.util.*;
 
+
 import rx.Single;
+
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
 
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.28.0-SNAPSHOT")
 public class UserApi {
 
     private final org.openapitools.client.api.UserApi delegate;
@@ -50,9 +53,11 @@ public class UserApi {
     * @return Asynchronous result handler (RxJava Single)
     */
     public Single<Void> rxCreateUser(User body) {
+    
         return Single.create(new io.vertx.rx.java.SingleOnSubscribeAdapter<>(fut ->
             delegate.createUser(body, fut)
         ));
+    
     }
 
     /**
@@ -63,9 +68,11 @@ public class UserApi {
     * @return Asynchronous result handler (RxJava Single)
     */
     public Single<Void> rxCreateUser(User body, ApiClient.AuthInfo authInfo) {
+    
         return Single.create(new io.vertx.rx.java.SingleOnSubscribeAdapter<>(fut ->
             delegate.createUser(body, authInfo, fut)
         ));
+    
     }
     /**
     * Creates list of users with given input array
@@ -95,9 +102,11 @@ public class UserApi {
     * @return Asynchronous result handler (RxJava Single)
     */
     public Single<Void> rxCreateUsersWithArrayInput(List<User> body) {
+    
         return Single.create(new io.vertx.rx.java.SingleOnSubscribeAdapter<>(fut ->
             delegate.createUsersWithArrayInput(body, fut)
         ));
+    
     }
 
     /**
@@ -108,9 +117,11 @@ public class UserApi {
     * @return Asynchronous result handler (RxJava Single)
     */
     public Single<Void> rxCreateUsersWithArrayInput(List<User> body, ApiClient.AuthInfo authInfo) {
+    
         return Single.create(new io.vertx.rx.java.SingleOnSubscribeAdapter<>(fut ->
             delegate.createUsersWithArrayInput(body, authInfo, fut)
         ));
+    
     }
     /**
     * Creates list of users with given input array
@@ -140,9 +151,11 @@ public class UserApi {
     * @return Asynchronous result handler (RxJava Single)
     */
     public Single<Void> rxCreateUsersWithListInput(List<User> body) {
+    
         return Single.create(new io.vertx.rx.java.SingleOnSubscribeAdapter<>(fut ->
             delegate.createUsersWithListInput(body, fut)
         ));
+    
     }
 
     /**
@@ -153,9 +166,11 @@ public class UserApi {
     * @return Asynchronous result handler (RxJava Single)
     */
     public Single<Void> rxCreateUsersWithListInput(List<User> body, ApiClient.AuthInfo authInfo) {
+    
         return Single.create(new io.vertx.rx.java.SingleOnSubscribeAdapter<>(fut ->
             delegate.createUsersWithListInput(body, authInfo, fut)
         ));
+    
     }
     /**
     * Delete user
@@ -185,9 +200,11 @@ public class UserApi {
     * @return Asynchronous result handler (RxJava Single)
     */
     public Single<Void> rxDeleteUser(String username) {
+    
         return Single.create(new io.vertx.rx.java.SingleOnSubscribeAdapter<>(fut ->
             delegate.deleteUser(username, fut)
         ));
+    
     }
 
     /**
@@ -198,9 +215,11 @@ public class UserApi {
     * @return Asynchronous result handler (RxJava Single)
     */
     public Single<Void> rxDeleteUser(String username, ApiClient.AuthInfo authInfo) {
+    
         return Single.create(new io.vertx.rx.java.SingleOnSubscribeAdapter<>(fut ->
             delegate.deleteUser(username, authInfo, fut)
         ));
+    
     }
     /**
     * Get user by user name
@@ -230,9 +249,11 @@ public class UserApi {
     * @return Asynchronous result handler (RxJava Single)
     */
     public Single<User> rxGetUserByName(String username) {
+    
         return Single.create(new io.vertx.rx.java.SingleOnSubscribeAdapter<>(fut ->
             delegate.getUserByName(username, fut)
         ));
+    
     }
 
     /**
@@ -243,9 +264,11 @@ public class UserApi {
     * @return Asynchronous result handler (RxJava Single)
     */
     public Single<User> rxGetUserByName(String username, ApiClient.AuthInfo authInfo) {
+    
         return Single.create(new io.vertx.rx.java.SingleOnSubscribeAdapter<>(fut ->
             delegate.getUserByName(username, authInfo, fut)
         ));
+    
     }
     /**
     * Logs user into the system
@@ -278,9 +301,11 @@ public class UserApi {
     * @return Asynchronous result handler (RxJava Single)
     */
     public Single<String> rxLoginUser(String username, String password) {
+    
         return Single.create(new io.vertx.rx.java.SingleOnSubscribeAdapter<>(fut ->
             delegate.loginUser(username, password, fut)
         ));
+    
     }
 
     /**
@@ -292,9 +317,11 @@ public class UserApi {
     * @return Asynchronous result handler (RxJava Single)
     */
     public Single<String> rxLoginUser(String username, String password, ApiClient.AuthInfo authInfo) {
+    
         return Single.create(new io.vertx.rx.java.SingleOnSubscribeAdapter<>(fut ->
             delegate.loginUser(username, password, authInfo, fut)
         ));
+    
     }
     /**
     * Logs out current logged in user session
@@ -321,9 +348,11 @@ public class UserApi {
     * @return Asynchronous result handler (RxJava Single)
     */
     public Single<Void> rxLogoutUser() {
+    
         return Single.create(new io.vertx.rx.java.SingleOnSubscribeAdapter<>(fut ->
             delegate.logoutUser(fut)
         ));
+    
     }
 
     /**
@@ -333,9 +362,11 @@ public class UserApi {
     * @return Asynchronous result handler (RxJava Single)
     */
     public Single<Void> rxLogoutUser(ApiClient.AuthInfo authInfo) {
+    
         return Single.create(new io.vertx.rx.java.SingleOnSubscribeAdapter<>(fut ->
             delegate.logoutUser(authInfo, fut)
         ));
+    
     }
     /**
     * Updated user
@@ -368,9 +399,11 @@ public class UserApi {
     * @return Asynchronous result handler (RxJava Single)
     */
     public Single<Void> rxUpdateUser(String username, User body) {
+    
         return Single.create(new io.vertx.rx.java.SingleOnSubscribeAdapter<>(fut ->
             delegate.updateUser(username, body, fut)
         ));
+    
     }
 
     /**
@@ -382,9 +415,11 @@ public class UserApi {
     * @return Asynchronous result handler (RxJava Single)
     */
     public Single<Void> rxUpdateUser(String username, User body, ApiClient.AuthInfo authInfo) {
+    
         return Single.create(new io.vertx.rx.java.SingleOnSubscribeAdapter<>(fut ->
             delegate.updateUser(username, body, authInfo, fut)
         ));
+    
     }
 
     public static UserApi newInstance(org.openapitools.client.api.UserApi arg) {

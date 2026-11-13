@@ -4,15 +4,12 @@ import groovy.transform.Canonical
 {{#imports}}
 import {{import}};
 {{/imports}}
+{{#withXml}}
+import {{javaxPackage}}.xml.bind.annotation.*;
+{{/withXml}}
 
 {{#models}}
 {{#model}}
-@Canonical
-class {{classname}} {
-    {{#vars}}
-    {{#description}}/* {{{.}}} */{{/description}}
-    {{{dataType}}} {{name}}{{#defaultValue}} = {{{.}}}{{/defaultValue}}
-    {{/vars}}
-}
+{{#isEnum}}{{>modelEnum}}{{/isEnum}}{{^isEnum}}{{>modelClass}}{{/isEnum}}
 {{/model}}
 {{/models}}

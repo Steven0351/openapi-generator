@@ -12,11 +12,11 @@
  * Do not edit the class manually.
  */
 
-import {ApiRecordUtils, knownRecordFactories, appFromJS, NormalizedRecordEntities} from "../runtimeSagasAndRecords";
-import {getApiEntitiesState} from "../ApiEntitiesSelectors"
-import {List, Record, RecordOf, Map} from 'immutable';
-import {Schema, schema, NormalizedSchema} from "normalizr";
-import {select, call} from "redux-saga/effects";
+import { ApiRecordUtils, knownRecordFactories, appFromJS, NormalizedRecordEntities } from "../runtimeSagasAndRecords";
+import { getApiEntitiesState } from "../ApiEntitiesSelectors"
+import { List, Record, RecordOf, Map } from 'immutable';
+import { Schema, schema, NormalizedSchema } from "normalizr";
+import { select, call } from "redux-saga/effects";
 
 import {
     FindPetsByUserResponse,
@@ -54,15 +54,15 @@ knownRecordFactories.set(FindPetsByUserResponseRecordProps.recType, FindPetsByUs
 class FindPetsByUserResponseRecordUtils extends ApiRecordUtils<FindPetsByUserResponse, FindPetsByUserResponseRecord> {
     public normalize(apiObject: FindPetsByUserResponse, asEntity?: boolean): FindPetsByUserResponse {
         (apiObject as any).recType = FindPetsByUserResponseRecordProps.recType;
-        responseMetaRecordUtils.normalize(apiObject.meta);
-        if (apiObject.data) { userRecordUtils.normalizeArray(apiObject.data); } 
+        responseMetaRecordUtils.normalize(apiObject['meta']);
+        if (apiObject['data']) { userRecordUtils.normalizeArray(apiObject['data']); } 
         return apiObject;
     }
 
     public toApi(record: FindPetsByUserResponseRecord): FindPetsByUserResponse {
         const apiObject = super.toApi(record);
-        apiObject.meta = responseMetaRecordUtils.toApi(record.meta);
-        if (record.data) { apiObject.data = userRecordUtils.toApiArray(record.data); } 
+        apiObject['meta'] = responseMetaRecordUtils.toApi(record['meta']);
+        if (record['data']) { apiObject['data'] = userRecordUtils.toApiArray(record['data']); } 
         return apiObject;
     }
 

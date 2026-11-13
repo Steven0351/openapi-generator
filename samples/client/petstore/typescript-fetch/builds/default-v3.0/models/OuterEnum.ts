@@ -12,15 +12,28 @@
  * Do not edit the class manually.
  */
 
+
 /**
  * 
  * @export
- * @enum {string}
  */
-export enum OuterEnum {
-    Placed = 'placed',
-    Approved = 'approved',
-    Delivered = 'delivered'
+export const OuterEnum = {
+    Placed: 'placed',
+    Approved: 'approved',
+    Delivered: 'delivered',
+} as const;
+export type OuterEnum = typeof OuterEnum[keyof typeof OuterEnum];
+
+
+export function instanceOfOuterEnum(value: any): boolean {
+    for (const key in OuterEnum) {
+        if (Object.prototype.hasOwnProperty.call(OuterEnum, key)) {
+            if (OuterEnum[key as keyof typeof OuterEnum] === value) {
+                return true;
+            }
+        }
+    }
+    return false;
 }
 
 export function OuterEnumFromJSON(json: any): OuterEnum {
@@ -33,5 +46,9 @@ export function OuterEnumFromJSONTyped(json: any, ignoreDiscriminator: boolean):
 
 export function OuterEnumToJSON(value?: OuterEnum | null): any {
     return value as any;
+}
+
+export function OuterEnumToJSONTyped(value: any, ignoreDiscriminator: boolean): OuterEnum {
+    return value as OuterEnum;
 }
 

@@ -12,7 +12,7 @@
  * Do not edit the class manually.
  */
 
-import { exists, mapValues } from '../runtime';
+import { mapValues } from '../runtime';
 /**
  * Model for testing reserved words
  * @export
@@ -21,10 +21,15 @@ import { exists, mapValues } from '../runtime';
 export interface Return {
     /**
      * 
-     * @type {number}
-     * @memberof Return
      */
     _return?: number;
+}
+
+/**
+ * Check if a given object implements the Return interface.
+ */
+export function instanceOfReturn(value: object): value is Return {
+    return true;
 }
 
 export function ReturnFromJSON(json: any): Return {
@@ -32,25 +37,27 @@ export function ReturnFromJSON(json: any): Return {
 }
 
 export function ReturnFromJSONTyped(json: any, ignoreDiscriminator: boolean): Return {
-    if ((json === undefined) || (json === null)) {
+    if (json == null) {
         return json;
     }
     return {
         
-        '_return': !exists(json, 'return') ? undefined : json['return'],
+        '_return': json['return'] == null ? undefined : json['return'],
     };
 }
 
-export function ReturnToJSON(value?: Return | null): any {
-    if (value === undefined) {
-        return undefined;
+export function ReturnToJSON(json: any): Return {
+    return ReturnToJSONTyped(json, false);
+}
+
+export function ReturnToJSONTyped(value?: Return | null, ignoreDiscriminator: boolean = false): any {
+    if (value == null) {
+        return value;
     }
-    if (value === null) {
-        return null;
-    }
+
     return {
         
-        'return': value._return,
+        'return': value['_return'],
     };
 }
 

@@ -2,7 +2,7 @@
 /**
  * OpenAPIServerApiPass
  *
- * PHP version 7.1.3
+ * PHP version 8.1.1
  *
  * @category Class
  * @package  OpenAPI\Server\DependencyInjection\Compiler
@@ -49,7 +49,7 @@ class OpenAPIServerApiPass implements CompilerPassInterface
      *
      * @param ContainerBuilder $container
      */
-    public function process(ContainerBuilder $container) {
+    public function process(ContainerBuilder $container) : void {
         // always first check if the primary service is defined
         if (!$container->has('open_api_server.api.api_server')) {
             return;

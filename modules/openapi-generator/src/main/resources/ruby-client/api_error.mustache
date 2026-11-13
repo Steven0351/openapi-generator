@@ -1,5 +1,6 @@
 =begin
 {{> api_info}}
+
 =end
 
 module {{moduleName}}
@@ -24,6 +25,7 @@ module {{moduleName}}
         end
       else
         super arg
+        @message = arg
       end
     end
 

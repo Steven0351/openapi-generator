@@ -30,7 +30,7 @@ import (
 	"testing"
 	"time"
 
-	sw "./go-petstore"
+	sw "go-petstore"
 )
 
 // Test RSA private key as published in Appendix C 'Test Values' of
@@ -157,7 +157,7 @@ func writeRandomTestEcdsaPemKey(t *testing.T, filePath string) {
 
 // TestHttpSignaturePrivateKeys creates private keys of various sizes, serialization format,
 // clear-text and password encrypted.
-// Test unmarshaling of the private key.
+// Test unmarshalling of the private key.
 func TestHttpSignaturePrivateKeys(t *testing.T) {
 	var err error
 	var dir string
@@ -257,8 +257,10 @@ func executeHttpSignatureAuth(t *testing.T, authConfig *sw.HttpSignatureAuth, ex
 	cfg := sw.NewConfiguration()
 	cfg.AddDefaultHeader("testheader", "testvalue")
 	cfg.AddDefaultHeader("Content-Type", "application/json")
-	cfg.Host = testHost
-	cfg.Scheme = testScheme
+	// cfg.Host = testHost
+	cfg.Host = "petstore.swagger.io"
+	//cfg.Scheme = testScheme
+	cfg.Scheme = "http"
 	apiClient := sw.NewAPIClient(cfg)
 
 	privateKeyPath := filepath.Join(dir, "rsa.pem")
@@ -276,12 +278,12 @@ func executeHttpSignatureAuth(t *testing.T, authConfig *sw.HttpSignatureAuth, ex
 	newPet := (sw.Pet{Id: sw.PtrInt64(12992), Name: "gopher",
 		PhotoUrls: []string{"http://1.com", "http://2.com"},
 		Status:    sw.PtrString("pending"),
-		Tags:      &[]sw.Tag{sw.Tag{Id: sw.PtrInt64(1), Name: sw.PtrString("tag2")}}})
+		Tags:      []sw.Tag{{Id: sw.PtrInt64(1), Name: sw.PtrString("tag2")}}})
 
 	fmt.Printf("Request with HTTP signature. Scheme: '%s'. Algorithm: '%s'. MaxValidity: %v. Headers: '%v'\n",
 		authConfig.SigningScheme, authConfig.SigningAlgorithm, authConfig.SignatureMaxValidity, authConfig.SignedHeaders)
 
-	r, err2 := apiClient.PetApi.AddPet(authCtx).Pet(newPet).Execute()
+	r, err2 := apiClient.PetAPI.AddPet(authCtx).Pet(newPet).Execute()
 	if expectSuccess && err2 != nil {
 		t.Fatalf("Error while adding pet: %v", err2)
 	}
@@ -297,7 +299,7 @@ func executeHttpSignatureAuth(t *testing.T, authConfig *sw.HttpSignatureAuth, ex
 		t.Log(r)
 	}
 
-	_, r, err = apiClient.PetApi.GetPetById(authCtx, 12992).Execute()
+	_, r, err = apiClient.PetAPI.GetPetById(authCtx, 12992).Execute()
 	if expectSuccess && err != nil {
 		t.Fatalf("Error while deleting pet by id: %v", err)
 	}
@@ -611,7 +613,8 @@ func TestHttpSignatureAuth(t *testing.T) {
 		},
 	}
 	authorizationHeaderValue := executeHttpSignatureAuth(t, &authConfig, true)
-	expectedSignature := "sXE2MDeW8os6ywv1oUWaFEPFcSPCEb/msQ/NZGKNA9Emm/e42axaAPojzfkZ9Hacyw/iS/5nH4YIkczMgXu3z5fAwFjumxtf3OxbqvUcQ80wvw2/7B5aQmsF6ZwrCFHZ+L/cj9/bg7L1EGUGtdyDzoRKti4zf9QF/03OsP7QljI="
+	//expectedSignature := "sXE2MDeW8os6ywv1oUWaFEPFcSPCEb/msQ/NZGKNA9Emm/e42axaAPojzfkZ9Hacyw/iS/5nH4YIkczMgXu3z5fAwFjumxtf3OxbqvUcQ80wvw2/7B5aQmsF6ZwrCFHZ+L/cj9/bg7L1EGUGtdyDzoRKti4zf9QF/03OsP7QljI="
+	expectedSignature := "OTzXHWXkl+9shhgPQ1Gs5rgw8Y2/2ibenontjWpvtX5vw+2Kj5t1q8B8IFYF/+sIAFIP9/meU8REII5yqtNb/RlG+hNIg10AngRBJr+Xa7GPBmvrTJvha+S8Zr7TlbneWcKSyZn0LkO3ohRPBd/CHKZd0APIlivzy+GU5I2HlWY="
 	expectedAuthorizationHeader := fmt.Sprintf(
 		`Signature keyId="my-key-id",`+
 			`algorithm="hs2019",headers="(request-target) host content-type digest",`+
@@ -650,7 +653,7 @@ func TestInvalidHttpSignatureConfiguration(t *testing.T) {
 
 	authConfig = sw.HttpSignatureAuth{}
 	_, err = authConfig.ContextWithValue(context.Background())
-	if err == nil || !strings.Contains(err.Error(), "Key ID must be specified") {
+	if err == nil || !strings.Contains(err.Error(), "key ID must be specified") {
 		t.Fatalf("Invalid configuration: %v", err)
 	}
 
@@ -658,7 +661,7 @@ func TestInvalidHttpSignatureConfiguration(t *testing.T) {
 		KeyId: "my-key-id",
 	}
 	_, err = authConfig.ContextWithValue(context.Background())
-	if err == nil || !strings.Contains(err.Error(), "Private key path must be specified") {
+	if err == nil || !strings.Contains(err.Error(), "private key path must be specified") {
 		t.Fatalf("Invalid configuration: %v", err)
 	}
 
@@ -667,7 +670,7 @@ func TestInvalidHttpSignatureConfiguration(t *testing.T) {
 		PrivateKeyPath: "test.pem",
 	}
 	_, err = authConfig.ContextWithValue(context.Background())
-	if err == nil || !strings.Contains(err.Error(), "Invalid signing scheme") {
+	if err == nil || !strings.Contains(err.Error(), "invalid signing scheme") {
 		t.Fatalf("Invalid configuration: %v", err)
 	}
 
@@ -677,7 +680,7 @@ func TestInvalidHttpSignatureConfiguration(t *testing.T) {
 		SigningScheme:  "garbage",
 	}
 	_, err = authConfig.ContextWithValue(context.Background())
-	if err == nil || !strings.Contains(err.Error(), "Invalid signing scheme") {
+	if err == nil || !strings.Contains(err.Error(), "invalid signing scheme") {
 		t.Fatalf("Invalid configuration: %v", err)
 	}
 
@@ -699,7 +702,7 @@ func TestInvalidHttpSignatureConfiguration(t *testing.T) {
 		SignedHeaders:  []string{"foo", "bar", "Authorization"},
 	}
 	_, err = authConfig.ContextWithValue(context.Background())
-	if err == nil || !strings.Contains(err.Error(), "Signed headers cannot include the 'Authorization' header") {
+	if err == nil || !strings.Contains(err.Error(), "signed headers cannot include the 'Authorization' header") {
 		t.Fatalf("Invalid configuration: %v", err)
 	}
 
@@ -711,7 +714,7 @@ func TestInvalidHttpSignatureConfiguration(t *testing.T) {
 		SignatureMaxValidity: -7 * time.Minute,
 	}
 	_, err = authConfig.ContextWithValue(context.Background())
-	if err == nil || !strings.Contains(err.Error(), "Signature max validity must be a positive value") {
+	if err == nil || !strings.Contains(err.Error(), "signature max validity must be a positive value") {
 		t.Fatalf("Invalid configuration: %v", err)
 	}
 }

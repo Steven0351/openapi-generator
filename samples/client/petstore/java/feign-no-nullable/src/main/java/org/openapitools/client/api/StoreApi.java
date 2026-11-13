@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.Map;
 import feign.*;
 
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.28.0-SNAPSHOT")
 public interface StoreApi extends ApiClient.Api {
 
 
@@ -25,7 +25,7 @@ public interface StoreApi extends ApiClient.Api {
   @Headers({
     "Accept: application/json",
   })
-  void deleteOrder(@Param("orderId") String orderId);
+  void deleteOrder(@Param("orderId") @javax.annotation.Nonnull String orderId);
 
   /**
    * Delete purchase order by ID
@@ -37,7 +37,7 @@ public interface StoreApi extends ApiClient.Api {
   @Headers({
     "Accept: application/json",
   })
-  ApiResponse<Void> deleteOrderWithHttpInfo(@Param("orderId") String orderId);
+  ApiResponse<Void> deleteOrderWithHttpInfo(@Param("orderId") @javax.annotation.Nonnull String orderId);
 
 
 
@@ -68,28 +68,28 @@ public interface StoreApi extends ApiClient.Api {
 
   /**
    * Find purchase order by ID
-   * For valid response try integer IDs with value &lt;&#x3D; 5 or &gt; 10. Other values will generated exceptions
+   * For valid response try integer IDs with value &lt;&#x3D; 5 or &gt; 10. Other values will generate exceptions
    * @param orderId ID of pet that needs to be fetched (required)
    * @return Order
    */
   @RequestLine("GET /store/order/{orderId}")
   @Headers({
-    "Accept: application/json",
+    "Accept: application/json,application/xml",
   })
-  Order getOrderById(@Param("orderId") Long orderId);
+  Order getOrderById(@Param("orderId") @javax.annotation.Nonnull Long orderId);
 
   /**
    * Find purchase order by ID
    * Similar to <code>getOrderById</code> but it also returns the http response headers .
-   * For valid response try integer IDs with value &lt;&#x3D; 5 or &gt; 10. Other values will generated exceptions
+   * For valid response try integer IDs with value &lt;&#x3D; 5 or &gt; 10. Other values will generate exceptions
    * @param orderId ID of pet that needs to be fetched (required)
    * @return A ApiResponse that wraps the response boyd and the http headers.
    */
   @RequestLine("GET /store/order/{orderId}")
   @Headers({
-    "Accept: application/json",
+    "Accept: application/json,application/xml",
   })
-  ApiResponse<Order> getOrderByIdWithHttpInfo(@Param("orderId") Long orderId);
+  ApiResponse<Order> getOrderByIdWithHttpInfo(@Param("orderId") @javax.annotation.Nonnull Long orderId);
 
 
 
@@ -102,9 +102,9 @@ public interface StoreApi extends ApiClient.Api {
   @RequestLine("POST /store/order")
   @Headers({
     "Content-Type: */*",
-    "Accept: application/json",
+    "Accept: application/json,application/xml",
   })
-  Order placeOrder(Order body);
+  Order placeOrder(@javax.annotation.Nonnull Order body);
 
   /**
    * Place an order for a pet
@@ -116,9 +116,9 @@ public interface StoreApi extends ApiClient.Api {
   @RequestLine("POST /store/order")
   @Headers({
     "Content-Type: */*",
-    "Accept: application/json",
+    "Accept: application/json,application/xml",
   })
-  ApiResponse<Order> placeOrderWithHttpInfo(Order body);
+  ApiResponse<Order> placeOrderWithHttpInfo(@javax.annotation.Nonnull Order body);
 
 
 }

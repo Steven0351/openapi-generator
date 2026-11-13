@@ -4,7 +4,7 @@
 {{{defaultInclude}}}
 #include "Response.h"
 #include "Arduino.h"
-#include "AbstractService.h"
+#include "Service.h"
 #include "Helpers.h"
 #include <list>
 
@@ -20,13 +20,13 @@ namespace Tiny {
  * Generated with openapi::tiny-cpp-client
  */
 
-class {{classname}} : public AbstractService {
+class {{classname}} : public Service {
 public:
     {{! Constructor }}
     {{classname}}() = default;
 
     {{! Destructor }}
-    virtual ~{{classname}}() = default;
+    virtual ~{{classname}}();
 
     {{! Service endpoint }}
     {{#operation}}

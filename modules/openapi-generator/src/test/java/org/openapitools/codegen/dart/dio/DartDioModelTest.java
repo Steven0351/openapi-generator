@@ -1,6 +1,5 @@
 /*
- * Copyright 2018 OpenAPI-Generator Contributors (https://openapi-generator.tech)
- * Copyright 2018 SmartBear Software
+ * Copyright 2021 OpenAPI-Generator Contributors (https://openapi-generator.tech)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,17 +17,8 @@
 package org.openapitools.codegen.dart.dio;
 
 import io.swagger.v3.oas.models.OpenAPI;
-import io.swagger.v3.oas.models.media.ArraySchema;
-import io.swagger.v3.oas.models.media.DateSchema;
-import io.swagger.v3.oas.models.media.DateTimeSchema;
-import io.swagger.v3.oas.models.media.IntegerSchema;
-import io.swagger.v3.oas.models.media.MapSchema;
-import io.swagger.v3.oas.models.media.Schema;
-import io.swagger.v3.oas.models.media.StringSchema;
-import org.openapitools.codegen.CodegenModel;
-import org.openapitools.codegen.CodegenProperty;
-import org.openapitools.codegen.DefaultCodegen;
-import org.openapitools.codegen.TestUtils;
+import io.swagger.v3.oas.models.media.*;
+import org.openapitools.codegen.*;
 import org.openapitools.codegen.languages.DartDioClientCodegen;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
@@ -37,7 +27,7 @@ import org.testng.annotations.Test;
 @SuppressWarnings("static-method")
 public class DartDioModelTest {
 
-    @Test(description = "convert a simple php model")
+    @Test(description = "convert a simple model")
     public void simpleModelTest() {
         final Schema model = new Schema()
                 .description("a sample model")
@@ -92,21 +82,19 @@ public class DartDioModelTest {
     @Test(description = "convert a simple dart-dit model with datelibrary")
     public void simpleModelWithTimeMachineTest() {
         final Schema model = new Schema()
-            .description("a sample model")
-            .addProperties("id", new IntegerSchema())
-            .addProperties("name", new StringSchema())
-            .addProperties("createdAt", new DateTimeSchema())
-            .addProperties("birthDate", new DateSchema())
-            .addRequiredItem("id")
-            .addRequiredItem("name");
+                .description("a sample model")
+                .addProperties("id", new IntegerSchema())
+                .addProperties("name", new StringSchema())
+                .addProperties("createdAt", new DateTimeSchema())
+                .addProperties("birthDate", new DateSchema())
+                .addRequiredItem("id")
+                .addRequiredItem("name");
 
         final DartDioClientCodegen codegen = new DartDioClientCodegen();
-        codegen.additionalProperties().put(DartDioClientCodegen.DATE_LIBRARY, "timemachine");
-        codegen.setDateLibrary("timemachine");
+        codegen.additionalProperties().put(DartDioClientCodegen.DATE_LIBRARY, DartDioClientCodegen.DATE_LIBRARY_TIME_MACHINE);
         codegen.processOpts();
 
-        OpenAPI openAPI = TestUtils.createOpenAPIWithOneSchema("sample", model);
-        codegen.setOpenAPI(openAPI);
+        codegen.setOpenAPI(TestUtils.createOpenAPIWithOneSchema("sample", model));
 
         final CodegenModel cm = codegen.fromModel("sample", model);
 
@@ -166,9 +154,13 @@ public class DartDioModelTest {
                 .addProperties("urls", new ArraySchema()
                         .items(new StringSchema()))
                 .addRequiredItem("id");
+
         final DefaultCodegen codegen = new DartDioClientCodegen();
-        OpenAPI openAPI = TestUtils.createOpenAPIWithOneSchema("sample", model);
-        codegen.setOpenAPI(openAPI);
+        codegen.additionalProperties().put(CodegenConstants.SERIALIZATION_LIBRARY, DartDioClientCodegen.SERIALIZATION_LIBRARY_BUILT_VALUE);
+        codegen.processOpts();
+
+        codegen.setOpenAPI(TestUtils.createOpenAPIWithOneSchema("sample", model));
+
         final CodegenModel cm = codegen.fromModel("sample", model);
 
         Assert.assertEquals(cm.name, "sample");
@@ -204,9 +196,13 @@ public class DartDioModelTest {
                 .addProperties("id", new IntegerSchema())
                 .addProperties("urls", new ArraySchema().items(new StringSchema()).uniqueItems(true))
                 .addRequiredItem("id");
+
         final DefaultCodegen codegen = new DartDioClientCodegen();
-        OpenAPI openAPI = TestUtils.createOpenAPIWithOneSchema("sample", model);
-        codegen.setOpenAPI(openAPI);
+        codegen.additionalProperties().put(CodegenConstants.SERIALIZATION_LIBRARY, DartDioClientCodegen.SERIALIZATION_LIBRARY_BUILT_VALUE);
+        codegen.processOpts();
+
+        codegen.setOpenAPI(TestUtils.createOpenAPIWithOneSchema("sample", model));
+
         final CodegenModel cm = codegen.fromModel("sample", model);
 
         Assert.assertEquals(cm.name, "sample");
@@ -242,9 +238,13 @@ public class DartDioModelTest {
                 .addProperties("translations", new MapSchema()
                         .additionalProperties(new StringSchema()))
                 .addRequiredItem("id");
+
         final DefaultCodegen codegen = new DartDioClientCodegen();
-        OpenAPI openAPI = TestUtils.createOpenAPIWithOneSchema("sample", model);
-        codegen.setOpenAPI(openAPI);
+        codegen.additionalProperties().put(CodegenConstants.SERIALIZATION_LIBRARY, DartDioClientCodegen.SERIALIZATION_LIBRARY_BUILT_VALUE);
+        codegen.processOpts();
+
+        codegen.setOpenAPI(TestUtils.createOpenAPIWithOneSchema("sample", model));
+
         final CodegenModel cm = codegen.fromModel("sample", model);
 
         Assert.assertEquals(cm.name, "sample");
@@ -268,9 +268,13 @@ public class DartDioModelTest {
         final Schema model = new Schema()
                 .description("a sample model")
                 .addProperties("children", new Schema().$ref("#/definitions/Children"));
+
         final DefaultCodegen codegen = new DartDioClientCodegen();
-        OpenAPI openAPI = TestUtils.createOpenAPIWithOneSchema("sample", model);
-        codegen.setOpenAPI(openAPI);
+        codegen.additionalProperties().put(CodegenConstants.SERIALIZATION_LIBRARY, DartDioClientCodegen.SERIALIZATION_LIBRARY_BUILT_VALUE);
+        codegen.processOpts();
+
+        codegen.setOpenAPI(TestUtils.createOpenAPIWithOneSchema("sample", model));
+
         final CodegenModel cm = codegen.fromModel("sample", model);
 
         Assert.assertEquals(cm.name, "sample");
@@ -293,9 +297,13 @@ public class DartDioModelTest {
                 .description("a sample model")
                 .addProperties("children", new ArraySchema()
                         .items(new Schema().$ref("#/definitions/Children")));
+
         final DefaultCodegen codegen = new DartDioClientCodegen();
-        OpenAPI openAPI = TestUtils.createOpenAPIWithOneSchema("sample", model);
-        codegen.setOpenAPI(openAPI);
+        codegen.additionalProperties().put(CodegenConstants.SERIALIZATION_LIBRARY, DartDioClientCodegen.SERIALIZATION_LIBRARY_BUILT_VALUE);
+        codegen.processOpts();
+
+        codegen.setOpenAPI(TestUtils.createOpenAPIWithOneSchema("sample", model));
+
         final CodegenModel cm = codegen.fromModel("sample", model);
 
         Assert.assertEquals(cm.name, "sample");
@@ -319,17 +327,19 @@ public class DartDioModelTest {
                 .description("a sample model")
                 .addProperties("children", new MapSchema()
                         .additionalProperties(new Schema().$ref("#/definitions/Children")));
+
         final DefaultCodegen codegen = new DartDioClientCodegen();
-        OpenAPI openAPI = TestUtils.createOpenAPIWithOneSchema("sample", model);
-        codegen.setOpenAPI(openAPI);
+        codegen.additionalProperties().put(CodegenConstants.SERIALIZATION_LIBRARY, DartDioClientCodegen.SERIALIZATION_LIBRARY_BUILT_VALUE);
+        codegen.processOpts();
+
+        codegen.setOpenAPI(TestUtils.createOpenAPIWithOneSchema("sample", model));
+
         final CodegenModel cm = codegen.fromModel("sample", model);
 
         Assert.assertEquals(cm.name, "sample");
         Assert.assertEquals(cm.classname, "Sample");
         Assert.assertEquals(cm.description, "a sample model");
         Assert.assertEquals(cm.vars.size(), 1);
-        // {{imports}} is not used in template
-        //Assert.assertEquals(Sets.intersection(cm.imports, Sets.newHashSet("Children")).size(), 1);
 
         final CodegenProperty property1 = cm.vars.get(0);
         Assert.assertEquals(property1.baseName, "children");
@@ -379,9 +389,9 @@ public class DartDioModelTest {
 
     @DataProvider(name = "modelNames")
     public static Object[][] modelNames() {
-        return new Object[][] {
-            {"EnumClass", "TestModelEnumClass"},
-            {"JsonObject", "TestModelJsonObject"}
+        return new Object[][]{
+                {"EnumClass", "TestModelEnumClass"},
+                {"JsonObject", "TestModelJsonObject"},
         };
     }
 
@@ -389,10 +399,14 @@ public class DartDioModelTest {
     public void modelNameTest(String name, String expectedName) {
         OpenAPI openAPI = TestUtils.createOpenAPI();
         final Schema model = new Schema();
-        final DartDioClientCodegen codegen = new DartDioClientCodegen();
-        codegen.setOpenAPI(openAPI);
+
+        final DefaultCodegen codegen = new DartDioClientCodegen();
+        codegen.additionalProperties().put(CodegenConstants.SERIALIZATION_LIBRARY, DartDioClientCodegen.SERIALIZATION_LIBRARY_BUILT_VALUE);
+        codegen.processOpts();
         codegen.typeMapping().put("EnumClass", "TestModelEnumClass");
         codegen.typeMapping().put("JsonObject", "TestModelJsonObject");
+        codegen.setOpenAPI(openAPI);
+
         final CodegenModel cm = codegen.fromModel(name, model);
 
         Assert.assertEquals(cm.name, name);
@@ -401,10 +415,10 @@ public class DartDioModelTest {
 
     @DataProvider(name = "modelNamesTimemachine")
     public static Object[][] modelNamesTimemachine() {
-        return new Object[][] {
-            {"EnumClass", "TestModelEnumClass"},
-            {"JsonObject", "TestModelJsonObject"},
-            {"OffsetDate", "TestModelOffsetDate"},
+        return new Object[][]{
+                {"EnumClass", "TestModelEnumClass"},
+                {"JsonObject", "TestModelJsonObject"},
+                {"OffsetDate", "TestModelOffsetDate"},
         };
     }
 
@@ -413,12 +427,13 @@ public class DartDioModelTest {
         OpenAPI openAPI = TestUtils.createOpenAPI();
         final Schema model = new Schema();
         final DartDioClientCodegen codegen = new DartDioClientCodegen();
-        codegen.setDateLibrary("timemachine");
+        codegen.additionalProperties().put(DartDioClientCodegen.DATE_LIBRARY, DartDioClientCodegen.DATE_LIBRARY_TIME_MACHINE);
         codegen.processOpts();
         codegen.typeMapping().put("EnumClass", "TestModelEnumClass");
         codegen.typeMapping().put("JsonObject", "TestModelJsonObject");
         codegen.typeMapping().put("OffsetDate", "TestModelOffsetDate");
         codegen.setOpenAPI(openAPI);
+
         final CodegenModel cm = codegen.fromModel(name, model);
 
         Assert.assertEquals(cm.name, name);
@@ -435,8 +450,9 @@ public class DartDioModelTest {
                 .addProperties("arrayEmptyDefault", array)
                 .addProperties("mapNoDefault", new MapSchema());
         final DefaultCodegen codegen = new DartDioClientCodegen();
-        OpenAPI openAPI = TestUtils.createOpenAPIWithOneSchema("sample", model);
-        codegen.setOpenAPI(openAPI);
+        codegen.additionalProperties().put(CodegenConstants.SERIALIZATION_LIBRARY, DartDioClientCodegen.SERIALIZATION_LIBRARY_BUILT_VALUE);
+        codegen.setOpenAPI(TestUtils.createOpenAPIWithOneSchema("sample", model));
+        codegen.processOpts();
         final CodegenModel cm = codegen.fromModel("sample", model);
 
         final CodegenProperty arrayNoDefault = cm.vars.get(0);
@@ -475,5 +491,33 @@ public class DartDioModelTest {
         final CodegenProperty dateTimeDefault = cm.vars.get(1);
         Assert.assertEquals(dateTimeDefault.name, "dateTime");
         Assert.assertNull(dateTimeDefault.defaultValue);
+    }
+
+    @Test(description = "array items can be nullable")
+    public void arrayItemsCanBeNullable() {
+        final OpenAPI openAPI = TestUtils.parseFlattenSpec("src/test/resources/3_0/array-nullable-items.yaml");
+        final DartDioClientCodegen codegen = new DartDioClientCodegen();
+        codegen.additionalProperties().put(CodegenConstants.SERIALIZATION_LIBRARY, DartDioClientCodegen.SERIALIZATION_LIBRARY_BUILT_VALUE);
+        codegen.processOpts();
+        codegen.setOpenAPI(openAPI);
+        final ArraySchema schema = (ArraySchema) openAPI.getComponents().getSchemas().get("ArrayWithNullableItemsModel")
+                .getProperties()
+                .get("foo");
+
+        Assert.assertEquals(codegen.getTypeDeclaration(schema), "BuiltList<String?>");
+    }
+
+    @Test(description = "nested array items can be nullable")
+    public void nestedArrayItemsCanBeNullable() {
+        final OpenAPI openAPI = TestUtils.parseFlattenSpec("src/test/resources/3_0/nested-array-nullable-items.yaml");
+        final DartDioClientCodegen codegen = new DartDioClientCodegen();
+        codegen.additionalProperties().put(CodegenConstants.SERIALIZATION_LIBRARY, DartDioClientCodegen.SERIALIZATION_LIBRARY_BUILT_VALUE);
+        codegen.processOpts();
+        codegen.setOpenAPI(openAPI);
+        final ArraySchema schema = (ArraySchema) openAPI.getComponents().getSchemas().get("NestedArrayWithNullableItemsModel")
+                .getProperties()
+                .get("foo");
+
+        Assert.assertEquals(codegen.getTypeDeclaration(schema), "BuiltList<BuiltList<String?>>");
     }
 }

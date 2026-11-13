@@ -16,27 +16,33 @@
 
 package org.openapitools.codegen.languages;
 
+import io.swagger.v3.oas.models.media.IntegerSchema;
+import io.swagger.v3.parser.util.SchemaTypeUtil;
+import lombok.Getter;
+import lombok.Setter;
+import org.apache.commons.lang3.StringUtils;
 import org.openapitools.codegen.*;
-import org.openapitools.codegen.meta.features.*;
 import org.openapitools.codegen.meta.GeneratorMetadata;
 import org.openapitools.codegen.meta.Stability;
+import org.openapitools.codegen.meta.features.*;
+import org.openapitools.codegen.model.ModelMap;
+import org.openapitools.codegen.model.ModelsMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.commons.lang3.StringUtils;
-
+import java.io.File;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.io.File;
 
-import io.swagger.v3.oas.models.media.IntegerSchema;
-import io.swagger.v3.parser.util.SchemaTypeUtil;
-
-import static org.openapitools.codegen.utils.StringUtils.*;
+import static org.openapitools.codegen.utils.StringUtils.camelize;
+import static org.openapitools.codegen.utils.StringUtils.underscore;
 
 // This code was almost entirely based on MySqlSchemaCodegen.
 
+/**
+ * <p>Mustache templates are located in {@code src/main/resources/ktorm-schema/}.
+ */
 @SuppressWarnings("unchecked")
 public class KtormSchemaCodegen extends AbstractKotlinCodegen {
     private final Logger LOGGER = LoggerFactory.getLogger(KtormSchemaCodegen.class);
@@ -49,14 +55,26 @@ public class KtormSchemaCodegen extends AbstractKotlinCodegen {
     public static final String ADD_SURROGATE_KEY = "addSurrogateKey";
     public static final Integer IDENTIFIER_MAX_LENGTH = 255;
 
+    /**
+     * Imported package name for the models
+     */
+    @Getter @Setter
     protected String importModelPackageName = "";
-    protected String defaultDatabaseName = "sqlite.db";
+    /**
+     * Default database name for all queries
+     * This value must be used with backticks only, eg. `database_name`
+     */
+    @Getter protected String defaultDatabaseName = "sqlite.db";
     protected String databaseNamePrefix = "_", databaseNameSuffix = "";
     protected String tableNamePrefix = "_", tableNameSuffix = "";
     protected String columnNamePrefix = "_", columnNameSuffix = "";
-    protected String identifierNamingConvention = "original";
+    /**
+     * Identifier naming convention for table names and column names.
+     */
+    @Getter protected String identifierNamingConvention = "original";
+    @Getter @Setter
     protected String primaryKeyConvention = "id";
-    protected boolean addSurrogateKey = false;
+    @Setter protected boolean addSurrogateKey = false;
 
     protected Map<String, String> sqlTypeMapping = new HashMap<String, String>();
 
@@ -161,8 +179,8 @@ public class KtormSchemaCodegen extends AbstractKotlinCodegen {
         typeMapping.put("short", "kotlin.Short");
         typeMapping.put("char", "kotlin.String");
         typeMapping.put("real", "kotlin.Double");
-        typeMapping.put("UUID", "java.util.UUID"); //be explict
-        typeMapping.put("URI", "java.net.URI"); //be explict
+        typeMapping.put("UUID", "java.util.UUID"); //be explicit
+        typeMapping.put("URI", "java.net.URI"); //be explicit
         typeMapping.put("decimal", "java.math.BigDecimal");
         typeMapping.put("BigDecimal", "java.math.BigDecimal");
         typeMapping.put("AnyType", "kotlin.Any");
@@ -181,8 +199,11 @@ public class KtormSchemaCodegen extends AbstractKotlinCodegen {
         sqlTypeMapping.put("kotlin.ByteArray", SqlType.Blob);
         sqlTypeMapping.put("kotlin.Array", SqlType.Blob);
         sqlTypeMapping.put("kotlin.collections.List", SqlType.Blob);
+        sqlTypeMapping.put("kotlin.collections.MutableList", SqlType.Blob);
         sqlTypeMapping.put("kotlin.collections.Set", SqlType.Blob);
+        sqlTypeMapping.put("kotlin.collections.MutableSet", SqlType.Blob);
         sqlTypeMapping.put("kotlin.collections.Map", SqlType.Blob);
+        sqlTypeMapping.put("kotlin.collections.MutableMap", SqlType.Blob);
         sqlTypeMapping.put("kotlin.Any", SqlType.Blob);
         sqlTypeMapping.put("java.io.File", SqlType.Blob);
         sqlTypeMapping.put("java.math.BigDecimal", SqlType.Decimal);
@@ -206,7 +227,6 @@ public class KtormSchemaCodegen extends AbstractKotlinCodegen {
         // cliOptions default redefinition need to be updated
         updateOption(CodegenConstants.ARTIFACT_ID, artifactId);
         updateOption(CodegenConstants.PACKAGE_NAME, packageName);
-        removeOption(CodegenConstants.API_SUFFIX);
         removeOption(CodegenConstants.PARCELIZE_MODELS);
         removeOption(CodegenConstants.SERIALIZABLE_MODEL);
         removeOption(CodegenConstants.SERIALIZATION_LIBRARY);
@@ -227,14 +247,17 @@ public class KtormSchemaCodegen extends AbstractKotlinCodegen {
 
     }
 
+    @Override
     public CodegenType getTag() {
         return CodegenType.SCHEMA;
     }
 
+    @Override
     public String getName() {
         return "ktorm-schema";
     }
 
+    @Override
     public String getHelp() {
         return "Generates a kotlin-ktorm schema (beta)";
     }
@@ -279,19 +302,17 @@ public class KtormSchemaCodegen extends AbstractKotlinCodegen {
     }
 
     @Override
-    public Map<String, Object> postProcessModels(Map<String, Object> objs) {
+    public ModelsMap postProcessModels(ModelsMap objs) {
         objs = super.postProcessModels(objs);
 
-        List<Object> models = (List<Object>) objs.get("models");
-        for (Object _mo : models) {
-            Map<String, Object> mo = (Map<String, Object>) _mo;
-            CodegenModel model = (CodegenModel) mo.get("model");
+        for (ModelMap mo : objs.getModels()) {
+            CodegenModel model = mo.getModel();
             String modelName = model.getName();
             String tableName = toTableName(modelName);
             String modelDescription = model.getDescription();
             Map<String, Object> modelVendorExtensions = model.getVendorExtensions();
-            Map<String, Object> ktormSchema = new HashMap<String, Object>();
-            Map<String, Object> tableDefinition = new HashMap<String, Object>();
+            Map<String, Object> ktormSchema = new HashMap<>();
+            Map<String, Object> tableDefinition = new HashMap<>();
 
             if (getIdentifierNamingConvention().equals("snake_case") && !modelName.equals(tableName)) {
                 // add original name in table comment
@@ -320,7 +341,7 @@ public class KtormSchemaCodegen extends AbstractKotlinCodegen {
                 }
                 if (!hasPrimaryKey) {
                     final IntegerSchema schema = new IntegerSchema().format(SchemaTypeUtil.INTEGER64_FORMAT);
-                    CodegenProperty cp = super.fromProperty(primaryKeyConvention, schema);
+                    CodegenProperty cp = super.fromProperty(primaryKeyConvention, schema, false);
                     cp.setRequired(true);
                     model.vars.add(0, cp);
                     model.allVars.add(0, cp);
@@ -1055,7 +1076,7 @@ public class KtormSchemaCodegen extends AbstractKotlinCodegen {
 
         // identifier name cannot be empty
         if (escapedName.isEmpty()) {
-            throw new RuntimeException("Empty database/table/column name for property '" + name.toString() + "' not allowed");
+            throw new RuntimeException("Empty database/table/column name for property '" + name + "' not allowed");
         }
         return escapedName;
     }
@@ -1094,11 +1115,6 @@ public class KtormSchemaCodegen extends AbstractKotlinCodegen {
         return input.replace("'", "");
     }
 
-    @Override
-    public String escapeUnsafeCharacters(String input) {
-        return input.replace("*/", "*_/").replace("/*", "/_*");
-    }
-
     /**
      * Sets default database name for all queries
      * Provided value will be escaped when necessary
@@ -1113,34 +1129,6 @@ public class KtormSchemaCodegen extends AbstractKotlinCodegen {
                     databaseName, escapedName);
         }
         this.defaultDatabaseName = escapedName;
-    }
-
-    /**
-     * Returns default database name for all queries
-     * This value must be used with backticks only, eg. `database_name`
-     *
-     * @return default database name
-     */
-    public String getDefaultDatabaseName() {
-        return this.defaultDatabaseName;
-    }
-
-    /**
-     * Sets imported package name for the models
-     *
-     * @param name name
-     */
-    public void setImportModelPackageName(String name) {
-        this.importModelPackageName = name;
-    }
-
-    /**
-     * Returns imported package name for the models
-     *
-     * @return name
-     */
-    public String getImportModelPackageName() {
-        return this.importModelPackageName;
     }
 
     /**
@@ -1159,42 +1147,6 @@ public class KtormSchemaCodegen extends AbstractKotlinCodegen {
                 LOGGER.warn("\"{}\" is invalid \"identifierNamingConvention\" argument. Current \"{}\" used instead.",
                         naming, this.identifierNamingConvention);
         }
-    }
-
-    /**
-     * Returns identifier naming convention for table names and column names.
-     *
-     * @return identifier naming convention
-     */
-    public String getIdentifierNamingConvention() {
-        return this.identifierNamingConvention;
-    }
-
-    /**
-     * Sets primary key naming convention
-     *
-     * @param name name
-     */
-    public void setPrimaryKeyConvention(String name) {
-        this.primaryKeyConvention = name;
-    }
-
-    /**
-     * Returns primary key naming convention
-     *
-     * @return name
-     */
-    public String getPrimaryKeyConvention() {
-        return this.primaryKeyConvention;
-    }
-
-    /**
-     * Sets primary key naming convention
-     *
-     * @param enable enable this option
-     */
-    public void setAddSurrogateKey(boolean enable) {
-        this.addSurrogateKey = enable;
     }
 
     /**
@@ -1224,4 +1176,8 @@ public class KtormSchemaCodegen extends AbstractKotlinCodegen {
         return StringUtils.removeEnd(packagePath, File.separator);
     }
 
+    @Override
+    public GeneratorLanguage generatorLanguage() {
+        return GeneratorLanguage.KTORM;
+    }
 }

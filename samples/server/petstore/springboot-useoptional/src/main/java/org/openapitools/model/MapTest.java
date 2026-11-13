@@ -1,26 +1,33 @@
 package org.openapitools.model;
 
+import java.net.URI;
 import java.util.Objects;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
-import io.swagger.annotations.ApiModel;
-import io.swagger.annotations.ApiModelProperty;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
+import org.springframework.lang.Nullable;
 import org.openapitools.jackson.nullable.JsonNullable;
-import javax.validation.Valid;
-import javax.validation.constraints.*;
+import java.time.OffsetDateTime;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.*;
+import io.swagger.v3.oas.annotations.media.Schema;
+
+
+import java.util.*;
+import jakarta.annotation.Generated;
 
 /**
  * MapTest
  */
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.SpringCodegen")
-public class MapTest   {
-  @JsonProperty("map_map_of_string")
-  @Valid
-  private Map<String, Map<String, String>> mapMapOfString = null;
+
+@Generated(value = "org.openapitools.codegen.languages.SpringCodegen", comments = "Generator version: 7.28.0-SNAPSHOT")
+public class MapTest {
+
+  @JsonInclude(JsonInclude.Include.NON_DEFAULT)
+  private Map<String, Map<String, String>> mapMapOfString = new HashMap<>();
 
   /**
    * Gets or Sets inner
@@ -30,7 +37,7 @@ public class MapTest   {
     
     LOWER("lower");
 
-    private String value;
+    private final String value;
 
     InnerEnum(String value) {
       this.value = value;
@@ -57,17 +64,14 @@ public class MapTest   {
     }
   }
 
-  @JsonProperty("map_of_enum_string")
-  @Valid
-  private Map<String, InnerEnum> mapOfEnumString = null;
+  @JsonInclude(JsonInclude.Include.NON_DEFAULT)
+  private Map<String, InnerEnum> mapOfEnumString = new HashMap<>();
 
-  @JsonProperty("direct_map")
-  @Valid
-  private Map<String, Boolean> directMap = null;
+  @JsonInclude(JsonInclude.Include.NON_DEFAULT)
+  private Map<String, Boolean> directMap = new HashMap<>();
 
-  @JsonProperty("indirect_map")
-  @Valid
-  private Map<String, Boolean> indirectMap = null;
+  @JsonInclude(JsonInclude.Include.NON_DEFAULT)
+  private Map<String, Boolean> indirectMap = new HashMap<>();
 
   public MapTest mapMapOfString(Map<String, Map<String, String>> mapMapOfString) {
     this.mapMapOfString = mapMapOfString;
@@ -85,15 +89,15 @@ public class MapTest   {
   /**
    * Get mapMapOfString
    * @return mapMapOfString
-  */
-  @ApiModelProperty(value = "")
-
-  @Valid
-
+   */
+  
+  @Schema(name = "map_map_of_string", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+  @JsonProperty("map_map_of_string")
   public Map<String, Map<String, String>> getMapMapOfString() {
     return mapMapOfString;
   }
 
+  @JsonProperty("map_map_of_string")
   public void setMapMapOfString(Map<String, Map<String, String>> mapMapOfString) {
     this.mapMapOfString = mapMapOfString;
   }
@@ -114,14 +118,15 @@ public class MapTest   {
   /**
    * Get mapOfEnumString
    * @return mapOfEnumString
-  */
-  @ApiModelProperty(value = "")
-
-
+   */
+  
+  @Schema(name = "map_of_enum_string", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+  @JsonProperty("map_of_enum_string")
   public Map<String, InnerEnum> getMapOfEnumString() {
     return mapOfEnumString;
   }
 
+  @JsonProperty("map_of_enum_string")
   public void setMapOfEnumString(Map<String, InnerEnum> mapOfEnumString) {
     this.mapOfEnumString = mapOfEnumString;
   }
@@ -142,14 +147,15 @@ public class MapTest   {
   /**
    * Get directMap
    * @return directMap
-  */
-  @ApiModelProperty(value = "")
-
-
+   */
+  
+  @Schema(name = "direct_map", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+  @JsonProperty("direct_map")
   public Map<String, Boolean> getDirectMap() {
     return directMap;
   }
 
+  @JsonProperty("direct_map")
   public void setDirectMap(Map<String, Boolean> directMap) {
     this.directMap = directMap;
   }
@@ -170,18 +176,18 @@ public class MapTest   {
   /**
    * Get indirectMap
    * @return indirectMap
-  */
-  @ApiModelProperty(value = "")
-
-
+   */
+  
+  @Schema(name = "indirect_map", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+  @JsonProperty("indirect_map")
   public Map<String, Boolean> getIndirectMap() {
     return indirectMap;
   }
 
+  @JsonProperty("indirect_map")
   public void setIndirectMap(Map<String, Boolean> indirectMap) {
     this.indirectMap = indirectMap;
   }
-
 
   @Override
   public boolean equals(Object o) {
@@ -207,7 +213,6 @@ public class MapTest   {
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class MapTest {\n");
-    
     sb.append("    mapMapOfString: ").append(toIndentedString(mapMapOfString)).append("\n");
     sb.append("    mapOfEnumString: ").append(toIndentedString(mapOfEnumString)).append("\n");
     sb.append("    directMap: ").append(toIndentedString(directMap)).append("\n");
@@ -220,11 +225,84 @@ public class MapTest   {
    * Convert the given object to string with each line indented by 4 spaces
    * (except the first line).
    */
-  private String toIndentedString(Object o) {
-    if (o == null) {
-      return "null";
-    }
-    return o.toString().replace("\n", "\n    ");
+  private String toIndentedString(@Nullable Object o) {
+    return o == null ? "null" : o.toString().replace("\n", "\n    ");
   }
+  
+  public static class Builder {
+
+    private MapTest instance;
+
+    public Builder() {
+      this(new MapTest());
+    }
+
+    protected Builder(MapTest instance) {
+      this.instance = instance;
+    }
+
+    protected Builder copyOf(MapTest value) { 
+      this.instance.setMapMapOfString(value.mapMapOfString);
+      this.instance.setMapOfEnumString(value.mapOfEnumString);
+      this.instance.setDirectMap(value.directMap);
+      this.instance.setIndirectMap(value.indirectMap);
+      return this;
+    }
+
+    public MapTest.Builder mapMapOfString(Map<String, Map<String, String>> mapMapOfString) {
+      this.instance.mapMapOfString(mapMapOfString);
+      return this;
+    }
+    
+    public MapTest.Builder mapOfEnumString(Map<String, InnerEnum> mapOfEnumString) {
+      this.instance.mapOfEnumString(mapOfEnumString);
+      return this;
+    }
+    
+    public MapTest.Builder directMap(Map<String, Boolean> directMap) {
+      this.instance.directMap(directMap);
+      return this;
+    }
+    
+    public MapTest.Builder indirectMap(Map<String, Boolean> indirectMap) {
+      this.instance.indirectMap(indirectMap);
+      return this;
+    }
+    
+    /**
+    * returns a built MapTest instance.
+    *
+    * The builder is not reusable (NullPointerException)
+    */
+    public MapTest build() {
+      try {
+        return this.instance;
+      } finally {
+        // ensure that this.instance is not reused
+        this.instance = null;
+      }
+    }
+
+    @Override
+    public String toString() {
+      return getClass() + "=(" + instance + ")";
+    }
+  }
+
+  /**
+  * Create a builder with no initialized field (except for the default values).
+  */
+  public static MapTest.Builder builder() {
+    return new MapTest.Builder();
+  }
+
+  /**
+  * Create a builder with a shallow copy of this instance.
+  */
+  public MapTest.Builder toBuilder() {
+    MapTest.Builder builder = new MapTest.Builder();
+    return builder.copyOf(this);
+  }
+
 }
 

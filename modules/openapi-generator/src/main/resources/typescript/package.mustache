@@ -3,14 +3,37 @@
   "version": "{{npmVersion}}",
   "description": "OpenAPI client for {{npmName}}",
   "author": "OpenAPI-Generator Contributors",
+  "repository": {
+    "type": "git",
+    "url": "https://{{gitHost}}/{{gitUserId}}/{{gitRepoId}}.git"
+  },
   "keywords": [
     "fetch",
     "typescript",
     "openapi-client",
     "openapi-generator"
   ],
-  "license": "Unlicense",
+  "license": "{{licenseName}}",
   "main": "./dist/index.js",
+  {{#supportsES6}}
+  "type": "module",
+  "module": "./dist/index.js",
+  {{/supportsES6}}
+  {{^supportsES6}}
+  "type": "commonjs",
+  {{/supportsES6}}
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      {{^supportsES6}}
+      "require": "./dist/index.js",
+      {{/supportsES6}}
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist"
+  ],
   "typings": "./dist/index.d.ts",
   "scripts": {
     "build": "tsc",
@@ -21,8 +44,7 @@
       {{#fetch-api}}
         {{#platforms}}
           {{#node}}
-    "node-fetch": "^2.6.0",
-    "@types/node-fetch": "^2.5.7",
+    "undici": "^7.30.1",
           {{/node}}
           {{#browser}}
     "whatwg-fetch": "^3.0.0",
@@ -36,22 +58,20 @@
     {{/frameworks}}
     {{#platforms}}
       {{#node}}
-    "@types/node": "*",
-    "form-data": "^2.5.0",
-    "btoa": "^1.2.1",
+    "@types/node": "^20.17.10",
+    "form-data": "^4.0.4",
       {{/node}}
     {{/platforms}}
     {{#useRxJS}}
     "rxjs": "^6.4.0",
     {{/useRxJS}}
     {{#useInversify}}
-    "inversify": "^5.0.1",
+    "inversify": "^6.0.1",
     {{/useInversify}}
-    "es6-promise": "^4.2.4",
-    "url-parse": "^1.4.3"
+    "es6-promise": "^4.2.4"
   },
   "devDependencies": {
-    "typescript": "^3.9.3"
+    "typescript": "^{{typescriptMajorVersion}}.0"
   }{{#npmRepository}},{{/npmRepository}}
 {{#npmRepository}}
   "publishConfig":{

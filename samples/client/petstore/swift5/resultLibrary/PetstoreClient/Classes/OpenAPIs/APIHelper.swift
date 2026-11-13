@@ -6,8 +6,8 @@
 
 import Foundation
 
-public struct APIHelper {
-    public static func rejectNil(_ source: [String: Any?]) -> [String: Any]? {
+internal struct APIHelper {
+    internal static func rejectNil(_ source: [String: Any?]) -> [String: Any]? {
         let destination = source.reduce(into: [String: Any]()) { result, item in
             if let value = item.value {
                 result[item.key] = value
@@ -20,17 +20,19 @@ public struct APIHelper {
         return destination
     }
 
-    public static func rejectNilHeaders(_ source: [String: Any?]) -> [String: String] {
+    internal static func rejectNilHeaders(_ source: [String: Any?]) -> [String: String] {
         return source.reduce(into: [String: String]()) { result, item in
             if let collection = item.value as? [Any?] {
-                result[item.key] = collection.filter { $0 != nil }.map { "\($0!)" }.joined(separator: ",")
+                result[item.key] = collection
+                    .compactMap { value in convertAnyToString(value) }
+                    .joined(separator: ",")
             } else if let value: Any = item.value {
-                result[item.key] = "\(value)"
+                result[item.key] = convertAnyToString(value)
             }
         }
     }
 
-    public static func convertBoolToString(_ source: [String: Any]?) -> [String: Any]? {
+    internal static func convertBoolToString(_ source: [String: Any]?) -> [String: Any]? {
         guard let source = source else {
             return nil
         }
@@ -45,27 +47,75 @@ public struct APIHelper {
         }
     }
 
-    public static func mapValueToPathItem(_ source: Any) -> Any {
+    internal static func convertAnyToString(_ value: Any?) -> String? {
+        guard let value = value else { return nil }
+        if let value = value as? any RawRepresentable {
+            return "\(value.rawValue)"
+        } else {
+            return "\(value)"
+        }
+    }
+
+    internal static func mapValueToPathItem(_ source: Any) -> Any {
         if let collection = source as? [Any?] {
-            return collection.filter { $0 != nil }.map { "\($0!)" }.joined(separator: ",")
+            return collection
+                .compactMap { value in convertAnyToString(value) }
+                .joined(separator: ",")
+        } else if let value = source as? any RawRepresentable {
+            return "\(value.rawValue)"
         }
         return source
     }
 
-    public static func mapValuesToQueryItems(_ source: [String: Any?]) -> [URLQueryItem]? {
-        let destination = source.filter { $0.value != nil }.reduce(into: [URLQueryItem]()) { result, item in
-            if let collection = item.value as? [Any?] {
-                collection.filter { $0 != nil }.map { "\($0!)" }.forEach { value in
-                    result.append(URLQueryItem(name: item.key, value: value))
+    /// maps all values from source to query parameters
+    ///
+    /// explode attribute is respected: collection values might be either joined or split up into separate key value pairs
+    internal static func mapValuesToQueryItems(_ source: [String: (wrappedValue: Any?, isExplode: Bool)]) -> [URLQueryItem]? {
+        let destination = source.filter { $0.value.wrappedValue != nil }.reduce(into: [URLQueryItem]()) { result, item in
+            if let collection = item.value.wrappedValue as? [Any?] {
+
+                let collectionValues: [String] = collection.compactMap { value in convertAnyToString(value) }
+
+                if !item.value.isExplode {
+                    result.append(URLQueryItem(name: item.key, value: collectionValues.joined(separator: ",")))
+                } else {
+                    collectionValues
+                        .forEach { value in
+                            result.append(URLQueryItem(name: item.key, value: value))
+                        }
                 }
-            } else if let value = item.value {
-                result.append(URLQueryItem(name: item.key, value: "\(value)"))
+
+            } else if let value = item.value.wrappedValue {
+                result.append(URLQueryItem(name: item.key, value: convertAnyToString(value)))
             }
         }
 
         if destination.isEmpty {
             return nil
         }
-        return destination
+        return destination.sorted { $0.name < $1.name }
+    }
+
+    /// maps all values from source to query parameters
+    ///
+    /// collection values are always exploded
+    internal static func mapValuesToQueryItems(_ source: [String: Any?]) -> [URLQueryItem]? {
+        let destination = source.filter { $0.value != nil }.reduce(into: [URLQueryItem]()) { result, item in
+            if let collection = item.value as? [Any?] {
+                collection
+                    .compactMap { value in convertAnyToString(value) }
+                    .forEach { value in
+                        result.append(URLQueryItem(name: item.key, value: value))
+                    }
+
+            } else if let value = item.value {
+                result.append(URLQueryItem(name: item.key, value: convertAnyToString(value)))
+            }
+        }
+
+        if destination.isEmpty {
+            return nil
+        }
+        return destination.sorted { $0.name < $1.name }
     }
 }

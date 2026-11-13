@@ -1,30 +1,52 @@
 package org.openapitools.model;
 
+import java.net.URI;
 import java.util.Objects;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
-import io.swagger.annotations.ApiModel;
-import io.swagger.annotations.ApiModelProperty;
 import java.math.BigDecimal;
+import org.springframework.lang.Nullable;
 import org.openapitools.jackson.nullable.JsonNullable;
-import javax.validation.Valid;
-import javax.validation.constraints.*;
+import java.time.OffsetDateTime;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.*;
+import io.swagger.v3.oas.annotations.media.Schema;
+
+
+import java.util.*;
+import jakarta.annotation.Generated;
 
 /**
  * OuterComposite
  */
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.SpringCodegen")
-public class OuterComposite   {
-  @JsonProperty("my_number")
-  private BigDecimal myNumber;
 
-  @JsonProperty("my_string")
-  private String myString;
+@Generated(value = "org.openapitools.codegen.languages.SpringCodegen", comments = "Generator version: 7.28.0-SNAPSHOT")
+public class OuterComposite {
 
-  @JsonProperty("my_boolean")
-  private Boolean myBoolean;
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private @Nullable BigDecimal myNumber;
 
-  public OuterComposite myNumber(BigDecimal myNumber) {
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private @Nullable String myString;
+
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private @Nullable Boolean myBoolean;
+
+  public OuterComposite() {
+    super();
+  }
+
+  /**
+   * Constructor with all args parameters
+   */
+  public OuterComposite(@Nullable BigDecimal myNumber, @Nullable String myString, @Nullable Boolean myBoolean) {
+      this.myNumber = myNumber;
+      this.myString = myString;
+      this.myBoolean = myBoolean;
+  }
+
+  public OuterComposite myNumber(@Nullable BigDecimal myNumber) {
     this.myNumber = myNumber;
     return this;
   }
@@ -32,20 +54,20 @@ public class OuterComposite   {
   /**
    * Get myNumber
    * @return myNumber
-  */
-  @ApiModelProperty(value = "")
-
-  @Valid
-
-  public BigDecimal getMyNumber() {
+   */
+  @Valid 
+  @Schema(name = "my_number", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+  @JsonProperty("my_number")
+  public @Nullable BigDecimal getMyNumber() {
     return myNumber;
   }
 
-  public void setMyNumber(BigDecimal myNumber) {
+  @JsonProperty("my_number")
+  public void setMyNumber(@Nullable BigDecimal myNumber) {
     this.myNumber = myNumber;
   }
 
-  public OuterComposite myString(String myString) {
+  public OuterComposite myString(@Nullable String myString) {
     this.myString = myString;
     return this;
   }
@@ -53,19 +75,20 @@ public class OuterComposite   {
   /**
    * Get myString
    * @return myString
-  */
-  @ApiModelProperty(value = "")
-
-
-  public String getMyString() {
+   */
+  
+  @Schema(name = "my_string", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+  @JsonProperty("my_string")
+  public @Nullable String getMyString() {
     return myString;
   }
 
-  public void setMyString(String myString) {
+  @JsonProperty("my_string")
+  public void setMyString(@Nullable String myString) {
     this.myString = myString;
   }
 
-  public OuterComposite myBoolean(Boolean myBoolean) {
+  public OuterComposite myBoolean(@Nullable Boolean myBoolean) {
     this.myBoolean = myBoolean;
     return this;
   }
@@ -73,18 +96,18 @@ public class OuterComposite   {
   /**
    * Get myBoolean
    * @return myBoolean
-  */
-  @ApiModelProperty(value = "")
-
-
-  public Boolean getMyBoolean() {
+   */
+  
+  @Schema(name = "my_boolean", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+  @JsonProperty("my_boolean")
+  public @Nullable Boolean getMyBoolean() {
     return myBoolean;
   }
 
-  public void setMyBoolean(Boolean myBoolean) {
+  @JsonProperty("my_boolean")
+  public void setMyBoolean(@Nullable Boolean myBoolean) {
     this.myBoolean = myBoolean;
   }
-
 
   @Override
   public boolean equals(Object o) {
@@ -109,7 +132,6 @@ public class OuterComposite   {
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class OuterComposite {\n");
-    
     sb.append("    myNumber: ").append(toIndentedString(myNumber)).append("\n");
     sb.append("    myString: ").append(toIndentedString(myString)).append("\n");
     sb.append("    myBoolean: ").append(toIndentedString(myBoolean)).append("\n");
@@ -121,11 +143,8 @@ public class OuterComposite   {
    * Convert the given object to string with each line indented by 4 spaces
    * (except the first line).
    */
-  private String toIndentedString(Object o) {
-    if (o == null) {
-      return "null";
-    }
-    return o.toString().replace("\n", "\n    ");
+  private String toIndentedString(@Nullable Object o) {
+    return o == null ? "null" : o.toString().replace("\n", "\n    ");
   }
 }
 

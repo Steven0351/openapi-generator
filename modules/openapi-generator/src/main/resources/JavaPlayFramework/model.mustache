@@ -7,14 +7,16 @@ import java.io.Serializable;
 {{/serializableModel}}
 import com.fasterxml.jackson.annotation.*;
 import java.util.Set;
-import javax.validation.*;
+import {{javaxPackage}}.validation.*;
 {{#models}}
 {{#model}}
 {{#isEnum}}
 {{>enumOuterClass}}
+
 {{/isEnum}}
 {{^isEnum}}
 {{>pojo}}
+
 {{/isEnum}}
 {{/model}}
 {{/models}}

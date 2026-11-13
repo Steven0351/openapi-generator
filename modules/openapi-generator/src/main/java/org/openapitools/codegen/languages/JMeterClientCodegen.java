@@ -20,7 +20,6 @@ package org.openapitools.codegen.languages;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.Operation;
 import io.swagger.v3.oas.models.PathItem;
-import io.swagger.v3.oas.models.media.ArraySchema;
 import io.swagger.v3.oas.models.media.Schema;
 import org.openapitools.codegen.CodegenConfig;
 import org.openapitools.codegen.CodegenType;
@@ -34,6 +33,9 @@ import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.Map;
 
+/**
+ * <p>Mustache templates are located in {@code src/main/resources/jmeter-client/}.
+ */
 public class JMeterClientCodegen extends DefaultCodegen implements CodegenConfig {
 
     // source folder where to write the files
@@ -133,7 +135,7 @@ public class JMeterClientCodegen extends DefaultCodegen implements CodegenConfig
         /*
          * Reserved words.  Override this with reserved words specific to your language
          */
-        reservedWords = new HashSet<String>(
+        reservedWords = new HashSet<>(
                 Arrays.asList(
                         "sample1",  // replace with static values
                         "sample2")
@@ -161,6 +163,12 @@ public class JMeterClientCodegen extends DefaultCodegen implements CodegenConfig
                 }
             }
         }
+    }
+
+    @Override
+    public String toOperationId(String operationId) {
+        // replace $ with _
+        return super.toOperationId(operationId.replace("$", "_"));
     }
 
     /**
@@ -204,11 +212,10 @@ public class JMeterClientCodegen extends DefaultCodegen implements CodegenConfig
     @Override
     public String getTypeDeclaration(Schema p) {
         if (ModelUtils.isArraySchema(p)) {
-            ArraySchema ap = (ArraySchema) p;
-            Schema inner = ap.getItems();
+            Schema inner = ModelUtils.getSchemaItems(p);
             return getSchemaType(p) + "[" + getTypeDeclaration(inner) + "]";
         } else if (ModelUtils.isMapSchema(p)) {
-            Schema inner = getAdditionalProperties(p);
+            Schema inner = ModelUtils.getAdditionalProperties(p);
             return getSchemaType(p) + "[String, " + getTypeDeclaration(inner) + "]";
         }
         return super.getTypeDeclaration(p);

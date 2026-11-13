@@ -30,13 +30,13 @@ namespace test_namespace {
 class PFXUser : public PFXObject {
 public:
     PFXUser();
-    PFXUser(QString json);
+    PFXUser(const QString &json);
     ~PFXUser() override;
 
     QString asJson() const override;
     QJsonObject asJsonObject() const override;
     void fromJsonObject(QJsonObject json) override;
-    void fromJson(QString jsonString) override;
+    void fromJson(const QString &jsonString) override;
 
     qint64 getId() const;
     void setId(const qint64 &id);
@@ -84,35 +84,35 @@ public:
 private:
     void initializeModel();
 
-    qint64 id;
+    qint64 m_id;
     bool m_id_isSet;
     bool m_id_isValid;
 
-    QString username;
+    QString m_username;
     bool m_username_isSet;
     bool m_username_isValid;
 
-    QString first_name;
+    QString m_first_name;
     bool m_first_name_isSet;
     bool m_first_name_isValid;
 
-    QString last_name;
+    QString m_last_name;
     bool m_last_name_isSet;
     bool m_last_name_isValid;
 
-    QString email;
+    QString m_email;
     bool m_email_isSet;
     bool m_email_isValid;
 
-    QString password;
+    QString m_password;
     bool m_password_isSet;
     bool m_password_isValid;
 
-    QString phone;
+    QString m_phone;
     bool m_phone_isSet;
     bool m_phone_isValid;
 
-    qint32 user_status;
+    qint32 m_user_status;
     bool m_user_status_isSet;
     bool m_user_status_isValid;
 };

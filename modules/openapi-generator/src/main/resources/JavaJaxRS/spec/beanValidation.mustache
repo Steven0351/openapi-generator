@@ -1,4 +1,1 @@
-{{#required}}
-  @NotNull
-{{/required}}
-{{>beanValidationCore}}
+{{#required}}{{^isReadOnly}}@NotNull {{/isReadOnly}}{{/required}}{{^isContainer}}{{^isPrimitiveType}}{{^isDate}}{{^isDateTime}}{{^isString}}{{^isFile}}{{^isEnumOrRef}}@Valid {{/isEnumOrRef}}{{/isFile}}{{/isString}}{{/isDateTime}}{{/isDate}}{{/isPrimitiveType}}{{/isContainer}}{{>beanValidationCore}}

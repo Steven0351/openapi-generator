@@ -54,11 +54,11 @@ public enum SchemaSupportFeature {
      *
      * <p>
      * This means that a single "Type" in generated code may refer to one of any type in a set of 2 or more types.
-     *
+     * <p>
      * This is defined as a union as "OneOf" support is not explicitly limited to physical boundaries in OpenAPI Specification. The
      * implementation of such a type is easily represented dynamically (a JSON object), but requires explicit language support and
      * potentially a custom implementation (typed instances).
-     *
+     * <p>
      * Note that a generator may support "Unions" very loosely by returning an Object/Any/ref/interface{} type, leaving onus
      * on type determination to the consumer. This does *NOT* suggest generated code implements a "Union Type".
      * </p>
@@ -66,5 +66,33 @@ public enum SchemaSupportFeature {
      * <p>This suggests support of OneOf in OpenAPI Specification with a discriminator.</p>
      */
     @OAS3
-    Union
+    Union,
+
+    /**
+     * The json schema Composition allOf keyword
+     * If a composed schema uses the allOf keyword, then payloads must be valid against all the given allOf schemas
+     */
+    @OAS2 @OAS3
+    allOf,
+
+    /**
+     * The json schema Composition anyOf keyword
+     * If a composed schema uses the anyOf keyword, then payloads must be valid against any of the given anyOf schemas
+     */
+    @OAS3
+    anyOf,
+
+    /**
+     * The json schema Composition oneOf keyword
+     * If a composed schema uses the oneOf keyword, then payloads must be valid against one of the given oneOf schemas
+     */
+    @OAS3
+    oneOf,
+
+    /**
+     * The json schema Composition not keyword
+     * If a composed schema uses the not keyword, then payloads must not be valid against the given not schema
+     */
+    @OAS3
+    not
 }

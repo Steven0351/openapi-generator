@@ -12,15 +12,17 @@
  * Do not edit the class manually.
  */
 
-
 import * as runtime from '../runtime';
 import {
-    Client,
+    type Client,
     ClientFromJSON,
     ClientToJSON,
-} from '../models';
+} from '../models/Client';
 
 export interface TestClassnameRequest {
+    /**
+     * client model
+     */
     client: Client;
 }
 
@@ -30,12 +32,14 @@ export interface TestClassnameRequest {
 export class FakeClassnameTags123Api extends runtime.BaseAPI {
 
     /**
-     * To test class name in snake case
-     * To test class name in snake case
+     * Creates request options for testClassname without sending the request
      */
-    async testClassnameRaw(requestParameters: TestClassnameRequest, initOverrides?: RequestInit): Promise<runtime.ApiResponse<Client>> {
-        if (requestParameters.client === null || requestParameters.client === undefined) {
-            throw new runtime.RequiredError('client','Required parameter requestParameters.client was null or undefined when calling testClassname.');
+    async testClassnameRequestOpts(requestParameters: TestClassnameRequest): Promise<runtime.RequestOpts> {
+        if (requestParameters['client'] == null) {
+            throw new runtime.RequiredError(
+                'client',
+                'Required parameter "client" was null or undefined when calling testClassname().'
+            );
         }
 
         const queryParameters: any = {};
@@ -45,16 +49,28 @@ export class FakeClassnameTags123Api extends runtime.BaseAPI {
         headerParameters['Content-Type'] = 'application/json';
 
         if (this.configuration && this.configuration.apiKey) {
-            queryParameters["api_key_query"] = this.configuration.apiKey("api_key_query"); // api_key_query authentication
+            queryParameters["api_key_query"] = await this.configuration.apiKey("api_key_query"); // api_key_query authentication
         }
 
-        const response = await this.request({
-            path: `/fake_classname_test`,
+
+        let urlPath = `/fake_classname_test`;
+
+        return {
+            path: urlPath,
             method: 'PATCH',
             headers: headerParameters,
             query: queryParameters,
-            body: ClientToJSON(requestParameters.client),
-        }, initOverrides);
+            body: ClientToJSON(requestParameters['client']),
+        };
+    }
+
+    /**
+     * To test class name in snake case
+     * To test class name in snake case
+     */
+    async testClassnameRaw(requestParameters: TestClassnameRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Client>> {
+        const requestOptions = await this.testClassnameRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.JSONApiResponse(response, (jsonValue) => ClientFromJSON(jsonValue));
     }
@@ -63,7 +79,7 @@ export class FakeClassnameTags123Api extends runtime.BaseAPI {
      * To test class name in snake case
      * To test class name in snake case
      */
-    async testClassname(requestParameters: TestClassnameRequest, initOverrides?: RequestInit): Promise<Client> {
+    async testClassname(requestParameters: TestClassnameRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Client> {
         const response = await this.testClassnameRaw(requestParameters, initOverrides);
         return await response.value();
     }

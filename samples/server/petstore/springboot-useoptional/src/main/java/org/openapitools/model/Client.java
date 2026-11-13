@@ -1,42 +1,51 @@
 package org.openapitools.model;
 
+import java.net.URI;
 import java.util.Objects;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
-import io.swagger.annotations.ApiModel;
-import io.swagger.annotations.ApiModelProperty;
+import org.springframework.lang.Nullable;
 import org.openapitools.jackson.nullable.JsonNullable;
-import javax.validation.Valid;
-import javax.validation.constraints.*;
+import java.time.OffsetDateTime;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.*;
+import io.swagger.v3.oas.annotations.media.Schema;
+
+
+import java.util.*;
+import jakarta.annotation.Generated;
 
 /**
  * Client
  */
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.SpringCodegen")
-public class Client   {
-  @JsonProperty("client")
-  private String client;
+
+@Generated(value = "org.openapitools.codegen.languages.SpringCodegen", comments = "Generator version: 7.28.0-SNAPSHOT")
+public class Client {
+
+  @JsonInclude(JsonInclude.Include.NON_DEFAULT)
+  private Optional<String> client = Optional.empty();
 
   public Client client(String client) {
-    this.client = client;
+    this.client = Optional.ofNullable(client);
     return this;
   }
 
   /**
    * Get client
    * @return client
-  */
-  @ApiModelProperty(value = "")
-
-
-  public String getClient() {
+   */
+  
+  @Schema(name = "client", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+  @JsonProperty("client")
+  public Optional<String> getClient() {
     return client;
   }
 
-  public void setClient(String client) {
+  @JsonProperty("client")
+  public void setClient(Optional<String> client) {
     this.client = client;
   }
-
 
   @Override
   public boolean equals(Object o) {
@@ -59,7 +68,6 @@ public class Client   {
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class Client {\n");
-    
     sb.append("    client: ").append(toIndentedString(client)).append("\n");
     sb.append("}");
     return sb.toString();
@@ -69,11 +77,66 @@ public class Client   {
    * Convert the given object to string with each line indented by 4 spaces
    * (except the first line).
    */
-  private String toIndentedString(Object o) {
-    if (o == null) {
-      return "null";
-    }
-    return o.toString().replace("\n", "\n    ");
+  private String toIndentedString(@Nullable Object o) {
+    return o == null ? "null" : o.toString().replace("\n", "\n    ");
   }
+  
+  public static class Builder {
+
+    private Client instance;
+
+    public Builder() {
+      this(new Client());
+    }
+
+    protected Builder(Client instance) {
+      this.instance = instance;
+    }
+
+    protected Builder copyOf(Client value) { 
+      this.instance.setClient(value.client);
+      return this;
+    }
+
+    public Client.Builder client(String client) {
+      this.instance.client(client);
+      return this;
+    }
+    
+    /**
+    * returns a built Client instance.
+    *
+    * The builder is not reusable (NullPointerException)
+    */
+    public Client build() {
+      try {
+        return this.instance;
+      } finally {
+        // ensure that this.instance is not reused
+        this.instance = null;
+      }
+    }
+
+    @Override
+    public String toString() {
+      return getClass() + "=(" + instance + ")";
+    }
+  }
+
+  /**
+  * Create a builder with no initialized field (except for the default values).
+  */
+  public static Client.Builder builder() {
+    return new Client.Builder();
+  }
+
+  /**
+  * Create a builder with a shallow copy of this instance.
+  */
+  public Client.Builder toBuilder() {
+    Client.Builder builder = new Client.Builder();
+    return builder.copyOf(this);
+  }
+
 }
 

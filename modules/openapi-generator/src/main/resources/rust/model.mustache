@@ -1,69 +1,216 @@
 {{>partial_header}}
+use crate::models;
+use serde::{Deserialize, Serialize};
 {{#models}}
 {{#model}}
+{{^isEnum}}{{#vendorExtensions.x-rust-has-byte-array}}
+use serde_with::serde_as;
+{{/vendorExtensions.x-rust-has-byte-array}}{{#vendorExtensions.x-rust-has-integer-property-enum}}
+use serde_repr::{Serialize_repr,Deserialize_repr};
+{{/vendorExtensions.x-rust-has-integer-property-enum}}{{/isEnum}}
+{{#isEnum}}
+{{#isInteger}}
+use serde_repr::{Serialize_repr,Deserialize_repr};
+{{/isInteger}}
+{{/isEnum}}
 {{#description}}
 /// {{{classname}}} : {{{description}}}
 {{/description}}
+{{!-- for repr(int) enum schemas --}}
+{{#isEnum}}
+{{#isInteger}}
+/// {{{description}}}
+#[repr(i64)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, Serialize_repr, Deserialize_repr)]
+pub enum {{{classname}}} {
+{{#allowableValues}}
+{{#enumVars}}
+{{#-last}}
+{{#enumUnknownDefaultCase}}
+    #[serde(other)]
+{{/enumUnknownDefaultCase}}
+{{/-last}}
+    {{{name}}} = {{{value}}},
+{{/enumVars}}{{/allowableValues}}
+}
 
+impl std::fmt::Display for {{{classname}}} {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", match self {
+            {{#allowableValues}}
+            {{#enumVars}}
+            Self::{{{name}}} => "{{{value}}}",
+            {{/enumVars}}
+            {{/allowableValues}}
+        })
+    }
+}
+{{/isInteger}}
+{{/isEnum}}
 {{!-- for enum schemas --}}
 {{#isEnum}}
+{{^isInteger}}
 /// {{{description}}}
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, Serialize, Deserialize)]
 pub enum {{{classname}}} {
 {{#allowableValues}}
 {{#enumVars}}
     #[serde(rename = "{{{value}}}")]
+{{#-last}}
+{{#enumUnknownDefaultCase}}
+    #[serde(other)]
+{{/enumUnknownDefaultCase}}
+{{/-last}}
     {{{name}}},
 {{/enumVars}}{{/allowableValues}}
 }
 
-impl ToString for {{{classname}}} {
-    fn to_string(&self) -> String {
+impl std::fmt::Display for {{{classname}}} {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
             {{#allowableValues}}
             {{#enumVars}}
-            Self::{{{name}}} => String::from("{{{value}}}"),
+            Self::{{{name}}} => write!(f, "{{{value}}}"),
             {{/enumVars}}
             {{/allowableValues}}
         }
     }
 }
-{{/isEnum}}
 
+{{/isInteger}}
+impl Default for {{{classname}}} {
+    fn default() -> {{{classname}}} {
+        {{#allowableValues}}
+        Self::{{ enumVars.0.name }}
+        {{/allowableValues}}
+    }
+}
+{{/isEnum}}
 {{!-- for schemas that have a discriminator --}}
 {{#discriminator}}
+{{#vendorExtensions.x-rust-tagged-content}}
+{{!-- the variants carry the tag themselves: serialized as is, deserialized from the content the tag stays in --}}
+#[derive(Clone, Debug, PartialEq)]
+{{/vendorExtensions.x-rust-tagged-content}}
+{{^vendorExtensions.x-rust-tagged-content}}
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-#[serde(tag = "{{{vendorExtensions.x-tag-name}}}")]
+#[serde(tag = "{{{propertyBaseName}}}")]
+{{/vendorExtensions.x-rust-tagged-content}}
 pub enum {{{classname}}} {
-{{#vendorExtensions}}
-    {{#x-mapped-models}}
+    {{^oneOf}}
+    {{#mappedModels}}
     #[serde(rename="{{mappingName}}")]
+    {{^vendorExtensions.x-rust-inline-variants}}
+    {{!-- newtype variant: the child's own fields survive; named by modelName (unique per mapping), wraps the real classname --}}
+    {{{modelName}}}({{^avoidBoxedModels}}Box<{{/avoidBoxedModels}}models::{{#model}}{{{classname}}}{{/model}}{{^model}}{{{modelName}}}{{/model}}{{^avoidBoxedModels}}>{{/avoidBoxedModels}}),
+    {{/vendorExtensions.x-rust-inline-variants}}
+    {{#vendorExtensions.x-rust-inline-variants}}
     {{{modelName}}} {
     {{#vars}}
         {{#description}}
         /// {{{.}}}
         {{/description}}
         #[serde(rename = "{{{baseName}}}"{{^required}}, skip_serializing_if = "Option::is_none"{{/required}})]
-        {{{name}}}: {{#required}}{{#isNullable}}Option<{{/isNullable}}{{/required}}{{^required}}Option<{{/required}}{{#isEnum}}{{{enumName}}}{{/isEnum}}{{^isEnum}}{{#isModel}}Box<{{{dataType}}}>{{/isModel}}{{^isModel}}{{{dataType}}}{{/isModel}}{{/isEnum}}{{#required}}{{#isNullable}}>{{/isNullable}}{{/required}}{{^required}}>{{/required}},
+        {{{name}}}: {{#required}}{{#isNullable}}Option<{{/isNullable}}{{/required}}{{^required}}Option<{{/required}}{{#isEnum}}{{{enumName}}}{{/isEnum}}{{^isEnum}}{{#isModel}}{{^avoidBoxedModels}}Box<{{/avoidBoxedModels}}{{{dataType}}}{{^avoidBoxedModels}}>{{/avoidBoxedModels}}{{/isModel}}{{^isModel}}{{{dataType}}}{{/isModel}}{{/isEnum}}{{#required}}{{#isNullable}}>{{/isNullable}}{{/required}}{{^required}}>{{/required}},
     {{/vars}}
     },
-    {{/x-mapped-models}}
-{{/vendorExtensions}}
+    {{/vendorExtensions.x-rust-inline-variants}}
+    {{/mappedModels}}
+    {{/oneOf}}
+    {{^oneOf.isEmpty}}
+    {{#composedSchemas.oneOf}}
+    {{#description}}
+    /// {{{.}}}
+    {{/description}}
+    {{^vendorExtensions.x-rust-tagged-content}}
+    {{#baseName}}
+    #[serde(rename="{{{.}}}")]
+    {{/baseName}}
+    {{/vendorExtensions.x-rust-tagged-content}}
+    {{{name}}}({{#isModel}}{{^avoidBoxedModels}}Box<{{/avoidBoxedModels}}{{/isModel}}{{{dataType}}}{{#isModel}}{{^avoidBoxedModels}}>{{/avoidBoxedModels}}{{/isModel}}),
+    {{/composedSchemas.oneOf}}
+    {{/oneOf.isEmpty}}
 }
 
-{{/discriminator}}
+impl Default for {{classname}} {
+    fn default() -> Self {
+        {{^oneOf}}{{#mappedModels}}{{#-first}}{{^vendorExtensions.x-rust-inline-variants}}Self::{{modelName}}(Default::default()){{/vendorExtensions.x-rust-inline-variants}}{{#vendorExtensions.x-rust-inline-variants}}Self::{{modelName}} {
+        {{#vars}}
+            {{{name}}}: Default::default(),
+        {{/vars}}
+        }{{/vendorExtensions.x-rust-inline-variants}}{{/-first}}{{/mappedModels}}
+        {{/oneOf}}{{^oneOf.isEmpty}}{{#composedSchemas.oneOf}}{{#-first}}Self::{{{name}}}(Default::default()){{/-first}}{{/composedSchemas.oneOf}}{{/oneOf.isEmpty}}
+    }
+}
 
+{{#vendorExtensions.x-rust-tagged-content}}
+impl Serialize for {{classname}} {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        let (tag, value) = match self {
+            {{#composedSchemas.oneOf}}
+            Self::{{{name}}}(x) => ("{{{baseName}}}", serde_json::to_value(x)),
+            {{/composedSchemas.oneOf}}
+        };
+        let mut value = value.map_err(serde::ser::Error::custom)?;
+        // the union variant decides the tag, as serde(tag) would, even if the variant left it unset or set another value
+        if let Some(map) = value.as_object_mut() {
+            map.insert("{{{propertyBaseName}}}".to_owned(), serde_json::Value::String(tag.to_owned()));
+        }
+        value.serialize(serializer)
+    }
+}
+
+impl<'de> Deserialize<'de> for {{classname}} {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let value = serde_json::Value::deserialize(deserializer)?;
+        match value.get("{{{propertyBaseName}}}").and_then(serde_json::Value::as_str) {
+            {{#composedSchemas.oneOf}}
+            Some("{{{baseName}}}") => serde_json::from_value(value).map(Self::{{{name}}}).map_err(serde::de::Error::custom),
+            {{/composedSchemas.oneOf}}
+            Some(tag) => Err(serde::de::Error::unknown_variant(tag, &[{{#composedSchemas.oneOf}}"{{{baseName}}}"{{^-last}}, {{/-last}}{{/composedSchemas.oneOf}}])),
+            None => Err(serde::de::Error::missing_field("{{{propertyBaseName}}}")),
+        }
+    }
+}
+
+{{/vendorExtensions.x-rust-tagged-content}}
+{{/discriminator}}
 {{!-- for non-enum schemas --}}
 {{^isEnum}}
 {{^discriminator}}
-#[derive(Clone, Debug, PartialEq, Default, Serialize, Deserialize)]
+{{#vendorExtensions.x-rust-has-byte-array}}#[serde_as]
+{{/vendorExtensions.x-rust-has-byte-array}}{{#oneOf.isEmpty}}#[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct {{{classname}}} {
 {{#vars}}
     {{#description}}
     /// {{{.}}}
     {{/description}}
-    #[serde(rename = "{{{baseName}}}"{{^required}}, skip_serializing_if = "Option::is_none"{{/required}})]
-    pub {{{name}}}: {{#required}}{{#isNullable}}Option<{{/isNullable}}{{/required}}{{^required}}Option<{{/required}}{{#isEnum}}{{#isArray}}{{#uniqueItems}}std::collections::HashSet<{{/uniqueItems}}{{^uniqueItems}}Vec<{{/uniqueItems}}{{/isArray}}{{{enumName}}}{{#isArray}}>{{/isArray}}{{/isEnum}}{{^isEnum}}{{#isModel}}Box<{{{dataType}}}>{{/isModel}}{{^isModel}}{{{dataType}}}{{/isModel}}{{/isEnum}}{{#required}}{{#isNullable}}>{{/isNullable}}{{/required}}{{^required}}>{{/required}},
+    {{#isByteArray}}
+    {{#vendorExtensions.isMandatory}}#[serde_as(as = "serde_with::base64::Base64")]{{/vendorExtensions.isMandatory}}{{^vendorExtensions.isMandatory}}#[serde_as(as = "{{^serdeAsDoubleOption}}Option{{/serdeAsDoubleOption}}{{#serdeAsDoubleOption}}super::DoubleOption{{/serdeAsDoubleOption}}<serde_with::base64::Base64>")]{{/vendorExtensions.isMandatory}}
+    {{/isByteArray}}
+    {{!-- a mapped child's discriminator is the union's consumed serde tag: default it, skip it while unset --}}
+    #[serde(rename = "{{{baseName}}}"{{#isDiscriminator}}{{#required}}, default{{#isNullable}}, skip_serializing_if = "Option::is_none"{{/isNullable}}{{^isNullable}}{{#isString}}{{^isEnum}}, skip_serializing_if = "String::is_empty"{{/isEnum}}{{/isString}}{{/isNullable}}{{/required}}{{/isDiscriminator}}{{^required}}{{#isNullable}}, default{{^isByteArray}}, with = "::serde_with::rust::double_option"{{/isByteArray}}{{/isNullable}}{{/required}}{{^required}}, skip_serializing_if = "Option::is_none"{{/required}}{{#required}}{{#isNullable}}{{^isDiscriminator}}, deserialize_with = "Option::deserialize"{{/isDiscriminator}}{{/isNullable}}{{/required}})]
+    pub {{{name}}}: {{!
+    ### Option Start
+    }}{{#isNullable}}Option<{{/isNullable}}{{^required}}Option<{{/required}}{{!
+    ### Enums
+    }}{{#isEnum}}{{#isArray}}{{#uniqueItems}}std::collections::HashSet<{{/uniqueItems}}{{^uniqueItems}}Vec<{{/uniqueItems}}{{/isArray}}{{{enumName}}}{{#isArray}}>{{/isArray}}{{/isEnum}}{{!
+    ### Non-Enums Start
+    }}{{^isEnum}}{{!
+    ### Models
+    }}{{#isModel}}{{^avoidBoxedModels}}Box<{{/avoidBoxedModels}}{{{dataType}}}{{^avoidBoxedModels}}>{{/avoidBoxedModels}}{{/isModel}}{{!
+    ### Primative datatypes
+    }}{{^isModel}}{{#isByteArray}}Vec<u8>{{/isByteArray}}{{^isByteArray}}{{{dataType}}}{{/isByteArray}}{{/isModel}}{{!
+    ### Non-Enums End
+    }}{{/isEnum}}{{!
+    ### Option End (and trailing comma)
+    }}{{#isNullable}}>{{/isNullable}}{{^required}}>{{/required}},
 {{/vars}}
 }
 
@@ -71,29 +218,105 @@ impl {{{classname}}} {
     {{#description}}
     /// {{{.}}}
     {{/description}}
-    pub fn new({{#requiredVars}}{{{name}}}: {{#isNullable}}Option<{{/isNullable}}{{#isEnum}}{{{enumName}}}{{/isEnum}}{{^isEnum}}{{{dataType}}}{{/isEnum}}{{#isNullable}}>{{/isNullable}}{{^-last}}, {{/-last}}{{/requiredVars}}) -> {{{classname}}} {
+    pub fn new({{#requiredVars}}{{{name}}}: {{!
+    ### Option Start
+    }}{{#isNullable}}Option<{{/isNullable}}{{!
+    ### Enums
+    }}{{#isEnum}}{{#isArray}}{{#uniqueItems}}std::collections::HashSet<{{/uniqueItems}}{{^uniqueItems}}Vec<{{/uniqueItems}}{{/isArray}}{{{enumName}}}{{#isArray}}>{{/isArray}}{{/isEnum}}{{!
+    ### Non-Enums
+    }}{{^isEnum}}{{#isByteArray}}Vec<u8>{{/isByteArray}}{{^isByteArray}}{{{dataType}}}{{/isByteArray}}{{/isEnum}}{{!
+    ### Option End
+    }}{{#isNullable}}>{{/isNullable}}{{!
+    ### Comma for next arguement
+    }}{{^-last}}, {{/-last}}{{/requiredVars}}) -> {{{classname}}} {
         {{{classname}}} {
             {{#vars}}
-            {{{name}}}{{^required}}{{#isArray}}: None{{/isArray}}{{#isMap}}: None{{/isMap}}{{^isContainer}}: None{{/isContainer}}{{/required}}{{#required}}{{#isModel}}: Box::new({{{name}}}){{/isModel}}{{/required}},
+            {{{name}}}{{^required}}: None{{/required}}{{#required}}{{^isEnum}}{{#isModel}}{{^avoidBoxedModels}}: {{^isNullable}}Box::new({{{name}}}){{/isNullable}}{{#isNullable}}if let Some(x) = {{{name}}} {Some(Box::new(x))} else {None}{{/isNullable}}{{/avoidBoxedModels}}{{/isModel}}{{/isEnum}}{{/required}},
             {{/vars}}
         }
     }
 }
+{{/oneOf.isEmpty}}
+{{^oneOf.isEmpty}}
+{{! TODO: add other vars that are not part of the oneOf}}
+{{#description}}
+/// {{{.}}}
+{{/description}}
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum {{classname}} {
+{{#composedSchemas.oneOf}}
+    {{#description}}
+    /// {{{.}}}
+    {{/description}}
+    {{{name}}}({{#isModel}}{{^avoidBoxedModels}}Box<{{/avoidBoxedModels}}{{/isModel}}{{{dataType}}}{{#isModel}}{{^avoidBoxedModels}}>{{/avoidBoxedModels}}{{/isModel}}),
+{{/composedSchemas.oneOf}}
+}
+
+impl Default for {{classname}} {
+    fn default() -> Self {
+        {{#composedSchemas.oneOf}}{{#-first}}Self::{{{name}}}(Default::default()){{/-first}}{{/composedSchemas.oneOf}}
+    }
+}
+{{/oneOf.isEmpty}}
 {{/discriminator}}
 {{/isEnum}}
-
 {{!-- for properties that are of enum type --}}
 {{#vars}}
 {{#isEnum}}
+{{#isInteger}}
+/// {{{description}}}
+#[repr(i64)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, Serialize_repr, Deserialize_repr)]
+pub enum {{{enumName}}} {
+{{#allowableValues}}
+{{#enumVars}}
+{{#-last}}
+{{#enumUnknownDefaultCase}}
+    #[serde(other)]
+{{/enumUnknownDefaultCase}}
+{{/-last}}
+    {{{name}}} = {{{value}}},
+{{/enumVars}}
+{{/allowableValues}}
+}
+
+impl std::fmt::Display for {{{enumName}}} {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", match self {
+            {{#allowableValues}}
+            {{#enumVars}}
+            Self::{{{name}}} => "{{{value}}}",
+            {{/enumVars}}
+            {{/allowableValues}}
+        })
+    }
+}
+{{/isInteger}}
+{{^isInteger}}
 /// {{{description}}}
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, Serialize, Deserialize)]
 pub enum {{{enumName}}} {
 {{#allowableValues}}
 {{#enumVars}}
     #[serde(rename = "{{{value}}}")]
+{{#-last}}
+{{#enumUnknownDefaultCase}}
+    #[serde(other)]
+{{/enumUnknownDefaultCase}}
+{{/-last}}
     {{{name}}},
 {{/enumVars}}
 {{/allowableValues}}
+}
+{{/isInteger}}
+
+impl Default for {{{enumName}}} {
+    fn default() -> {{{enumName}}} {
+        {{#allowableValues}}
+        Self::{{ enumVars.0.name }}
+        {{/allowableValues}}
+    }
 }
 {{/isEnum}}
 {{/vars}}

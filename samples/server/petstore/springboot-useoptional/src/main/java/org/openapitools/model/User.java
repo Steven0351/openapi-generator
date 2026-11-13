@@ -1,203 +1,219 @@
 package org.openapitools.model;
 
+import java.net.URI;
 import java.util.Objects;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
-import io.swagger.annotations.ApiModel;
-import io.swagger.annotations.ApiModelProperty;
+import org.springframework.lang.Nullable;
 import org.openapitools.jackson.nullable.JsonNullable;
-import javax.validation.Valid;
-import javax.validation.constraints.*;
+import java.time.OffsetDateTime;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.*;
+import io.swagger.v3.oas.annotations.media.Schema;
+
+
+import java.util.*;
+import jakarta.annotation.Generated;
 
 /**
  * User
  */
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.SpringCodegen")
-public class User   {
-  @JsonProperty("id")
-  private Long id;
 
-  @JsonProperty("username")
-  private String username;
+@Generated(value = "org.openapitools.codegen.languages.SpringCodegen", comments = "Generator version: 7.28.0-SNAPSHOT")
+public class User {
 
-  @JsonProperty("firstName")
-  private String firstName;
+  @JsonInclude(JsonInclude.Include.NON_DEFAULT)
+  private Optional<Long> id = Optional.empty();
 
-  @JsonProperty("lastName")
-  private String lastName;
+  @JsonInclude(JsonInclude.Include.NON_DEFAULT)
+  private Optional<String> username = Optional.empty();
 
-  @JsonProperty("email")
-  private String email;
+  @JsonInclude(JsonInclude.Include.NON_DEFAULT)
+  private Optional<String> firstName = Optional.empty();
 
-  @JsonProperty("password")
-  private String password;
+  @JsonInclude(JsonInclude.Include.NON_DEFAULT)
+  private Optional<String> lastName = Optional.empty();
 
-  @JsonProperty("phone")
-  private String phone;
+  @JsonInclude(JsonInclude.Include.NON_DEFAULT)
+  private Optional<String> email = Optional.empty();
 
-  @JsonProperty("userStatus")
-  private Integer userStatus;
+  @JsonInclude(JsonInclude.Include.NON_DEFAULT)
+  private Optional<String> password = Optional.empty();
+
+  @JsonInclude(JsonInclude.Include.NON_DEFAULT)
+  private Optional<String> phone = Optional.empty();
+
+  @JsonInclude(JsonInclude.Include.NON_DEFAULT)
+  private Optional<Integer> userStatus = Optional.empty();
 
   public User id(Long id) {
-    this.id = id;
+    this.id = Optional.ofNullable(id);
     return this;
   }
 
   /**
    * Get id
    * @return id
-  */
-  @ApiModelProperty(value = "")
-
-
-  public Long getId() {
+   */
+  
+  @Schema(name = "id", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+  @JsonProperty("id")
+  public Optional<Long> getId() {
     return id;
   }
 
-  public void setId(Long id) {
+  @JsonProperty("id")
+  public void setId(Optional<Long> id) {
     this.id = id;
   }
 
   public User username(String username) {
-    this.username = username;
+    this.username = Optional.ofNullable(username);
     return this;
   }
 
   /**
    * Get username
    * @return username
-  */
-  @ApiModelProperty(value = "")
-
-
-  public String getUsername() {
+   */
+  
+  @Schema(name = "username", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+  @JsonProperty("username")
+  public Optional<String> getUsername() {
     return username;
   }
 
-  public void setUsername(String username) {
+  @JsonProperty("username")
+  public void setUsername(Optional<String> username) {
     this.username = username;
   }
 
   public User firstName(String firstName) {
-    this.firstName = firstName;
+    this.firstName = Optional.ofNullable(firstName);
     return this;
   }
 
   /**
    * Get firstName
    * @return firstName
-  */
-  @ApiModelProperty(value = "")
-
-
-  public String getFirstName() {
+   */
+  
+  @Schema(name = "firstName", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+  @JsonProperty("firstName")
+  public Optional<String> getFirstName() {
     return firstName;
   }
 
-  public void setFirstName(String firstName) {
+  @JsonProperty("firstName")
+  public void setFirstName(Optional<String> firstName) {
     this.firstName = firstName;
   }
 
   public User lastName(String lastName) {
-    this.lastName = lastName;
+    this.lastName = Optional.ofNullable(lastName);
     return this;
   }
 
   /**
    * Get lastName
    * @return lastName
-  */
-  @ApiModelProperty(value = "")
-
-
-  public String getLastName() {
+   */
+  
+  @Schema(name = "lastName", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+  @JsonProperty("lastName")
+  public Optional<String> getLastName() {
     return lastName;
   }
 
-  public void setLastName(String lastName) {
+  @JsonProperty("lastName")
+  public void setLastName(Optional<String> lastName) {
     this.lastName = lastName;
   }
 
   public User email(String email) {
-    this.email = email;
+    this.email = Optional.ofNullable(email);
     return this;
   }
 
   /**
    * Get email
    * @return email
-  */
-  @ApiModelProperty(value = "")
-
-
-  public String getEmail() {
+   */
+  
+  @Schema(name = "email", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+  @JsonProperty("email")
+  public Optional<String> getEmail() {
     return email;
   }
 
-  public void setEmail(String email) {
+  @JsonProperty("email")
+  public void setEmail(Optional<String> email) {
     this.email = email;
   }
 
   public User password(String password) {
-    this.password = password;
+    this.password = Optional.ofNullable(password);
     return this;
   }
 
   /**
    * Get password
    * @return password
-  */
-  @ApiModelProperty(value = "")
-
-
-  public String getPassword() {
+   */
+  
+  @Schema(name = "password", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+  @JsonProperty("password")
+  public Optional<String> getPassword() {
     return password;
   }
 
-  public void setPassword(String password) {
+  @JsonProperty("password")
+  public void setPassword(Optional<String> password) {
     this.password = password;
   }
 
   public User phone(String phone) {
-    this.phone = phone;
+    this.phone = Optional.ofNullable(phone);
     return this;
   }
 
   /**
    * Get phone
    * @return phone
-  */
-  @ApiModelProperty(value = "")
-
-
-  public String getPhone() {
+   */
+  
+  @Schema(name = "phone", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+  @JsonProperty("phone")
+  public Optional<String> getPhone() {
     return phone;
   }
 
-  public void setPhone(String phone) {
+  @JsonProperty("phone")
+  public void setPhone(Optional<String> phone) {
     this.phone = phone;
   }
 
   public User userStatus(Integer userStatus) {
-    this.userStatus = userStatus;
+    this.userStatus = Optional.ofNullable(userStatus);
     return this;
   }
 
   /**
    * User Status
    * @return userStatus
-  */
-  @ApiModelProperty(value = "User Status")
-
-
-  public Integer getUserStatus() {
+   */
+  
+  @Schema(name = "userStatus", description = "User Status", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+  @JsonProperty("userStatus")
+  public Optional<Integer> getUserStatus() {
     return userStatus;
   }
 
-  public void setUserStatus(Integer userStatus) {
+  @JsonProperty("userStatus")
+  public void setUserStatus(Optional<Integer> userStatus) {
     this.userStatus = userStatus;
   }
-
 
   @Override
   public boolean equals(Object o) {
@@ -227,7 +243,6 @@ public class User   {
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class User {\n");
-    
     sb.append("    id: ").append(toIndentedString(id)).append("\n");
     sb.append("    username: ").append(toIndentedString(username)).append("\n");
     sb.append("    firstName: ").append(toIndentedString(firstName)).append("\n");
@@ -244,11 +259,108 @@ public class User   {
    * Convert the given object to string with each line indented by 4 spaces
    * (except the first line).
    */
-  private String toIndentedString(Object o) {
-    if (o == null) {
-      return "null";
-    }
-    return o.toString().replace("\n", "\n    ");
+  private String toIndentedString(@Nullable Object o) {
+    return o == null ? "null" : o.toString().replace("\n", "\n    ");
   }
+  
+  public static class Builder {
+
+    private User instance;
+
+    public Builder() {
+      this(new User());
+    }
+
+    protected Builder(User instance) {
+      this.instance = instance;
+    }
+
+    protected Builder copyOf(User value) { 
+      this.instance.setId(value.id);
+      this.instance.setUsername(value.username);
+      this.instance.setFirstName(value.firstName);
+      this.instance.setLastName(value.lastName);
+      this.instance.setEmail(value.email);
+      this.instance.setPassword(value.password);
+      this.instance.setPhone(value.phone);
+      this.instance.setUserStatus(value.userStatus);
+      return this;
+    }
+
+    public User.Builder id(Long id) {
+      this.instance.id(id);
+      return this;
+    }
+    
+    public User.Builder username(String username) {
+      this.instance.username(username);
+      return this;
+    }
+    
+    public User.Builder firstName(String firstName) {
+      this.instance.firstName(firstName);
+      return this;
+    }
+    
+    public User.Builder lastName(String lastName) {
+      this.instance.lastName(lastName);
+      return this;
+    }
+    
+    public User.Builder email(String email) {
+      this.instance.email(email);
+      return this;
+    }
+    
+    public User.Builder password(String password) {
+      this.instance.password(password);
+      return this;
+    }
+    
+    public User.Builder phone(String phone) {
+      this.instance.phone(phone);
+      return this;
+    }
+    
+    public User.Builder userStatus(Integer userStatus) {
+      this.instance.userStatus(userStatus);
+      return this;
+    }
+    
+    /**
+    * returns a built User instance.
+    *
+    * The builder is not reusable (NullPointerException)
+    */
+    public User build() {
+      try {
+        return this.instance;
+      } finally {
+        // ensure that this.instance is not reused
+        this.instance = null;
+      }
+    }
+
+    @Override
+    public String toString() {
+      return getClass() + "=(" + instance + ")";
+    }
+  }
+
+  /**
+  * Create a builder with no initialized field (except for the default values).
+  */
+  public static User.Builder builder() {
+    return new User.Builder();
+  }
+
+  /**
+  * Create a builder with a shallow copy of this instance.
+  */
+  public User.Builder toBuilder() {
+    User.Builder builder = new User.Builder();
+    return builder.copyOf(this);
+  }
+
 }
 

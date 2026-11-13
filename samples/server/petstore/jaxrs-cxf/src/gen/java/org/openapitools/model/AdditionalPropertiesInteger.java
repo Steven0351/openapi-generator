@@ -6,11 +6,14 @@ import javax.validation.constraints.*;
 import javax.validation.Valid;
 
 import io.swagger.annotations.ApiModelProperty;
+import java.util.Objects;
 import com.fasterxml.jackson.annotation.JsonProperty;
+
 
 public class AdditionalPropertiesInteger extends HashMap<String, Integer> {
   
   @ApiModelProperty(value = "")
+
   private String name;
  /**
    * Get name
@@ -30,6 +33,23 @@ public class AdditionalPropertiesInteger extends HashMap<String, Integer> {
     return this;
   }
 
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    AdditionalPropertiesInteger additionalPropertiesInteger = (AdditionalPropertiesInteger) o;
+    return Objects.equals(this.name, additionalPropertiesInteger.name) &&
+        super.equals(o);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(name, super.hashCode());
+  }
 
   @Override
   public String toString() {
@@ -46,10 +66,7 @@ public class AdditionalPropertiesInteger extends HashMap<String, Integer> {
    * (except the first line).
    */
   private static String toIndentedString(Object o) {
-    if (o == null) {
-      return "null";
-    }
-    return o.toString().replace("\n", "\n    ");
+    return o == null ? "null" : o.toString().replace("\n", "\n    ");
   }
 }
 

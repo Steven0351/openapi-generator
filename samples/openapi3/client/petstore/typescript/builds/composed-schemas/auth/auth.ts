@@ -1,4 +1,3 @@
-// typings for btoa are incorrect
 import { RequestContext } from "../http/http";
 
 /**
@@ -22,16 +21,18 @@ export interface TokenProvider {
   getToken(): Promise<string> | string;
 }
 
-
 export type AuthMethods = {
+    "default"?: SecurityAuthentication,
 }
 
 export type ApiKeyConfiguration = string;
 export type HttpBasicConfiguration = { "username": string, "password": string };
 export type HttpBearerConfiguration = { tokenProvider: TokenProvider };
 export type OAuth2Configuration = { accessToken: string };
+export type HttpSignatureConfiguration = unknown; // TODO: Implement
 
 export type AuthMethodsConfiguration = {
+    "default"?: SecurityAuthentication,
 }
 
 /**
@@ -44,6 +45,7 @@ export function configureAuthMethods(config: AuthMethodsConfiguration | undefine
     if (!config) {
         return authMethods;
     }
+    authMethods["default"] = config["default"]
 
     return authMethods;
 }

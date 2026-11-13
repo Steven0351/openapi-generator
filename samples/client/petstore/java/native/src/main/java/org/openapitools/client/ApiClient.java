@@ -20,9 +20,11 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.openapitools.jackson.nullable.JsonNullableModule;
 
 import java.io.InputStream;
+import java.io.IOException;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.net.http.HttpClient;
+import java.net.http.HttpConnectTimeoutException;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
@@ -33,6 +35,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.StringJoiner;
 import java.util.function.Consumer;
+import java.util.Optional;
+import java.util.zip.GZIPInputStream;
 import java.util.stream.Collectors;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -50,21 +54,22 @@ import static java.nio.charset.StandardCharsets.UTF_8;
  * <p>The setter methods of this class return the current object to facilitate
  * a fluent style of configuration.</p>
  */
-@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.28.0-SNAPSHOT")
 public class ApiClient {
 
-  private HttpClient.Builder builder;
-  private ObjectMapper mapper;
-  private String scheme;
-  private String host;
-  private int port;
-  private String basePath;
-  private Consumer<HttpRequest.Builder> interceptor;
-  private Consumer<HttpResponse<InputStream>> responseInterceptor;
-  private Consumer<HttpResponse<String>> asyncResponseInterceptor;
-  private Duration readTimeout;
+  protected HttpClient.Builder builder;
+  protected ObjectMapper mapper;
+  protected String scheme;
+  protected String host;
+  protected int port;
+  protected String basePath;
+  protected Consumer<HttpRequest.Builder> interceptor;
+  protected Consumer<HttpResponse<InputStream>> responseInterceptor;
+  protected Consumer<HttpResponse<InputStream>> asyncResponseInterceptor;
+  protected Duration readTimeout;
+  protected Duration connectTimeout;
 
-  private static String valueToString(Object value) {
+  public static String valueToString(Object value) {
     if (value == null) {
       return "";
     }
@@ -81,7 +86,7 @@ public class ApiClient {
    * @return URL-encoded representation of the input string.
    */
   public static String urlEncode(String s) {
-    return URLEncoder.encode(s, UTF_8);
+    return URLEncoder.encode(s, UTF_8).replaceAll("\\+", "%20");
   }
 
   /**
@@ -159,32 +164,38 @@ public class ApiClient {
   }
 
   /**
-   * Ctor.
+   * Create an instance of ApiClient.
    */
   public ApiClient() {
     this.builder = createDefaultHttpClientBuilder();
     this.mapper = createDefaultObjectMapper();
-    updateBaseUri(getDefaultBaseUri());
+    updateBaseUri("http://petstore.swagger.io:80/v2");
     interceptor = null;
     readTimeout = null;
+    connectTimeout = null;
     responseInterceptor = null;
     asyncResponseInterceptor = null;
   }
 
   /**
-   * Ctor.
+   * Create an instance of ApiClient.
+   *
+   * @param builder Http client builder.
+   * @param mapper Object mapper.
+   * @param baseUri Base URI
    */
   public ApiClient(HttpClient.Builder builder, ObjectMapper mapper, String baseUri) {
     this.builder = builder;
     this.mapper = mapper;
-    updateBaseUri(baseUri != null ? baseUri : getDefaultBaseUri());
+    updateBaseUri(baseUri != null ? baseUri : "http://petstore.swagger.io:80/v2");
     interceptor = null;
     readTimeout = null;
+    connectTimeout = null;
     responseInterceptor = null;
     asyncResponseInterceptor = null;
   }
 
-  protected ObjectMapper createDefaultObjectMapper() {
+  public static ObjectMapper createDefaultObjectMapper() {
     ObjectMapper mapper = new ObjectMapper();
     mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
     mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
@@ -195,18 +206,19 @@ public class ApiClient {
     mapper.disable(DeserializationFeature.ADJUST_DATES_TO_CONTEXT_TIME_ZONE);
     mapper.registerModule(new JavaTimeModule());
     mapper.registerModule(new JsonNullableModule());
+    mapper.registerModule(new RFC3339JavaTimeModule());
     return mapper;
   }
 
-  protected String getDefaultBaseUri() {
-    return "http://petstore.swagger.io:80/v2";
+  protected final String getDefaultBaseUri() {
+    return basePath;
   }
 
-  protected HttpClient.Builder createDefaultHttpClientBuilder() {
+  public static HttpClient.Builder createDefaultHttpClientBuilder() {
     return HttpClient.newBuilder();
   }
 
-  public void updateBaseUri(String baseUri) {
+  public final void updateBaseUri(String baseUri) {
     URI uri = URI.create(baseUri);
     scheme = uri.getScheme();
     host = uri.getHost();
@@ -375,7 +387,7 @@ public class ApiClient {
    *                    of null resets the interceptor to a no-op.
    * @return This object.
    */
-  public ApiClient setAsyncResponseInterceptor(Consumer<HttpResponse<String>> interceptor) {
+  public ApiClient setAsyncResponseInterceptor(Consumer<HttpResponse<InputStream>> interceptor) {
     this.asyncResponseInterceptor = interceptor;
     return this;
   }
@@ -385,7 +397,7 @@ public class ApiClient {
    *
    * @return The custom interceptor that was set, or null if there isn't any.
    */
-  public Consumer<HttpResponse<String>> getAsyncResponseInterceptor() {
+  public Consumer<HttpResponse<InputStream>> getAsyncResponseInterceptor() {
     return asyncResponseInterceptor;
   }
 
@@ -414,4 +426,63 @@ public class ApiClient {
   public Duration getReadTimeout() {
     return readTimeout;
   }
+  /**
+   * Sets the connect timeout (in milliseconds) for the http client.
+   *
+   * <p> In the case where a new connection needs to be established, if
+   * the connection cannot be established within the given {@code
+   * duration}, then {@link HttpClient#send(HttpRequest,BodyHandler)
+   * HttpClient::send} throws an {@link HttpConnectTimeoutException}, or
+   * {@link HttpClient#sendAsync(HttpRequest,BodyHandler)
+   * HttpClient::sendAsync} completes exceptionally with an
+   * {@code HttpConnectTimeoutException}. If a new connection does not
+   * need to be established, for example if a connection can be reused
+   * from a previous request, then this timeout duration has no effect.
+   *
+   * @param connectTimeout connection timeout in milliseconds
+   *
+   * @return This object.
+   */
+  public ApiClient setConnectTimeout(Duration connectTimeout) {
+    this.connectTimeout = connectTimeout;
+    this.builder.connectTimeout(connectTimeout);
+    return this;
+  }
+
+  /**
+   * Get connection timeout (in milliseconds).
+   *
+   * @return Timeout in milliseconds
+   */
+  public Duration getConnectTimeout() {
+    return connectTimeout;
+  }
+
+  /**
+   * Returns the response body InputStream, transparently decoding gzip-compressed
+   * payloads when the server sets {@code Content-Encoding: gzip}.
+   *
+   * @param response HTTP response whose body should be consumed
+   * @return Original or decompressed InputStream for the response body
+   * @throws IOException if the response body cannot be accessed or wrapping fails
+   */
+  public static InputStream getResponseBody(HttpResponse<InputStream> response) throws IOException {
+    if (response == null) {
+      return null;
+    }
+    InputStream body = response.body();
+    if (body == null) {
+      return null;
+    }
+    Optional<String> encoding = response.headers().firstValue("Content-Encoding");
+    if (encoding.isPresent()) {
+      for (String token : encoding.get().split(",")) {
+        if ("gzip".equalsIgnoreCase(token.trim())) {
+          return new GZIPInputStream(body, 8192);
+        }
+      }
+    }
+    return body;
+  }
+
 }

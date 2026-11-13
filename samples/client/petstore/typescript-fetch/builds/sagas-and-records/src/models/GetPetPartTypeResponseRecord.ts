@@ -12,11 +12,11 @@
  * Do not edit the class manually.
  */
 
-import {ApiRecordUtils, knownRecordFactories, appFromJS, NormalizedRecordEntities} from "../runtimeSagasAndRecords";
-import {getApiEntitiesState} from "../ApiEntitiesSelectors"
-import {List, Record, RecordOf, Map} from 'immutable';
-import {Schema, schema, NormalizedSchema} from "normalizr";
-import {select, call} from "redux-saga/effects";
+import { ApiRecordUtils, knownRecordFactories, appFromJS, NormalizedRecordEntities } from "../runtimeSagasAndRecords";
+import { getApiEntitiesState } from "../ApiEntitiesSelectors"
+import { List, Record, RecordOf, Map } from 'immutable';
+import { Schema, schema, NormalizedSchema } from "normalizr";
+import { select, call } from "redux-saga/effects";
 
 import {
     GetPetPartTypeResponse,
@@ -50,13 +50,13 @@ knownRecordFactories.set(GetPetPartTypeResponseRecordProps.recType, GetPetPartTy
 class GetPetPartTypeResponseRecordUtils extends ApiRecordUtils<GetPetPartTypeResponse, GetPetPartTypeResponseRecord> {
     public normalize(apiObject: GetPetPartTypeResponse, asEntity?: boolean): GetPetPartTypeResponse {
         (apiObject as any).recType = GetPetPartTypeResponseRecordProps.recType;
-        responseMetaRecordUtils.normalize(apiObject.meta);
+        responseMetaRecordUtils.normalize(apiObject['meta']);
         return apiObject;
     }
 
     public toApi(record: GetPetPartTypeResponseRecord): GetPetPartTypeResponse {
         const apiObject = super.toApi(record);
-        apiObject.meta = responseMetaRecordUtils.toApi(record.meta);
+        apiObject['meta'] = responseMetaRecordUtils.toApi(record['meta']);
         return apiObject;
     }
 

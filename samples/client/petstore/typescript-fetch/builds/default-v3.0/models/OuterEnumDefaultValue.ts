@@ -12,15 +12,28 @@
  * Do not edit the class manually.
  */
 
+
 /**
  * 
  * @export
- * @enum {string}
  */
-export enum OuterEnumDefaultValue {
-    Placed = 'placed',
-    Approved = 'approved',
-    Delivered = 'delivered'
+export const OuterEnumDefaultValue = {
+    Placed: 'placed',
+    Approved: 'approved',
+    Delivered: 'delivered',
+} as const;
+export type OuterEnumDefaultValue = typeof OuterEnumDefaultValue[keyof typeof OuterEnumDefaultValue];
+
+
+export function instanceOfOuterEnumDefaultValue(value: any): boolean {
+    for (const key in OuterEnumDefaultValue) {
+        if (Object.prototype.hasOwnProperty.call(OuterEnumDefaultValue, key)) {
+            if (OuterEnumDefaultValue[key as keyof typeof OuterEnumDefaultValue] === value) {
+                return true;
+            }
+        }
+    }
+    return false;
 }
 
 export function OuterEnumDefaultValueFromJSON(json: any): OuterEnumDefaultValue {
@@ -33,5 +46,9 @@ export function OuterEnumDefaultValueFromJSONTyped(json: any, ignoreDiscriminato
 
 export function OuterEnumDefaultValueToJSON(value?: OuterEnumDefaultValue | null): any {
     return value as any;
+}
+
+export function OuterEnumDefaultValueToJSONTyped(value: any, ignoreDiscriminator: boolean): OuterEnumDefaultValue {
+    return value as OuterEnumDefaultValue;
 }
 

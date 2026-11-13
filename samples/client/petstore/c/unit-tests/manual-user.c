@@ -14,9 +14,32 @@
 #define USER_STATUS 4
 
 int main() {
-	user_t *newuser = user_create(USER_ID, USER_NAME, FIRST_NAME, LAST_NAME,
-	                              EMAIL,
-	                              PASSWORD, PHONE, USER_STATUS);
+
+	char *username = malloc(strlen(USER_NAME) + 1);
+	strcpy(username, USER_NAME);
+	char *firstname = malloc(strlen(FIRST_NAME) + 1);
+	strcpy(firstname, FIRST_NAME);
+	char *lastname = malloc(strlen(LAST_NAME) + 1);
+	strcpy(lastname, LAST_NAME);
+	char *email = malloc(strlen(EMAIL) + 1);
+	strcpy(email, EMAIL);
+	char *password = malloc(strlen(PASSWORD) + 1);
+	strcpy(password, PASSWORD);
+	char *phone = malloc(strlen(PHONE) + 1);
+	strcpy(phone, PHONE);
+	
+	long userId = USER_ID;
+	int userStatus = USER_STATUS;
+	user_t *newuser = user_create(&userId,
+	                              username,
+	                              firstname,
+	                              lastname,
+	                              email,
+	                              password,
+	                              phone,
+	                              &userStatus,
+	                              NULL,
+	                              openapi_petstore_preference__cats);
 
 	cJSON *JSONNODE = user_convertToJSON(newuser);
 
@@ -24,16 +47,16 @@ int main() {
 
 	printf("Created User is: \n%s\n", dataToPrint);
 
-	user_t *pasrsedUser = user_parseFromJSON(JSONNODE);
+	user_t *parsedUser = user_parseFromJSON(JSONNODE);
 
-	cJSON *fromJSON = user_convertToJSON(pasrsedUser);
+	cJSON *fromJSON = user_convertToJSON(parsedUser);
 
 	char *dataToPrintFromJSON = cJSON_Print(fromJSON);
 
 	printf("Parsed User From JSON is: \n%s\n", dataToPrintFromJSON);
 
 	user_free(newuser);
-	user_free(pasrsedUser);
+	user_free(parsedUser);
 	cJSON_Delete(JSONNODE);
 	cJSON_Delete(fromJSON);
 }

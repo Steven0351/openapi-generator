@@ -10,8 +10,8 @@
  * Do not edit the class manually.
  */
 
-import { Category } from './Category.ts';
-import { Tag } from './Tag.ts';
+import { Category } from '../models/Category.ts';
+import { Tag } from '../models/Tag.ts';
 import { HttpFile } from '../http/http.ts';
 
 /**
@@ -25,10 +25,13 @@ export class Pet {
     'tags'?: Array<Tag>;
     /**
     * pet status in the store
+    * @deprecated
     */
     'status'?: PetStatusEnum;
 
     static readonly discriminator: string | undefined = undefined;
+
+    static readonly mapping: {[index: string]: string} | undefined = undefined;
 
     static readonly attributeTypeMap: Array<{name: string, baseName: string, type: string, format: string}> = [
         {
@@ -76,6 +79,5 @@ export class Pet {
     }
 }
 
-
-export type PetStatusEnum = "available" | "pending" | "sold" ;
+    export type PetStatusEnum = "available" | "pending" | "sold" ;
 

@@ -1,7 +1,7 @@
 //
 // AUTO-GENERATED FILE, DO NOT MODIFY!
 //
-// @dart=2.0
+// @dart=2.18
 
 // ignore_for_file: unused_element, unused_import
 // ignore_for_file: always_put_required_named_parameters_first
@@ -15,15 +15,27 @@ class Pet {
   Pet({
     this.id,
     this.category,
-    @required this.name,
+    required this.name,
     this.photoUrls = const [],
     this.tags = const [],
     this.status,
   });
 
-  int id;
+  ///
+  /// Please note: This property should have been non-nullable! Since the specification file
+  /// does not include a default value (using the "default:" property), however, the generated
+  /// source code must fall back to having a nullable type.
+  /// Consider adding a "default:" property in the specification file to hide this note.
+  ///
+  int? id;
 
-  Category category;
+  ///
+  /// Please note: This property should have been non-nullable! Since the specification file
+  /// does not include a default value (using the "default:" property), however, the generated
+  /// source code must fall back to having a nullable type.
+  /// Consider adding a "default:" property in the specification file to hide this note.
+  ///
+  Category? category;
 
   String name;
 
@@ -32,45 +44,49 @@ class Pet {
   List<Tag> tags;
 
   /// pet status in the store
-  PetStatusEnum status;
+  PetStatusEnum? status;
 
   @override
   bool operator ==(Object other) => identical(this, other) || other is Pet &&
-     other.id == id &&
-     other.category == category &&
-     other.name == name &&
-     other.photoUrls == photoUrls &&
-     other.tags == tags &&
-     other.status == status;
+    other.id == id &&
+    other.category == category &&
+    other.name == name &&
+    _deepEquality.equals(other.photoUrls, photoUrls) &&
+    _deepEquality.equals(other.tags, tags) &&
+    other.status == status;
 
   @override
   int get hashCode =>
-  // ignore: unnecessary_parenthesis
-    (id == null ? 0 : id.hashCode) +
-    (category == null ? 0 : category.hashCode) +
-    (name == null ? 0 : name.hashCode) +
-    (photoUrls == null ? 0 : photoUrls.hashCode) +
-    (tags == null ? 0 : tags.hashCode) +
-    (status == null ? 0 : status.hashCode);
+    // ignore: unnecessary_parenthesis
+    (id == null ? 0 : id!.hashCode) +
+    (category == null ? 0 : category!.hashCode) +
+    (name.hashCode) +
+    (photoUrls.hashCode) +
+    (tags.hashCode) +
+    (status == null ? 0 : status!.hashCode);
 
   @override
   String toString() => 'Pet[id=$id, category=$category, name=$name, photoUrls=$photoUrls, tags=$tags, status=$status]';
 
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{};
-    if (id != null) {
-      json[r'id'] = id;
+    if (this.id != null) {
+      json[r'id'] = this.id;
+    } else {
+      json[r'id'] = null;
     }
-    if (category != null) {
-      json[r'category'] = category;
+    if (this.category != null) {
+      json[r'category'] = this.category;
+    } else {
+      json[r'category'] = null;
     }
-      json[r'name'] = name;
-      json[r'photoUrls'] = photoUrls;
-    if (tags != null) {
-      json[r'tags'] = tags;
-    }
-    if (status != null) {
-      json[r'status'] = status;
+      json[r'name'] = this.name;
+      json[r'photoUrls'] = this.photoUrls;
+      json[r'tags'] = this.tags;
+    if (this.status != null) {
+      json[r'status'] = this.status;
+    } else {
+      json[r'status'] = null;
     }
     return json;
   }
@@ -78,16 +94,28 @@ class Pet {
   /// Returns a new [Pet] instance and imports its values from
   /// [value] if it's a [Map], null otherwise.
   // ignore: prefer_constructors_over_static_methods
-  static Pet fromJson(dynamic value) {
+  static Pet? fromJson(dynamic value) {
     if (value is Map) {
       final json = value.cast<String, dynamic>();
+
+      // Ensure that the map contains the required keys.
+      // Note 1: the values aren't checked for validity beyond being non-null.
+      // Note 2: this code is stripped in release mode!
+      assert(() {
+        assert(json.containsKey(r'name'), 'Required key "Pet[name]" is missing from JSON.');
+        assert(json[r'name'] != null, 'Required key "Pet[name]" has a null value in JSON.');
+        assert(json.containsKey(r'photoUrls'), 'Required key "Pet[photoUrls]" is missing from JSON.');
+        assert(json[r'photoUrls'] != null, 'Required key "Pet[photoUrls]" has a null value in JSON.');
+        return true;
+      }());
+
       return Pet(
         id: mapValueOfType<int>(json, r'id'),
         category: Category.fromJson(json[r'category']),
-        name: mapValueOfType<String>(json, r'name'),
-        photoUrls: json[r'photoUrls'] is List
-          ? (json[r'photoUrls'] as List).cast<String>()
-          : null,
+        name: mapValueOfType<String>(json, r'name')!,
+        photoUrls: json[r'photoUrls'] is Iterable
+            ? (json[r'photoUrls'] as Iterable).cast<String>().toList(growable: false)
+            : const [],
         tags: Tag.listFromJson(json[r'tags']),
         status: PetStatusEnum.fromJson(json[r'status']),
       );
@@ -95,70 +123,90 @@ class Pet {
     return null;
   }
 
-  static List<Pet> listFromJson(dynamic json, {bool emptyIsNull, bool growable,}) =>
-    json is List && json.isNotEmpty
-      ? json.map(Pet.fromJson).toList(growable: true == growable)
-      : true == emptyIsNull ? null : <Pet>[];
+  static List<Pet> listFromJson(dynamic json, {bool growable = false,}) {
+    final result = <Pet>[];
+    if (json is List && json.isNotEmpty) {
+      for (final row in json) {
+        final value = Pet.fromJson(row);
+        if (value != null) {
+          result.add(value);
+        }
+      }
+    }
+    return result.toList(growable: growable);
+  }
 
   static Map<String, Pet> mapFromJson(dynamic json) {
     final map = <String, Pet>{};
     if (json is Map && json.isNotEmpty) {
-      json
-        .cast<String, dynamic>()
-        .forEach((key, dynamic value) => map[key] = Pet.fromJson(value));
+      json = json.cast<String, dynamic>(); // ignore: parameter_assignments
+      for (final entry in json.entries) {
+        final value = Pet.fromJson(entry.value);
+        if (value != null) {
+          map[entry.key] = value;
+        }
+      }
     }
     return map;
   }
 
   // maps a json object with a list of Pet-objects as value to a dart map
-  static Map<String, List<Pet>> mapListFromJson(dynamic json, {bool emptyIsNull, bool growable,}) {
+  static Map<String, List<Pet>> mapListFromJson(dynamic json, {bool growable = false,}) {
     final map = <String, List<Pet>>{};
     if (json is Map && json.isNotEmpty) {
-      json
-        .cast<String, dynamic>()
-        .forEach((key, dynamic value) {
-          map[key] = Pet.listFromJson(
-            value,
-            emptyIsNull: emptyIsNull,
-            growable: growable,
-          );
-        });
+      // ignore: parameter_assignments
+      json = json.cast<String, dynamic>();
+      for (final entry in json.entries) {
+        map[entry.key] = Pet.listFromJson(entry.value, growable: growable,);
+      }
     }
     return map;
   }
+
+  /// The list of required keys that must be present in a JSON.
+  static const requiredKeys = <String>{
+    'name',
+    'photoUrls',
+  };
 }
 
 /// pet status in the store
-class PetStatusEnum {
-  /// Instantiate a new enum with the provided [value].
-  const PetStatusEnum._(this.value);
+enum PetStatusEnum {
+  available._(r'available'),
+  pending._(r'pending'),
+  sold._(r'sold'),
+  ;
+
+  /// Instantiate a new enum with the provided value.
+  const PetStatusEnum._(this._value);
 
   /// The underlying value of this enum member.
-  final String value;
+  final String _value;
 
   @override
-  String toString() => value ?? '';
+  String toString() => _value;
 
-  String toJson() => value;
+  /// Encodes this enum as a value suitable for JSON.
+  String toJson() => _value;
 
-  static const available = PetStatusEnum._(r'available');
-  static const pending = PetStatusEnum._(r'pending');
-  static const sold = PetStatusEnum._(r'sold');
+  /// Returns the instance of [PetStatusEnum] that was successfully decoded
+  /// from the passed [value] on success, null otherwise.
+  static PetStatusEnum? fromJson(dynamic value) => PetStatusEnumTypeTransformer().decode(value);
 
-  /// List of all possible values in this [enum][PetStatusEnum].
-  static const values = <PetStatusEnum>[
-    available,
-    pending,
-    sold,
-  ];
-
-  static PetStatusEnum fromJson(dynamic value) =>
-    PetStatusEnumTypeTransformer().decode(value);
-
-  static List<PetStatusEnum> listFromJson(dynamic json, {bool emptyIsNull, bool growable,}) =>
-    json is List && json.isNotEmpty
-      ? json.map(PetStatusEnum.fromJson).toList(growable: true == growable)
-      : true == emptyIsNull ? null : <PetStatusEnum>[];
+  /// Returns a [List] containing instances of [PetStatusEnum]
+  /// that were successfully decoded from the passed [JSON][json].
+  static List<PetStatusEnum> listFromJson(dynamic json, {bool growable = false,}) {
+    final result = <PetStatusEnum>[];
+    if (json is List && json.isNotEmpty) {
+      for (final row in json) {
+        final value = PetStatusEnum.fromJson(row);
+        if (value != null) {
+          result.add(value);
+        }
+      }
+    }
+    return result.toList(growable: growable);
+  }
 }
 
 /// Transformation class that can [encode] an instance of [PetStatusEnum] to String,
@@ -168,9 +216,10 @@ class PetStatusEnumTypeTransformer {
 
   const PetStatusEnumTypeTransformer._();
 
-  String encode(PetStatusEnum data) => data.value;
+  String encode(PetStatusEnum data) => data._value;
 
-  /// Decodes a [dynamic value][data] to a PetStatusEnum.
+  /// Returns the instance of [PetStatusEnum] that was successfully decoded
+  /// from the passed [data] value on success, null otherwise.
   ///
   /// If [allowNull] is true and the [dynamic value][data] cannot be decoded successfully,
   /// then null is returned. However, if [allowNull] is false and the [dynamic value][data]
@@ -178,14 +227,17 @@ class PetStatusEnumTypeTransformer {
   ///
   /// The [allowNull] is very handy when an API changes and a new enum value is added or removed,
   /// and users are still using an old app with the old code.
-  PetStatusEnum decode(dynamic data, {bool allowNull}) {
+  PetStatusEnum? decode(dynamic data, {bool allowNull = true}) {
+    if (data is PetStatusEnum) {
+      return data;
+    }
     if (data != null) {
-      switch (data.toString()) {
+      switch (data) {
         case r'available': return PetStatusEnum.available;
         case r'pending': return PetStatusEnum.pending;
         case r'sold': return PetStatusEnum.sold;
         default:
-          if (allowNull == false) {
+          if (!allowNull) {
             throw ArgumentError('Unknown enum value to decode: $data');
           }
       }
@@ -193,8 +245,8 @@ class PetStatusEnumTypeTransformer {
     return null;
   }
 
-  /// Singleton [PetStatusEnumTypeTransformer] instance.
-  static PetStatusEnumTypeTransformer _instance;
+  /// The singleton instance of this transformer.
+  static PetStatusEnumTypeTransformer? _instance;
 }
 
 

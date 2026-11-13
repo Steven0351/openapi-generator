@@ -30,13 +30,13 @@ namespace test_namespace {
 class PFXApiResponse : public PFXObject {
 public:
     PFXApiResponse();
-    PFXApiResponse(QString json);
+    PFXApiResponse(const QString &json);
     ~PFXApiResponse() override;
 
     QString asJson() const override;
     QJsonObject asJsonObject() const override;
     void fromJsonObject(QJsonObject json) override;
-    void fromJson(QString jsonString) override;
+    void fromJson(const QString &jsonString) override;
 
     qint32 getCode() const;
     void setCode(const qint32 &code);
@@ -59,15 +59,15 @@ public:
 private:
     void initializeModel();
 
-    qint32 code;
+    qint32 m_code;
     bool m_code_isSet;
     bool m_code_isValid;
 
-    QString type;
+    QString m_type;
     bool m_type_isSet;
     bool m_type_isValid;
 
-    QString message;
+    QString m_message;
     bool m_message_isSet;
     bool m_message_isValid;
 };

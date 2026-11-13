@@ -1,90 +1,100 @@
 package org.openapitools.model;
 
+import java.net.URI;
 import java.util.Objects;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
-import io.swagger.annotations.ApiModel;
-import io.swagger.annotations.ApiModelProperty;
 import java.math.BigDecimal;
+import org.springframework.lang.Nullable;
 import org.openapitools.jackson.nullable.JsonNullable;
-import javax.validation.Valid;
-import javax.validation.constraints.*;
+import java.time.OffsetDateTime;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.*;
+import io.swagger.v3.oas.annotations.media.Schema;
+
+
+import java.util.*;
+import jakarta.annotation.Generated;
 
 /**
  * OuterComposite
  */
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.SpringCodegen")
-public class OuterComposite   {
-  @JsonProperty("my_number")
-  private BigDecimal myNumber;
 
-  @JsonProperty("my_string")
-  private String myString;
+@Generated(value = "org.openapitools.codegen.languages.SpringCodegen", comments = "Generator version: 7.28.0-SNAPSHOT")
+public class OuterComposite {
 
-  @JsonProperty("my_boolean")
-  private Boolean myBoolean;
+  @JsonInclude(JsonInclude.Include.NON_DEFAULT)
+  private Optional<BigDecimal> myNumber = Optional.empty();
+
+  @JsonInclude(JsonInclude.Include.NON_DEFAULT)
+  private Optional<String> myString = Optional.empty();
+
+  @JsonInclude(JsonInclude.Include.NON_DEFAULT)
+  private Optional<Boolean> myBoolean = Optional.empty();
 
   public OuterComposite myNumber(BigDecimal myNumber) {
-    this.myNumber = myNumber;
+    this.myNumber = Optional.ofNullable(myNumber);
     return this;
   }
 
   /**
    * Get myNumber
    * @return myNumber
-  */
-  @ApiModelProperty(value = "")
-
-  @Valid
-
-  public BigDecimal getMyNumber() {
+   */
+  @Valid 
+  @Schema(name = "my_number", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+  @JsonProperty("my_number")
+  public Optional<BigDecimal> getMyNumber() {
     return myNumber;
   }
 
-  public void setMyNumber(BigDecimal myNumber) {
+  @JsonProperty("my_number")
+  public void setMyNumber(Optional<BigDecimal> myNumber) {
     this.myNumber = myNumber;
   }
 
   public OuterComposite myString(String myString) {
-    this.myString = myString;
+    this.myString = Optional.ofNullable(myString);
     return this;
   }
 
   /**
    * Get myString
    * @return myString
-  */
-  @ApiModelProperty(value = "")
-
-
-  public String getMyString() {
+   */
+  
+  @Schema(name = "my_string", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+  @JsonProperty("my_string")
+  public Optional<String> getMyString() {
     return myString;
   }
 
-  public void setMyString(String myString) {
+  @JsonProperty("my_string")
+  public void setMyString(Optional<String> myString) {
     this.myString = myString;
   }
 
   public OuterComposite myBoolean(Boolean myBoolean) {
-    this.myBoolean = myBoolean;
+    this.myBoolean = Optional.ofNullable(myBoolean);
     return this;
   }
 
   /**
    * Get myBoolean
    * @return myBoolean
-  */
-  @ApiModelProperty(value = "")
-
-
-  public Boolean getMyBoolean() {
+   */
+  
+  @Schema(name = "my_boolean", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+  @JsonProperty("my_boolean")
+  public Optional<Boolean> getMyBoolean() {
     return myBoolean;
   }
 
-  public void setMyBoolean(Boolean myBoolean) {
+  @JsonProperty("my_boolean")
+  public void setMyBoolean(Optional<Boolean> myBoolean) {
     this.myBoolean = myBoolean;
   }
-
 
   @Override
   public boolean equals(Object o) {
@@ -109,7 +119,6 @@ public class OuterComposite   {
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class OuterComposite {\n");
-    
     sb.append("    myNumber: ").append(toIndentedString(myNumber)).append("\n");
     sb.append("    myString: ").append(toIndentedString(myString)).append("\n");
     sb.append("    myBoolean: ").append(toIndentedString(myBoolean)).append("\n");
@@ -121,11 +130,78 @@ public class OuterComposite   {
    * Convert the given object to string with each line indented by 4 spaces
    * (except the first line).
    */
-  private String toIndentedString(Object o) {
-    if (o == null) {
-      return "null";
-    }
-    return o.toString().replace("\n", "\n    ");
+  private String toIndentedString(@Nullable Object o) {
+    return o == null ? "null" : o.toString().replace("\n", "\n    ");
   }
+  
+  public static class Builder {
+
+    private OuterComposite instance;
+
+    public Builder() {
+      this(new OuterComposite());
+    }
+
+    protected Builder(OuterComposite instance) {
+      this.instance = instance;
+    }
+
+    protected Builder copyOf(OuterComposite value) { 
+      this.instance.setMyNumber(value.myNumber);
+      this.instance.setMyString(value.myString);
+      this.instance.setMyBoolean(value.myBoolean);
+      return this;
+    }
+
+    public OuterComposite.Builder myNumber(BigDecimal myNumber) {
+      this.instance.myNumber(myNumber);
+      return this;
+    }
+    
+    public OuterComposite.Builder myString(String myString) {
+      this.instance.myString(myString);
+      return this;
+    }
+    
+    public OuterComposite.Builder myBoolean(Boolean myBoolean) {
+      this.instance.myBoolean(myBoolean);
+      return this;
+    }
+    
+    /**
+    * returns a built OuterComposite instance.
+    *
+    * The builder is not reusable (NullPointerException)
+    */
+    public OuterComposite build() {
+      try {
+        return this.instance;
+      } finally {
+        // ensure that this.instance is not reused
+        this.instance = null;
+      }
+    }
+
+    @Override
+    public String toString() {
+      return getClass() + "=(" + instance + ")";
+    }
+  }
+
+  /**
+  * Create a builder with no initialized field (except for the default values).
+  */
+  public static OuterComposite.Builder builder() {
+    return new OuterComposite.Builder();
+  }
+
+  /**
+  * Create a builder with a shallow copy of this instance.
+  */
+  public OuterComposite.Builder toBuilder() {
+    OuterComposite.Builder builder = new OuterComposite.Builder();
+    return builder.copyOf(this);
+  }
+
 }
 

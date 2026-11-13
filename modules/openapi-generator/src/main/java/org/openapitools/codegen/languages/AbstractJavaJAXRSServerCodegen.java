@@ -21,16 +21,31 @@ import com.google.common.annotations.VisibleForTesting;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.Operation;
 import io.swagger.v3.oas.models.PathItem;
+import java.io.File;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import lombok.Setter;
 import org.apache.commons.lang3.StringUtils;
-import org.openapitools.codegen.*;
+import org.openapitools.codegen.CliOption;
+import org.openapitools.codegen.CodegenConstants;
+import org.openapitools.codegen.CodegenOperation;
+import org.openapitools.codegen.CodegenParameter;
+import org.openapitools.codegen.CodegenResponse;
+import org.openapitools.codegen.CodegenType;
 import org.openapitools.codegen.languages.features.BeanValidationFeatures;
+import org.openapitools.codegen.model.ModelMap;
+import org.openapitools.codegen.model.OperationMap;
+import org.openapitools.codegen.model.OperationsMap;
 import org.openapitools.codegen.utils.URLPathUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.File;
-import java.net.URL;
-import java.util.*;
 
 public abstract class AbstractJavaJAXRSServerCodegen extends AbstractJavaCodegen implements BeanValidationFeatures {
     public static final String SERVER_PORT = "serverPort";
@@ -41,13 +56,39 @@ public abstract class AbstractJavaJAXRSServerCodegen extends AbstractJavaCodegen
      * Mustache template for the JAX-RS Codegen.
      */
     protected static final String JAXRS_TEMPLATE_DIRECTORY_NAME = "JavaJaxRS";
+    protected static final String X_MICROPROFILE_OPEN_API_RETURN_SCHEMA_CONTAINER = "x-microprofile-open-api-return-schema-container";
+    protected static final String X_MICROPROFILE_OPEN_API_RETURN_UNIQUE_ITEMS = "x-microprofile-open-api-return-unique-items";
+    protected static final String X_MICROPROFILE_OPEN_API_SCHEMA_TYPE = "x-microprofile-open-api-schema-type";
+    protected static final String SCHEMA_TYPE_ARRAY = "org.eclipse.microprofile.openapi.annotations.enums.SchemaType.ARRAY";
+    protected static final Map<String, String> ARRAY_OF_MICROPROFILE_OPEN_API_SCHEMA_TYPES;
+
+    static {
+        final Map<String, String> schemaTypes = new HashMap<>();
+        schemaTypes.put("integer", "org.eclipse.microprofile.openapi.annotations.enums.SchemaType.INTEGER");
+        schemaTypes.put("number", "org.eclipse.microprofile.openapi.annotations.enums.SchemaType.NUMBER");
+        schemaTypes.put("boolean", "org.eclipse.microprofile.openapi.annotations.enums.SchemaType.BOOLEAN");
+        schemaTypes.put("string", "org.eclipse.microprofile.openapi.annotations.enums.SchemaType.STRING");
+        schemaTypes.put("object", "org.eclipse.microprofile.openapi.annotations.enums.SchemaType.OBJECT");
+        schemaTypes.put("array", "org.eclipse.microprofile.openapi.annotations.enums.SchemaType.ARRAY");
+        ARRAY_OF_MICROPROFILE_OPEN_API_SCHEMA_TYPES = Collections.unmodifiableMap(schemaTypes);
+    }
+
+    @Setter
     protected String implFolder = "src/main/java";
     protected String testResourcesFolder = "src/test/resources";
     protected String title = "OpenAPI Server";
     protected String serverPort = "8080";
 
-    protected boolean useBeanValidation = true;
     protected boolean useTags = false;
+
+    /**
+     * All resource paths seen across every tag, collected during the first pass
+     * ({@link #addOperationToGroup}).  Used in the second pass
+     * ({@link #postProcessOperationsWithModels}) to detect cross-tag path shadowing: a
+     * candidate {@code commonPath} is only safe if no <em>other</em> tag owns a resource
+     * path that starts with that prefix.
+     */
+    private final Set<String> allResourcePaths = new HashSet<>();
 
     private final Logger LOGGER = LoggerFactory.getLogger(AbstractJavaJAXRSServerCodegen.class);
 
@@ -60,21 +101,23 @@ public abstract class AbstractJavaJAXRSServerCodegen extends AbstractJavaCodegen
         dateLibrary = "legacy"; //TODO: add joda support to all jax-rs
         apiPackage = "org.openapitools.api";
         modelPackage = "org.openapitools.model";
+        useBeanValidation = true;
 
         // clioOptions default redefinition need to be updated
         updateOption(CodegenConstants.INVOKER_PACKAGE, this.getInvokerPackage());
         updateOption(CodegenConstants.ARTIFACT_ID, this.getArtifactId());
         updateOption(CodegenConstants.API_PACKAGE, apiPackage);
         updateOption(CodegenConstants.MODEL_PACKAGE, modelPackage);
-        updateOption(this.DATE_LIBRARY, this.getDateLibrary());
+        updateOption(DATE_LIBRARY, this.getDateLibrary());
+        updateOption(CodegenConstants.SOURCE_FOLDER, this.getSourceFolder());
 
         additionalProperties.put("title", title);
         // java inflector uses the jackson lib
-        additionalProperties.put(JACKSON, "true");
+        this.jackson = true;
 
         cliOptions.add(new CliOption(CodegenConstants.IMPL_FOLDER, CodegenConstants.IMPL_FOLDER_DESC).defaultValue(implFolder));
         cliOptions.add(new CliOption("title", "a title describing the application").defaultValue(title));
-        cliOptions.add(CliOption.newBoolean(USE_BEANVALIDATION, "Use BeanValidation API annotations",useBeanValidation));
+        cliOptions.add(CliOption.newBoolean(USE_BEANVALIDATION, "Use BeanValidation API annotations", useBeanValidation));
         cliOptions.add(new CliOption(SERVER_PORT, "The port on which the server should be started").defaultValue(serverPort));
         cliOptions.add(CliOption.newBoolean(USE_TAGS, "use tags for creating interface and controller classnames"));
     }
@@ -90,22 +133,21 @@ public abstract class AbstractJavaJAXRSServerCodegen extends AbstractJavaCodegen
     }
 
     @Override
+    protected boolean useBeanValidationOnMapValueType() {
+        // The JAX-RS templates place container element validation on the type argument
+        // (List<@Valid T>, Map<String, @Valid V>) rather than the deprecated
+        // container-level @Valid (HV000271).
+        return true;
+    }
+
+    @Override
     public void processOpts() {
         super.processOpts();
 
-        if (additionalProperties.containsKey(CodegenConstants.IMPL_FOLDER)) {
-            implFolder = (String) additionalProperties.get(CodegenConstants.IMPL_FOLDER);
-        }
-
-        if (additionalProperties.containsKey(USE_BEANVALIDATION)) {
-            setUseBeanValidation(convertPropertyToBoolean(USE_BEANVALIDATION));
-        }
-
-        if (additionalProperties.containsKey(USE_TAGS)) {
-            setUseTags(convertPropertyToBoolean(USE_TAGS));
-        }
-
-        writePropertyBack(USE_BEANVALIDATION, useBeanValidation);
+        convertPropertyToStringAndWriteBack(CodegenConstants.IMPL_FOLDER, this::setImplFolder);
+        convertPropertyToBooleanAndWriteBack(USE_BEANVALIDATION, this::setUseBeanValidation);
+        convertPropertyToBooleanAndWriteBack(USE_TAGS, this::setUseTags);
+        convertPropertyToBooleanAndWriteBack(JACKSON, this::setJackson);
     }
 
     @Override
@@ -124,6 +166,8 @@ public abstract class AbstractJavaJAXRSServerCodegen extends AbstractJavaCodegen
             final List<CodegenOperation> opList = operations.computeIfAbsent(co.baseName, k -> new ArrayList<>());
             opList.add(co);
         }
+
+        allResourcePaths.add(resourcePath);
     }
 
     @Override
@@ -167,98 +211,187 @@ public abstract class AbstractJavaJAXRSServerCodegen extends AbstractJavaCodegen
     }
 
     @Override
-    public Map<String, Object> postProcessOperationsWithModels(Map<String, Object> objs, List<Object> allModels) {
-        return jaxrsPostProcessOperations(objs);
+    public OperationsMap postProcessOperationsWithModels(OperationsMap objs, List<ModelMap> allModels) {
+        OperationsMap updatedObjs = jaxrsPostProcessOperations(objs, allResourcePaths);
+        OperationMap operations = updatedObjs.getOperations();
+        if (operations != null) {
+            List<CodegenOperation> ops = operations.getOperation();
+            for (CodegenOperation co : ops) {
+                handleImplicitHeaders(co);
+            }
+        }
+        return updatedObjs;
     }
 
-    static Map<String, Object> jaxrsPostProcessOperations(Map<String, Object> objs) {
-        @SuppressWarnings("unchecked")
-        Map<String, Object> operations = (Map<String, Object>) objs.get("operations");
-        String commonPath = null;
-        if (operations != null) {
-            @SuppressWarnings("unchecked")
-            List<CodegenOperation> ops = (List<CodegenOperation>) operations.get("operation");
-            for (CodegenOperation operation : ops) {
-                if (operation.hasConsumes == Boolean.TRUE) {
-                    Map<String, String> firstType = operation.consumes.get(0);
-                    if (firstType != null) {
-                        if ("multipart/form-data".equals(firstType.get("mediaType"))) {
-                            operation.isMultipart = Boolean.TRUE;
-                        }
+    /** Delegates to {@link #jaxrsPostProcessOperations(OperationsMap, Set)} with no shadow check. */
+    static OperationsMap jaxrsPostProcessOperations(OperationsMap objs) {
+        return jaxrsPostProcessOperations(objs, null);
+    }
+
+    /** Post-processes operations: normalizes metadata, computes common path, applies shadowing check. */
+    private static OperationsMap jaxrsPostProcessOperations(OperationsMap objs, Set<String> allResourcePaths) {
+        OperationMap operations = objs.getOperations();
+        if (operations == null) {
+            return objs;
+        }
+        List<CodegenOperation> ops = operations.getOperation();
+
+        processOperationMetadata(ops);
+
+        String commonPath = computeCommonPath(ops);
+
+        if (commonPath != null && !commonPath.isEmpty() && !"/".equals(commonPath)
+                && wouldShadowOtherTags(commonPath, ops, allResourcePaths)) {
+            commonPath = null;
+        }
+
+        applyCommonPath(ops, commonPath, objs);
+
+        return objs;
+    }
+
+    /** Normalizes consumes, responses, and return types for all operations. */
+    private static void processOperationMetadata(List<CodegenOperation> ops) {
+        for (CodegenOperation operation : ops) {
+            if (operation.hasConsumes == Boolean.TRUE) {
+                Map<String, String> firstType = operation.consumes.get(0);
+                if (firstType != null) {
+                    if ("multipart/form-data".equals(firstType.get("mediaType"))) {
+                        operation.isMultipart = Boolean.TRUE;
                     }
-                }
-
-                boolean isMultipartPost = false;
-                List<Map<String, String>> consumes = operation.consumes;
-                if (consumes != null) {
-                    for (Map<String, String> consume : consumes) {
-                        String mt = consume.get("mediaType");
-                        if (mt != null) {
-                            if (mt.startsWith("multipart/form-data")) {
-                                isMultipartPost = true;
-                            }
-                        }
-                    }
-                }
-
-                for (CodegenParameter parameter : operation.allParams) {
-                    if (isMultipartPost) {
-                        parameter.vendorExtensions.put("x-multipart", "true");
-                    }
-                }
-
-                List<CodegenResponse> responses = operation.responses;
-                if (responses != null) {
-                    for (CodegenResponse resp : responses) {
-                        if ("0".equals(resp.code)) {
-                            resp.code = "200";
-                        }
-
-                        if (resp.baseType == null) {
-                            resp.dataType = "void";
-                            resp.baseType = "Void";
-                            // set vendorExtensions.x-java-is-response-void to true as baseType is set to "Void"
-                            resp.vendorExtensions.put("x-java-is-response-void", true);
-                        }
-
-                        if ("array".equals(resp.containerType)) {
-                            resp.containerType = "List";
-                        } else if ("set".equals(resp.containerType)) {
-                            resp.containerType = "Set";
-                        } else if ("map".equals(resp.containerType)) {
-                            resp.containerType = "Map";
-                        }
-                    }
-                }
-
-                if (operation.returnBaseType == null) {
-                    operation.returnType = "void";
-                    operation.returnBaseType = "Void";
-                    // set vendorExtensions.x-java-is-response-void to true as returnBaseType is set to "Void"
-                    operation.vendorExtensions.put("x-java-is-response-void", true);
-                }
-
-                if ("array".equals(operation.returnContainer)) {
-                    operation.returnContainer = "List";
-                } else if ("set".equals(operation.returnContainer)) {
-                    operation.returnContainer = "Set";
-                } else if ("map".equals(operation.returnContainer)) {
-                    operation.returnContainer = "Map";
-                }
-
-                if (commonPath == null) {
-                    commonPath = operation.path;
-                } else {
-                    commonPath = getCommonPath(commonPath, operation.path);
                 }
             }
+
+            boolean isMultipartPost = false;
+            List<Map<String, String>> consumes = operation.consumes;
+            if (consumes != null) {
+                for (Map<String, String> consume : consumes) {
+                    String mt = consume.get("mediaType");
+                    if (mt != null) {
+                        if (mt.startsWith("multipart/form-data")) {
+                            isMultipartPost = true;
+                        }
+                    }
+                }
+            }
+
+            for (CodegenParameter parameter : operation.allParams) {
+                if (isMultipartPost) {
+                    parameter.vendorExtensions.put("x-multipart", "true");
+                }
+            }
+
+            List<CodegenResponse> responses = operation.responses;
+            if (responses != null) {
+                for (CodegenResponse resp : responses) {
+                    if ("0".equals(resp.code)) {
+                        resp.code = "200";
+                    }
+
+                    if (resp.baseType == null) {
+                        resp.dataType = "void";
+                        resp.baseType = "Void";
+                        // set vendorExtensions.x-java-is-response-void to true as baseType is set to "Void"
+                        resp.vendorExtensions.put("x-java-is-response-void", true);
+                    }
+
+                    if ("array".equals(resp.containerType)) {
+                        resp.containerType = "List";
+                        resp.vendorExtensions.put(X_MICROPROFILE_OPEN_API_RETURN_SCHEMA_CONTAINER, SCHEMA_TYPE_ARRAY);
+                    } else if ("set".equals(resp.containerType)) {
+                        resp.containerType = "Set";
+                        resp.vendorExtensions.put(X_MICROPROFILE_OPEN_API_RETURN_SCHEMA_CONTAINER, SCHEMA_TYPE_ARRAY);
+                        resp.vendorExtensions.put(X_MICROPROFILE_OPEN_API_RETURN_UNIQUE_ITEMS, true);
+                    } else if ("map".equals(resp.containerType)) {
+                        resp.containerType = "Map";
+                    }
+
+                    if (resp.getResponseHeaders() != null) {
+                        handleHeaders(resp.getResponseHeaders());
+                    }
+                }
+            }
+
+            if (operation.returnBaseType == null) {
+                operation.returnType = "void";
+                operation.returnBaseType = "Void";
+                // set vendorExtensions.x-java-is-response-void to true as returnBaseType is set to "Void"
+                operation.vendorExtensions.put("x-java-is-response-void", true);
+            }
+
+            if ("array".equals(operation.returnContainer)) {
+                operation.returnContainer = "List";
+            } else if ("set".equals(operation.returnContainer)) {
+                operation.returnContainer = "Set";
+            } else if ("map".equals(operation.returnContainer)) {
+                operation.returnContainer = "Map";
+            }
+        }
+    }
+
+    /** Computes the longest common path prefix shared by all operations. */
+    private static String computeCommonPath(List<CodegenOperation> ops) {
+        String commonPath = null;
+        for (CodegenOperation operation : ops) {
+            if (commonPath == null) {
+                commonPath = operation.path;
+            } else {
+                commonPath = getCommonPath(commonPath, operation.path);
+            }
+        }
+        return commonPath;
+    }
+
+    /** Strips {@code commonPath} from operation paths and writes it to {@code objs}; null means shadowing was detected. */
+    private static void applyCommonPath(List<CodegenOperation> ops, String commonPath, OperationsMap objs) {
+        if (commonPath == null) {
+            // Shadowing detected or no operations — keep full paths, set empty class-level prefix.
+            for (CodegenOperation co : ops) {
+                co.subresourceOperation = co.path.length() > 1;
+            }
+            objs.put("commonPath", StringUtils.EMPTY);
+        } else {
             for (CodegenOperation co : ops) {
                 co.path = StringUtils.removeStart(co.path, commonPath);
                 co.subresourceOperation = co.path.length() > 1;
             }
             objs.put("commonPath", "/".equals(commonPath) ? StringUtils.EMPTY : commonPath);
         }
-        return objs;
+    }
+
+    /** Returns {@code true} if using {@code commonPath} as the class-level {@code @Path} would shadow routes of another tag. */
+    private static boolean wouldShadowOtherTags(String commonPath, List<CodegenOperation> ops, Set<String> allResourcePaths) {
+        if (allResourcePaths == null || allResourcePaths.isEmpty()) {
+            return false;
+        }
+
+        // Build the set of full paths owned by the current tag.
+        Set<String> currentTagPaths = new HashSet<>();
+        for (CodegenOperation co : ops) {
+            currentTagPaths.add(co.path);
+        }
+
+        // Check whether any path from a different tag would be shadowed by commonPath.
+        for (String path : allResourcePaths) {
+            if (currentTagPaths.contains(path)) {
+                continue; // this path belongs to the current tag — not a shadow
+            }
+            if (path.startsWith(commonPath + "/") || path.equals(commonPath)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static void handleHeaders(List<CodegenParameter> headers) {
+        for (CodegenParameter header : headers) {
+            if (header.getSchema() != null && header.getSchema().getOpenApiType() != null) {
+                final String schemaType = ARRAY_OF_MICROPROFILE_OPEN_API_SCHEMA_TYPES.get(header.getSchema().getOpenApiType());
+                if (schemaType != null) {
+                    header.vendorExtensions.put(X_MICROPROFILE_OPEN_API_SCHEMA_TYPE, schemaType);
+                }
+            }
+        }
     }
 
     @Override

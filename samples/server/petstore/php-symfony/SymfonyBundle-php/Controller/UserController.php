@@ -2,7 +2,7 @@
 
 /**
  * UserController
- * PHP version 7.1.3
+ * PHP version 8.1.1
  *
  * @category Class
  * @package  OpenAPI\Server\Controller
@@ -78,7 +78,7 @@ class UserController extends Controller
 
         // Deserialize the input values that needs it
         try {
-            $inputFormat = $request->getMimeType($request->getContentType());
+            $inputFormat = $request->getMimeType($request->getContentTypeFormat());
             $user = $this->deserialize($user, 'OpenAPI\Server\Model\User', $inputFormat);
         } catch (SerializerRuntimeException $exception) {
             return $this->createBadRequestResponse($exception->getMessage());
@@ -87,7 +87,7 @@ class UserController extends Controller
         // Validate the input values
         $asserts = [];
         $asserts[] = new Assert\NotNull();
-        $asserts[] = new Assert\Type("OpenAPI\Server\Model\User");
+        $asserts[] = new Assert\Type('OpenAPI\Server\Model\User');
         $asserts[] = new Assert\Valid();
         $response = $this->validate($user, $asserts);
         if ($response instanceof Response) {
@@ -104,17 +104,13 @@ class UserController extends Controller
             // Make the call to the business logic
             $responseCode = 204;
             $responseHeaders = [];
-            $result = $handler->createUser($user, $responseCode, $responseHeaders);
 
-            // Find default response message
-            $message = 'successful operation';
+            $handler->createUser($user, $responseCode, $responseHeaders);
 
-            // Find a more specific message, if available
-            switch ($responseCode) {
-                case 0:
-                    $message = 'successful operation';
-                    break;
-            }
+            $message = match($responseCode) {
+                0 => 'successful operation',
+                default => 'successful operation',
+            };
 
             return new Response(
                 '',
@@ -126,7 +122,7 @@ class UserController extends Controller
                     ]
                 )
             );
-        } catch (Exception $fallthrough) {
+        } catch (\Throwable $fallthrough) {
             return $this->createErrorResponse(new HttpException(500, 'An unsuspected error occurred.', $fallthrough));
         }
     }
@@ -160,7 +156,7 @@ class UserController extends Controller
 
         // Deserialize the input values that needs it
         try {
-            $inputFormat = $request->getMimeType($request->getContentType());
+            $inputFormat = $request->getMimeType($request->getContentTypeFormat());
             $user = $this->deserialize($user, 'array<OpenAPI\Server\Model\User>', $inputFormat);
         } catch (SerializerRuntimeException $exception) {
             return $this->createBadRequestResponse($exception->getMessage());
@@ -188,17 +184,13 @@ class UserController extends Controller
             // Make the call to the business logic
             $responseCode = 204;
             $responseHeaders = [];
-            $result = $handler->createUsersWithArrayInput($user, $responseCode, $responseHeaders);
 
-            // Find default response message
-            $message = 'successful operation';
+            $handler->createUsersWithArrayInput($user, $responseCode, $responseHeaders);
 
-            // Find a more specific message, if available
-            switch ($responseCode) {
-                case 0:
-                    $message = 'successful operation';
-                    break;
-            }
+            $message = match($responseCode) {
+                0 => 'successful operation',
+                default => 'successful operation',
+            };
 
             return new Response(
                 '',
@@ -210,7 +202,7 @@ class UserController extends Controller
                     ]
                 )
             );
-        } catch (Exception $fallthrough) {
+        } catch (\Throwable $fallthrough) {
             return $this->createErrorResponse(new HttpException(500, 'An unsuspected error occurred.', $fallthrough));
         }
     }
@@ -244,7 +236,7 @@ class UserController extends Controller
 
         // Deserialize the input values that needs it
         try {
-            $inputFormat = $request->getMimeType($request->getContentType());
+            $inputFormat = $request->getMimeType($request->getContentTypeFormat());
             $user = $this->deserialize($user, 'array<OpenAPI\Server\Model\User>', $inputFormat);
         } catch (SerializerRuntimeException $exception) {
             return $this->createBadRequestResponse($exception->getMessage());
@@ -272,17 +264,13 @@ class UserController extends Controller
             // Make the call to the business logic
             $responseCode = 204;
             $responseHeaders = [];
-            $result = $handler->createUsersWithListInput($user, $responseCode, $responseHeaders);
 
-            // Find default response message
-            $message = 'successful operation';
+            $handler->createUsersWithListInput($user, $responseCode, $responseHeaders);
 
-            // Find a more specific message, if available
-            switch ($responseCode) {
-                case 0:
-                    $message = 'successful operation';
-                    break;
-            }
+            $message = match($responseCode) {
+                0 => 'successful operation',
+                default => 'successful operation',
+            };
 
             return new Response(
                 '',
@@ -294,7 +282,7 @@ class UserController extends Controller
                     ]
                 )
             );
-        } catch (Exception $fallthrough) {
+        } catch (\Throwable $fallthrough) {
             return $this->createErrorResponse(new HttpException(500, 'An unsuspected error occurred.', $fallthrough));
         }
     }
@@ -328,7 +316,7 @@ class UserController extends Controller
         // Validate the input values
         $asserts = [];
         $asserts[] = new Assert\NotNull();
-        $asserts[] = new Assert\Type("string");
+        $asserts[] = new Assert\Type('string');
         $response = $this->validate($username, $asserts);
         if ($response instanceof Response) {
             return $response;
@@ -344,20 +332,14 @@ class UserController extends Controller
             // Make the call to the business logic
             $responseCode = 204;
             $responseHeaders = [];
-            $result = $handler->deleteUser($username, $responseCode, $responseHeaders);
 
-            // Find default response message
-            $message = '';
+            $handler->deleteUser($username, $responseCode, $responseHeaders);
 
-            // Find a more specific message, if available
-            switch ($responseCode) {
-                case 400:
-                    $message = 'Invalid username supplied';
-                    break;
-                case 404:
-                    $message = 'User not found';
-                    break;
-            }
+            $message = match($responseCode) {
+                400 => 'Invalid username supplied',
+                404 => 'User not found',
+                default => '',
+            };
 
             return new Response(
                 '',
@@ -369,7 +351,7 @@ class UserController extends Controller
                     ]
                 )
             );
-        } catch (Exception $fallthrough) {
+        } catch (\Throwable $fallthrough) {
             return $this->createErrorResponse(new HttpException(500, 'An unsuspected error occurred.', $fallthrough));
         }
     }
@@ -409,7 +391,7 @@ class UserController extends Controller
         // Validate the input values
         $asserts = [];
         $asserts[] = new Assert\NotNull();
-        $asserts[] = new Assert\Type("string");
+        $asserts[] = new Assert\Type('string');
         $response = $this->validate($username, $asserts);
         if ($response instanceof Response) {
             return $response;
@@ -423,23 +405,15 @@ class UserController extends Controller
             // Make the call to the business logic
             $responseCode = 200;
             $responseHeaders = [];
+
             $result = $handler->getUserByName($username, $responseCode, $responseHeaders);
 
-            // Find default response message
-            $message = '';
-
-            // Find a more specific message, if available
-            switch ($responseCode) {
-                case 200:
-                    $message = 'successful operation';
-                    break;
-                case 400:
-                    $message = 'Invalid username supplied';
-                    break;
-                case 404:
-                    $message = 'User not found';
-                    break;
-            }
+            $message = match($responseCode) {
+                200 => 'successful operation',
+                400 => 'Invalid username supplied',
+                404 => 'User not found',
+                default => '',
+            };
 
             return new Response(
                 $result !== null ?$this->serialize($result, $responseFormat):'',
@@ -452,7 +426,7 @@ class UserController extends Controller
                     ]
                 )
             );
-        } catch (Exception $fallthrough) {
+        } catch (\Throwable $fallthrough) {
             return $this->createErrorResponse(new HttpException(500, 'An unsuspected error occurred.', $fallthrough));
         }
     }
@@ -495,7 +469,7 @@ class UserController extends Controller
         // Validate the input values
         $asserts = [];
         $asserts[] = new Assert\NotNull();
-        $asserts[] = new Assert\Type("string");
+        $asserts[] = new Assert\Type('string');
         $asserts[] = new Assert\Regex("/^[a-zA-Z0-9]+[a-zA-Z0-9\\.\\-_]*[a-zA-Z0-9]+$/");
         $response = $this->validate($username, $asserts);
         if ($response instanceof Response) {
@@ -503,7 +477,7 @@ class UserController extends Controller
         }
         $asserts = [];
         $asserts[] = new Assert\NotNull();
-        $asserts[] = new Assert\Type("string");
+        $asserts[] = new Assert\Type('string');
         $response = $this->validate($password, $asserts);
         if ($response instanceof Response) {
             return $response;
@@ -517,20 +491,14 @@ class UserController extends Controller
             // Make the call to the business logic
             $responseCode = 200;
             $responseHeaders = [];
+
             $result = $handler->loginUser($username, $password, $responseCode, $responseHeaders);
 
-            // Find default response message
-            $message = '';
-
-            // Find a more specific message, if available
-            switch ($responseCode) {
-                case 200:
-                    $message = 'successful operation';
-                    break;
-                case 400:
-                    $message = 'Invalid username/password supplied';
-                    break;
-            }
+            $message = match($responseCode) {
+                200 => 'successful operation',
+                400 => 'Invalid username/password supplied',
+                default => '',
+            };
 
             return new Response(
                 $result !== null ?$this->serialize($result, $responseFormat):'',
@@ -543,7 +511,7 @@ class UserController extends Controller
                     ]
                 )
             );
-        } catch (Exception $fallthrough) {
+        } catch (\Throwable $fallthrough) {
             return $this->createErrorResponse(new HttpException(500, 'An unsuspected error occurred.', $fallthrough));
         }
     }
@@ -579,17 +547,13 @@ class UserController extends Controller
             // Make the call to the business logic
             $responseCode = 204;
             $responseHeaders = [];
-            $result = $handler->logoutUser($responseCode, $responseHeaders);
 
-            // Find default response message
-            $message = 'successful operation';
+            $handler->logoutUser($responseCode, $responseHeaders);
 
-            // Find a more specific message, if available
-            switch ($responseCode) {
-                case 0:
-                    $message = 'successful operation';
-                    break;
-            }
+            $message = match($responseCode) {
+                0 => 'successful operation',
+                default => 'successful operation',
+            };
 
             return new Response(
                 '',
@@ -601,7 +565,7 @@ class UserController extends Controller
                     ]
                 )
             );
-        } catch (Exception $fallthrough) {
+        } catch (\Throwable $fallthrough) {
             return $this->createErrorResponse(new HttpException(500, 'An unsuspected error occurred.', $fallthrough));
         }
     }
@@ -636,7 +600,7 @@ class UserController extends Controller
         // Deserialize the input values that needs it
         try {
             $username = $this->deserialize($username, 'string', 'string');
-            $inputFormat = $request->getMimeType($request->getContentType());
+            $inputFormat = $request->getMimeType($request->getContentTypeFormat());
             $user = $this->deserialize($user, 'OpenAPI\Server\Model\User', $inputFormat);
         } catch (SerializerRuntimeException $exception) {
             return $this->createBadRequestResponse($exception->getMessage());
@@ -645,14 +609,14 @@ class UserController extends Controller
         // Validate the input values
         $asserts = [];
         $asserts[] = new Assert\NotNull();
-        $asserts[] = new Assert\Type("string");
+        $asserts[] = new Assert\Type('string');
         $response = $this->validate($username, $asserts);
         if ($response instanceof Response) {
             return $response;
         }
         $asserts = [];
         $asserts[] = new Assert\NotNull();
-        $asserts[] = new Assert\Type("OpenAPI\Server\Model\User");
+        $asserts[] = new Assert\Type('OpenAPI\Server\Model\User');
         $asserts[] = new Assert\Valid();
         $response = $this->validate($user, $asserts);
         if ($response instanceof Response) {
@@ -669,20 +633,14 @@ class UserController extends Controller
             // Make the call to the business logic
             $responseCode = 204;
             $responseHeaders = [];
-            $result = $handler->updateUser($username, $user, $responseCode, $responseHeaders);
 
-            // Find default response message
-            $message = '';
+            $handler->updateUser($username, $user, $responseCode, $responseHeaders);
 
-            // Find a more specific message, if available
-            switch ($responseCode) {
-                case 400:
-                    $message = 'Invalid user supplied';
-                    break;
-                case 404:
-                    $message = 'User not found';
-                    break;
-            }
+            $message = match($responseCode) {
+                400 => 'Invalid user supplied',
+                404 => 'User not found',
+                default => '',
+            };
 
             return new Response(
                 '',
@@ -694,7 +652,7 @@ class UserController extends Controller
                     ]
                 )
             );
-        } catch (Exception $fallthrough) {
+        } catch (\Throwable $fallthrough) {
             return $this->createErrorResponse(new HttpException(500, 'An unsuspected error occurred.', $fallthrough));
         }
     }

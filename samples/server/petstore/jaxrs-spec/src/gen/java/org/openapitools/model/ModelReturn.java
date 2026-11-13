@@ -1,5 +1,6 @@
 package org.openapitools.model;
 
+import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import java.io.Serializable;
@@ -12,15 +13,23 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.annotation.JsonTypeName;
+import org.openapitools.jackson.nullable.JsonNullable;
 
 /**
  * Model for testing reserved words
  **/
 @ApiModel(description = "Model for testing reserved words")
 @JsonTypeName("Return")
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaJAXRSSpecServerCodegen")public class ModelReturn  implements Serializable {
-  
-  private @Valid Integer _return;
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaJAXRSSpecServerCodegen", comments = "Generator version: 7.28.0-SNAPSHOT")
+public class ModelReturn  implements Serializable {
+  private Integer _return;
+
+  protected ModelReturn(ModelReturnBuilder<?, ?> b) {
+    this._return = b._return;
+  }
+
+  public ModelReturn() {
+  }
 
   /**
    **/
@@ -28,8 +37,6 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
     this._return = _return;
     return this;
   }
-
-  
 
   
   @ApiModelProperty(value = "")
@@ -76,12 +83,36 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
    * (except the first line).
    */
   private String toIndentedString(Object o) {
-    if (o == null) {
-      return "null";
-    }
-    return o.toString().replace("\n", "\n    ");
+    return o == null ? "null" : o.toString().replace("\n", "\n    ");
   }
 
 
-}
+  public static ModelReturnBuilder<?, ?> builder() {
+    return new ModelReturnBuilderImpl();
+  }
 
+  private static final class ModelReturnBuilderImpl extends ModelReturnBuilder<ModelReturn, ModelReturnBuilderImpl> {
+
+    @Override
+    protected ModelReturnBuilderImpl self() {
+      return this;
+    }
+
+    @Override
+    public ModelReturn build() {
+      return new ModelReturn(this);
+    }
+  }
+
+  public static abstract class ModelReturnBuilder<C extends ModelReturn, B extends ModelReturnBuilder<C, B>>  {
+    private Integer _return;
+    protected abstract B self();
+
+    public abstract C build();
+
+    public B _return(Integer _return) {
+      this._return = _return;
+      return self();
+    }
+  }
+}

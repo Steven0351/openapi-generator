@@ -28,6 +28,8 @@ Tag::Tag()
     
 }
 
+Tag::~Tag() = default;
+
 void Tag::validate() const
 {
     std::stringstream msg;
@@ -72,7 +74,7 @@ bool Tag::operator!=(const Tag& rhs) const
 
 void to_json(nlohmann::json& j, const Tag& o)
 {
-    j = nlohmann::json();
+    j = nlohmann::json::object();
     if(o.idIsSet())
         j["id"] = o.m_Id;
     if(o.nameIsSet())

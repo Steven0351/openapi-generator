@@ -1,5 +1,6 @@
 package org.openapitools.model;
 
+import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import java.io.Serializable;
@@ -11,14 +12,22 @@ import java.util.Objects;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.fasterxml.jackson.annotation.JsonTypeName;
+import org.openapitools.jackson.nullable.JsonNullable;
 
+/**
+ * Describes the result of uploading an image resource
+ **/
+@ApiModel(description = "Describes the result of uploading an image resource")
+@JsonTypeName("ApiResponse")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaJAXRSSpecServerCodegen", comments = "Generator version: 7.28.0-SNAPSHOT")
+public class ModelApiResponse  implements Serializable {
+  private Integer code;
+  private String type;
+  private String message;
 
-
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaJAXRSSpecServerCodegen")public class ModelApiResponse  implements Serializable {
-  
-  private @Valid Integer code;
-  private @Valid String type;
-  private @Valid String message;
+  public ModelApiResponse() {
+  }
 
   /**
    **/
@@ -28,26 +37,23 @@ import com.fasterxml.jackson.annotation.JsonValue;
   }
 
   
-
-  
   @ApiModelProperty(value = "")
   @JsonProperty("code")
   public Integer getCode() {
     return code;
   }
 
+  @JsonProperty("code")
   public void setCode(Integer code) {
     this.code = code;
   }
 
-/**
+  /**
    **/
   public ModelApiResponse type(String type) {
     this.type = type;
     return this;
   }
-
-  
 
   
   @ApiModelProperty(value = "")
@@ -56,18 +62,17 @@ import com.fasterxml.jackson.annotation.JsonValue;
     return type;
   }
 
+  @JsonProperty("type")
   public void setType(String type) {
     this.type = type;
   }
 
-/**
+  /**
    **/
   public ModelApiResponse message(String message) {
     this.message = message;
     return this;
   }
-
-  
 
   
   @ApiModelProperty(value = "")
@@ -76,6 +81,7 @@ import com.fasterxml.jackson.annotation.JsonValue;
     return message;
   }
 
+  @JsonProperty("message")
   public void setMessage(String message) {
     this.message = message;
   }
@@ -117,12 +123,8 @@ import com.fasterxml.jackson.annotation.JsonValue;
    * (except the first line).
    */
   private String toIndentedString(Object o) {
-    if (o == null) {
-      return "null";
-    }
-    return o.toString().replace("\n", "\n    ");
+    return o == null ? "null" : o.toString().replace("\n", "\n    ");
   }
 
 
 }
-

@@ -17,12 +17,11 @@
 
 package org.openapitools.codegen.options;
 
-import java.util.Map;
-
 import com.google.common.collect.ImmutableMap;
-
 import org.openapitools.codegen.CodegenConstants;
 import org.openapitools.codegen.languages.DartClientCodegen;
+
+import java.util.Map;
 
 public class DartClientOptionsProvider implements OptionsProvider {
     public static final String SORT_PARAMS_VALUE = "true";
@@ -35,10 +34,16 @@ public class DartClientOptionsProvider implements OptionsProvider {
     public static final String PUB_AUTHOR_VALUE = "Author";
     public static final String PUB_AUTHOR_EMAIL_VALUE = "author@homepage";
     public static final String PUB_HOMEPAGE_VALUE = "Homepage";
+    public static final String PUB_REPOSITORY_VALUE = "Repository";
+    public static final String PUB_PUBLISH_TO_VALUE = "Publish To";
     public static final String SOURCE_FOLDER_VALUE = "src";
     public static final String USE_ENUM_EXTENSION = "true";
     public static final String ALLOW_UNICODE_IDENTIFIERS_VALUE = "false";
     public static final String PREPEND_FORM_OR_BODY_PARAMETERS_VALUE = "true";
+    public static final String ENUM_UNKNOWN_DEFAULT_CASE_VALUE = "false";
+    public static final String USE_OPTIONAL_VALUE = "true";
+    public static final String USE_FINAL_PROPERTIES_VALUE = "true";
+    public static final String PATCH_ONLY_VALUE = "true";
 
     @Override
     public String getLanguage() {
@@ -58,6 +63,8 @@ public class DartClientOptionsProvider implements OptionsProvider {
                 .put(DartClientCodegen.PUB_AUTHOR, PUB_AUTHOR_VALUE)
                 .put(DartClientCodegen.PUB_AUTHOR_EMAIL, PUB_AUTHOR_EMAIL_VALUE)
                 .put(DartClientCodegen.PUB_HOMEPAGE, PUB_HOMEPAGE_VALUE)
+                .put(DartClientCodegen.PUB_REPOSITORY, PUB_REPOSITORY_VALUE)
+                .put(DartClientCodegen.PUB_PUBLISH_TO, PUB_PUBLISH_TO_VALUE)
                 .put(CodegenConstants.SOURCE_FOLDER, SOURCE_FOLDER_VALUE)
                 .put(DartClientCodegen.USE_ENUM_EXTENSION, USE_ENUM_EXTENSION)
                 .put(CodegenConstants.ALLOW_UNICODE_IDENTIFIERS, ALLOW_UNICODE_IDENTIFIERS_VALUE)
@@ -65,6 +72,10 @@ public class DartClientOptionsProvider implements OptionsProvider {
                 .put(CodegenConstants.LEGACY_DISCRIMINATOR_BEHAVIOR, "true")
                 .put(CodegenConstants.DISALLOW_ADDITIONAL_PROPERTIES_IF_NOT_PRESENT, "true")
                 .put("serializationLibrary", "custom")
+                .put(CodegenConstants.ENUM_UNKNOWN_DEFAULT_CASE, ENUM_UNKNOWN_DEFAULT_CASE_VALUE)
+                .put(DartClientCodegen.USE_OPTIONAL, USE_OPTIONAL_VALUE)
+                .put(DartClientCodegen.USE_FINAL_PROPERTIES, USE_FINAL_PROPERTIES_VALUE)
+                .put(DartClientCodegen.PATCH_ONLY, PATCH_ONLY_VALUE)
                 .build();
     }
 

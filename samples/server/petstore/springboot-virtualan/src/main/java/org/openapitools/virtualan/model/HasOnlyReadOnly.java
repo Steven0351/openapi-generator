@@ -1,26 +1,37 @@
 package org.openapitools.virtualan.model;
 
+import java.net.URI;
 import java.util.Objects;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
-import io.swagger.annotations.ApiModel;
-import io.swagger.annotations.ApiModelProperty;
+import com.fasterxml.jackson.annotation.JsonTypeName;
+import org.springframework.lang.Nullable;
 import org.openapitools.jackson.nullable.JsonNullable;
-import javax.validation.Valid;
-import javax.validation.constraints.*;
+import java.time.OffsetDateTime;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.*;
+import io.swagger.v3.oas.annotations.media.Schema;
+
+
+import java.util.*;
+import jakarta.annotation.Generated;
 
 /**
  * HasOnlyReadOnly
  */
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.SpringCodegen")
-public class HasOnlyReadOnly   {
-  @JsonProperty("bar")
-  private String bar;
 
-  @JsonProperty("foo")
-  private String foo;
+@JsonTypeName("hasOnlyReadOnly")
+@Generated(value = "org.openapitools.codegen.languages.SpringCodegen", comments = "Generator version: 7.28.0-SNAPSHOT")
+public class HasOnlyReadOnly {
 
-  public HasOnlyReadOnly bar(String bar) {
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private @Nullable String bar;
+
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private @Nullable String foo;
+
+  public HasOnlyReadOnly bar(@Nullable String bar) {
     this.bar = bar;
     return this;
   }
@@ -28,19 +39,20 @@ public class HasOnlyReadOnly   {
   /**
    * Get bar
    * @return bar
-  */
-  @ApiModelProperty(readOnly = true, value = "")
-
-
-  public String getBar() {
+   */
+  
+  @Schema(name = "bar", accessMode = Schema.AccessMode.READ_ONLY, requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+  @JsonProperty("bar")
+  public @Nullable String getBar() {
     return bar;
   }
 
-  public void setBar(String bar) {
+  @JsonProperty("bar")
+  public void setBar(@Nullable String bar) {
     this.bar = bar;
   }
 
-  public HasOnlyReadOnly foo(String foo) {
+  public HasOnlyReadOnly foo(@Nullable String foo) {
     this.foo = foo;
     return this;
   }
@@ -48,18 +60,18 @@ public class HasOnlyReadOnly   {
   /**
    * Get foo
    * @return foo
-  */
-  @ApiModelProperty(readOnly = true, value = "")
-
-
-  public String getFoo() {
+   */
+  
+  @Schema(name = "foo", accessMode = Schema.AccessMode.READ_ONLY, requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+  @JsonProperty("foo")
+  public @Nullable String getFoo() {
     return foo;
   }
 
-  public void setFoo(String foo) {
+  @JsonProperty("foo")
+  public void setFoo(@Nullable String foo) {
     this.foo = foo;
   }
-
 
   @Override
   public boolean equals(Object o) {
@@ -83,7 +95,6 @@ public class HasOnlyReadOnly   {
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class HasOnlyReadOnly {\n");
-    
     sb.append("    bar: ").append(toIndentedString(bar)).append("\n");
     sb.append("    foo: ").append(toIndentedString(foo)).append("\n");
     sb.append("}");
@@ -94,11 +105,8 @@ public class HasOnlyReadOnly   {
    * Convert the given object to string with each line indented by 4 spaces
    * (except the first line).
    */
-  private String toIndentedString(Object o) {
-    if (o == null) {
-      return "null";
-    }
-    return o.toString().replace("\n", "\n    ");
+  private String toIndentedString(@Nullable Object o) {
+    return o == null ? "null" : o.toString().replace("\n", "\n    ");
   }
 }
 

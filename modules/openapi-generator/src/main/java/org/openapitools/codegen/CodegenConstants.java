@@ -25,21 +25,23 @@ public class CodegenConstants {
     // NOTE: We may want to move these to a separate class to avoid confusion or modification.
     public static final String APIS = "apis";
     public static final String MODELS = "models";
+    public static final String GENERATE_RECURSIVE_DEPENDENT_MODELS = "generateRecursiveDependentModels";
     public static final String SUPPORTING_FILES = "supportingFiles";
     public static final String MODEL_TESTS = "modelTests";
     public static final String MODEL_DOCS = "modelDocs";
+    public static final String WEBHOOKS = "webhooks";
     public static final String API_TESTS = "apiTests";
     public static final String API_DOCS = "apiDocs";
 
-    public static final String WITH_XML = "withXml";
     public static final String SKIP_FORM_MODEL = "skipFormModel";
     /* /end System Properties */
+
+    public static final String API_NAME = "apiName";
 
     public static final String API_PACKAGE = "apiPackage";
     public static final String API_PACKAGE_DESC = "package for generated api classes";
 
-    public static final String API_SUFFIX = "apiSuffix";
-    public static final String API_SUFFIX_DESC = "suffix for api classes";
+    public static final String AUTOSET_CONSTANTS = "autosetConstants";
 
     public static final String MODEL_PACKAGE = "modelPackage";
     public static final String MODEL_PACKAGE_DESC = "package for generated models";
@@ -86,7 +88,7 @@ public class CodegenConstants {
     public static final String ARTIFACT_ID_DESC = "artifactId in generated pom.xml. This also becomes part of the generated library's filename";
 
     public static final String ARTIFACT_VERSION = "artifactVersion";
-    public static final String ARTIFACT_VERSION_DESC = "artifact version in generated pom.xml. This also becomes part of the generated library's filename";
+    public static final String ARTIFACT_VERSION_DESC = "artifact version in generated pom.xml. This also becomes part of the generated library's filename. If not provided, uses the version from the OpenAPI specification file. If that's also not present, uses the default value of the artifactVersion option.";
 
     public static final String ARTIFACT_URL = "artifactUrl";
     public static final String ARTIFACT_URL_DESC = "artifact URL in generated pom.xml";
@@ -148,8 +150,29 @@ public class CodegenConstants {
     public static final String PREPEND_FORM_OR_BODY_PARAMETERS = "prependFormOrBodyParameters";
     public static final String PREPEND_FORM_OR_BODY_PARAMETERS_DESC = "Add form or body parameters to the beginning of the parameter list.";
 
+    public static final String SPLIT_OPERATIONS_BY_CONTENT_TYPE = "splitOperationsByContentType";
+
+    /**
+     * Extensions set on every operation produced by {@code splitOperationsByContentType}, describing where
+     * the variant sits in the content-type matrix so that a generator can merge the variants back into a
+     * single construct instead of emitting one method per combination.
+     * <p>
+     * The {@code *-index} ones carry the 0-based rank of the variant's media-type in its axis, in the order
+     * the spec declares them, so a consumer never has to rely on the order operations happen to reach it in:
+     * rank 0 is that axis's default content-type, and the variant ranked 0 on both axes is the one a caller
+     * gets without asking. An axis that was not split has no media-type and ranks 0.
+     */
+    public static final String X_CONTENT_TYPE_VARIANT_GROUP = "x-content-type-variant-group";
+    public static final String X_CONTENT_TYPE_VARIANT_REQUEST = "x-content-type-variant-request";
+    public static final String X_CONTENT_TYPE_VARIANT_RESPONSE = "x-content-type-variant-response";
+    public static final String X_CONTENT_TYPE_VARIANT_REQUEST_INDEX = "x-content-type-variant-request-index";
+    public static final String X_CONTENT_TYPE_VARIANT_RESPONSE_INDEX = "x-content-type-variant-response-index";
+
     public static final String USE_DATETIME_OFFSET = "useDateTimeOffset";
     public static final String USE_DATETIME_OFFSET_DESC = "Use DateTimeOffset to model date-time properties";
+
+    public static final String USE_DATETIME_FOR_DATE = "useDateTimeForDate";
+    public static final String USE_DATETIME_FOR_DATE_DESC = "Use DateTime to model date properties even if DateOnly supported. (.net 6.0+ only)";
 
     public static final String ENSURE_UNIQUE_PARAMS = "ensureUniqueParams";
     public static final String ENSURE_UNIQUE_PARAMS_DESC = "Whether to ensure parameter names are unique in an operation (rename parameters that are not).";
@@ -170,8 +193,12 @@ public class CodegenConstants {
     public static final String PACKAGE_COMPANY_DESC = "Specifies an AssemblyCompany for the .NET Framework global assembly attributes stored in the AssemblyInfo file.";
     public static final String PACKAGE_AUTHORS = "packageAuthors";
     public static final String PACKAGE_AUTHORS_DESC = "Specifies Authors property in the .NET Core project file.";
+    public static final String PACKAGE_AUTHORS_URL = "packageAuthorsUrl";
+    public static final String PACKAGE_AUTHORS_URL_DESC = "Specifies Authors URL property in the PHP composer.json file.";
     public static final String PACKAGE_COPYRIGHT = "packageCopyright";
     public static final String PACKAGE_COPYRIGHT_DESC = "Specifies an AssemblyCopyright for the .NET Framework global assembly attributes stored in the AssemblyInfo file.";
+    public static final String COMPOSER_PACKAGE_NAME = "composerPackageName";
+    public static final String COMPOSER_PACKAGE_NAME_DESC = "The name to use in the composer package name field. e.g. `vendor/project` (must be lowercase and consist of words separated by `-`, `.` or `_`).";
 
     public static final String POD_VERSION = "podVersion";
 
@@ -196,6 +223,9 @@ public class CodegenConstants {
     public static final String INTERFACE_PREFIX = "interfacePrefix";
     public static final String INTERFACE_PREFIX_DESC = "Prefix interfaces with a community standard or widely accepted prefix.";
 
+    public static final String INTERFACE_ONLY = "interfaceOnly";
+    public static final String INTERFACE_ONLY_DESC = "Whether to generate only API interface stubs without the server files.";
+
     public static final String RETURN_ICOLLECTION = "returnICollection";
     public static final String RETURN_ICOLLECTION_DESC = "Return ICollection<T> instead of the concrete type.";
 
@@ -212,13 +242,18 @@ public class CodegenConstants {
     public static final String PARAM_NAMING_DESC = "Naming convention for parameters: 'camelCase', 'PascalCase', 'snake_case' and 'original', which keeps the original name";
 
     public static final String DOTNET_FRAMEWORK = "targetFramework";
-    public static final String DOTNET_FRAMEWORK_DESC = "The target .NET framework version. To target multiple frameworks, use `;` as the separator, e.g. `netstandard2.1;netcoreapp3.0`";
+    public static final String DOTNET_FRAMEWORK_DESC = "The target .NET framework version. To target multiple frameworks, use `;` as the separator, e.g. `netstandard2.1;netcoreapp3.1`";
 
     public static final String NULLABLE_REFERENCE_TYPES = "nullableReferenceTypes";
-    public static final String NULLABLE_REFERENCE_TYPES_DESC = "Use nullable annotations in the project. Only supported on C# 8 / ASP.NET Core 3.0 or newer.";
+    public static final String NULLABLE_REFERENCE_TYPES_DESC = "Use nullable annotations in the project. Only supported on C# 8 / ASP.NET Core 3.1 or newer.";
+
+    public static final String OPENAPI_NULLABLE = "openApiNullable";
+    public static final String OPENAPI_NULLABLE_DESC = "Enable OpenAPI Jackson Nullable library (jackson-databind-nullable) for optional + nullable properties.";
 
     public static final String TEMPLATING_ENGINE = "templatingEngine";
     public static final String TEMPLATING_ENGINE_DESC = "The templating engine plugin to use: \"mustache\" (default) or \"handlebars\" (beta)";
+
+    public static final String MUSTACHE_PARENT_CONTEXT = "MUSTACHE_PARENT_CONTEXT";
 
     public static enum PARAM_NAMING_TYPE {camelCase, PascalCase, snake_case, original}
 
@@ -232,6 +267,9 @@ public class CodegenConstants {
     // Allow different language generators to offer an option of serialization library. Each language specific
     // Codegen constants should define a description and provide proper input validation for the value of serializationLibrary
     public static final String SERIALIZATION_LIBRARY = "serializationLibrary";
+
+    public static final String TYPE_INFO_DEFAULT_IMPLS = "typeInfoDefaultImpls";
+    public static final String TYPE_INFO_DEFAULT_IMPLS_DESC = "Map of schema name to default Jackson deserialization class for @JsonTypeInfo(defaultImpl=...). Applies to both deduction-based and discriminator-based oneOf interfaces. Overrides x-jackson-default-impl when both are set for the same schema. Example: yaml `typeInfoDefaultImpls: {PostRegistrationRequest: PostRegistrationBasicRequest}`";
 
     public static final String API_NAME_PREFIX = "apiNamePrefix";
     public static final String API_NAME_PREFIX_DESC = "Prefix that will be appended to all API names ('tags'). Default: empty string. e.g. Pet => Pet.";
@@ -272,6 +310,9 @@ public class CodegenConstants {
     public static final String SUPPORTS_ASYNC = "supportsAsync";
     public static final String SUPPORTS_ASYNC_DESC = "Generate code that supports async operations.";
 
+    public static final String USE_VIRTUAL_FOR_HOOKS = "useVirtualForHooks";
+    public static final String USE_VIRTUAL_FOR_HOOKS_DESC = "Generate code that exposes public virtual hooks on ApiClient to customize low-level HTTP requests (only `restsharp`. `httpclient` libraries support this option).";
+
     public static final String EXCLUDE_TESTS = "excludeTests";
     public static final String EXCLUDE_TESTS_DESC = "Specifies that no tests are to be generated.";
 
@@ -288,6 +329,7 @@ public class CodegenConstants {
 
     public static final String GENERATE_APIS = "generateApis";
     public static final String GENERATE_API_DOCS = "generateApiDocs";
+    public static final String GENERATE_WEBHOOKS = "generateWebhooks";
 
     public static final String GENERATE_API_TESTS = "generateApiTests";
     public static final String GENERATE_API_TESTS_DESC = "Specifies that api tests are to be generated.";
@@ -295,6 +337,7 @@ public class CodegenConstants {
     // Not user-configurable. System provided for use in templates.
     public static final String GENERATE_MODELS = "generateModels";
     public static final String GENERATE_MODEL_DOCS = "generateModelDocs";
+    public static final String GENERATE_SUPPORTING_FILES = "generateSupportingFiles";
 
     public static final String VIRTUAL_SERVICE = "virtualService";
     public static final String VIRTUAL_SERVICE_DESC = "Generate Spring boot rest service as virtual service with Virtualan";
@@ -313,6 +356,9 @@ public class CodegenConstants {
 
     public static final String VALIDATABLE = "validatable";
     public static final String VALIDATABLE_DESC = "Generates self-validatable models.";
+
+    public static final String EQUATABLE = "equatable";
+    public static final String EQUATABLE_DESC = "Overrides Equals and GetHashCode methods.";
 
     public static final String IGNORE_FILE_OVERRIDE = "ignoreFileOverride";
     public static final String IGNORE_FILE_OVERRIDE_DESC = "Specifies an override location for the .openapi-generator-ignore file. Most useful on initial generation.";
@@ -354,9 +400,9 @@ public class CodegenConstants {
 
     public static final String GENERATE_ALIAS_AS_MODEL = "generateAliasAsModel";
     public static final String GENERATE_ALIAS_AS_MODEL_DESC = "Generate model implementation for aliases to map and array schemas. " +
-        "An 'alias' is an array, map, or list which is defined inline in a OpenAPI document and becomes a model in the generated code. " +
-        "A 'map' schema is an object that can have undeclared properties, i.e. the 'additionalproperties' attribute is set on that object. " +
-        "An 'array' schema is a list of sub schemas in a OAS document";
+            "An 'alias' is an array, map, or list which is defined inline in a OpenAPI document and becomes a model in the generated code. " +
+            "A 'map' schema is an object that can have undeclared properties, i.e. the 'additionalproperties' attribute is set on that object. " +
+            "An 'array' schema is a list of sub schemas in a OAS document";
 
     public static final String USE_COMPARE_NET_OBJECTS = "useCompareNetObjects";
     public static final String USE_COMPARE_NET_OBJECTS_DESC = "Use KellermanSoftware.CompareNetObjects for deep recursive object comparison. WARNING: this option incurs potential performance impact.";
@@ -376,16 +422,159 @@ public class CodegenConstants {
     public static final String REMOVE_ENUM_VALUE_PREFIX = "removeEnumValuePrefix";
     public static final String REMOVE_ENUM_VALUE_PREFIX_DESC = "Remove the common prefix of enum values";
 
+    public static final String SKIP_ONEOF_ANYOF_GETTER = "skipOneOfAnyOfGetter";
+    public static final String SKIP_ONEOF_ANYOF_GETTER_DESC = "Skip the generation of getter for sub-schemas in oneOf/anyOf models.";
+
     public static final String LEGACY_DISCRIMINATOR_BEHAVIOR = "legacyDiscriminatorBehavior";
-    public static final String LEGACY_DISCRIMINATOR_BEHAVIOR_DESC = "Set to false for generators with better support for discriminators. (Python, Java, Go, PowerShell, C#have this enabled by default).";
+    public static final String LEGACY_DISCRIMINATOR_BEHAVIOR_DESC = "Set to false for generators with better support for discriminators. (Python, Java, Go, PowerShell, C# have this enabled by default).";
 
     public static final String USE_SINGLE_REQUEST_PARAMETER = "useSingleRequestParameter";
     public static final String USE_SINGLE_REQUEST_PARAMETER_DESC = "Setting this property to true will generate functions with a single argument containing all API endpoint parameters instead of one argument per parameter.";
 
+    public static final String USE_VERTX_5 = "useVertx5";
+    public static final String USE_VERTX_5_DESC = "Setting this property to true will generate Vert.x 5 specific callbacks using Callables.";
+
+    public static final String OPTIONAL_NON_NULL_PROPERTY_JSON_INCLUDE = "optionalNonNullPropertyJsonInclude";
+
+    public static final String OPTIONAL_NON_NULL_PROPERTY_JSON_SETTER_NULLS = "optionalNonNullPropertyJsonSetterNulls";
+
+    public static final String GENERATE_JSON_INCLUDE_ANNOTATIONS = "generateJsonIncludeAnnotations";
+
+    public static final String GENERATE_JSON_SETTER_NULLS_ANNOTATIONS = "generateJsonSetterNullsAnnotations";
+
     public static final String DISALLOW_ADDITIONAL_PROPERTIES_IF_NOT_PRESENT = "disallowAdditionalPropertiesIfNotPresent";
     public static final String DISALLOW_ADDITIONAL_PROPERTIES_IF_NOT_PRESENT_DESC =
-        "If false, the 'additionalProperties' implementation (set to true by default) is compliant with the OAS and JSON schema specifications. " +
-        "If true (default), keep the old (incorrect) behaviour that 'additionalProperties' is set to false by default.";
+            "If false, the 'additionalProperties' implementation (set to true by default) is compliant with the OAS and JSON schema specifications. " +
+                    "If true (default), keep the old (incorrect) behaviour that 'additionalProperties' is set to false by default.";
+
+    public static final String UNSUPPORTED_V310_SPEC_MSG =
+            "OpenAPI 3.1 support is still in beta. To report an issue related to 3.1 spec, please kindly open an issue in the Github repo: https://github.com/openAPITools/openapi-generator.";
+
+    public static final String ENUM_UNKNOWN_DEFAULT_CASE = "enumUnknownDefaultCase";
+    public static final String ENUM_UNKNOWN_DEFAULT_CASE_DESC =
+            "If the server adds new enum cases, that are unknown by an old spec/client, the client will fail to parse the network response. " +
+                    "With this option enabled, each enum will have a new case, 'unknown_default_open_api', so that when the server sends an enum case that is not known by the client/spec, they can safely fallback to this case.";
+
     public static final String USE_ONEOF_DISCRIMINATOR_LOOKUP = "useOneOfDiscriminatorLookup";
     public static final String USE_ONEOF_DISCRIMINATOR_LOOKUP_DESC = "Use the discriminator's mapping in oneOf to speed up the model lookup. IMPORTANT: Validation (e.g. one and only one match in oneOf's schemas) will be skipped.";
+
+    public static final String INIT_REQUIRED_VARS = "initRequiredVars";
+    public static final String INIT_REQUIRED_VARS_DESC = "If set to true then the required variables are included as positional arguments in __init__ and _from_openapi_data methods. Note: this can break some composition use cases. To learn more read PR #8802.";
+
+    public static final String ERROR_OBJECT_TYPE = "errorObjectType";
+
+    public static final String NON_COMPLIANT_USE_DISCR_IF_COMPOSITION_FAILS = "nonCompliantUseDiscriminatorIfCompositionFails";
+    public static final String NON_COMPLIANT_USE_DISCR_IF_COMPOSITION_FAILS_DESC =
+            "When true, If the payload fails to validate against composed schemas (allOf/anyOf/oneOf/not) and a " +
+                    "discriminator is present, then ignore the composition validation errors and attempt to use the " +
+                    "discriminator to validate the payload.<br />" +
+                    "Note: setting this to true makes the generated client not comply with json schema because it ignores " +
+                    "composition validation errors. Please consider making your schemas more restrictive rather than " +
+                    "setting this to true. You can do that by:<ul>" +
+                    "<li>defining the propertyName as an enum with only one value in the schemas that are in your discriminator map</li>" +
+                    "<li>setting additionalProperties: false in your schemas</li></ul>";
+
+    public static final String FASTAPI_IMPLEMENTATION_PACKAGE = "fastapiImplementationPackage";
+
+    public static final String USE_EXTERNAL_IMPLEMENTATION_PACKAGE = "useExternalImplementationPackage";
+    public static final String USE_EXTERNAL_IMPLEMENTATION_PACKAGE_DESC = "If true, fastapiImplementationPackage is a fully qualified python package that already exists outside the generated package: it is imported as-is (not prefixed with packageName) and its __init__.py is not generated.";
+
+    public static final String WITH_XML = "withXml";
+
+    public static final String WITH_GO_MOD = "withGoMod";
+
+    public static final String GENERATE_MARSHAL_JSON = "generateMarshalJSON";
+    public static final String GENERATE_MARSHAL_JSON_DESC = "Generate MarshalJSON method";
+
+    public static final String GENERATE_UNMARSHAL_JSON = "generateUnmarshalJSON";
+    public static final String GENERATE_UNMARSHAL_JSON_DESC = "Generate UnmarshalJSON method";
+    public static final String MAX_ATTEMPTS_FOR_RETRY = "maxAttemptsForRetry";
+
+    public static final String WAIT_TIME_OF_THREAD = "waitTimeMillis";
+
+    public static final String USE_DEFAULT_VALUES_FOR_REQUIRED_VARS = "useDefaultValuesForRequiredVars";
+
+    public static final String DEFAULT_TO_EMPTY_CONTAINER = "defaultToEmptyContainer";
+    public static final String DEFAULT_TO_EMPTY_CONTAINER_DESC = "Initialize containers (array/set/map) to empty containers instead of null by default. Usage: https://github.com/OpenAPITools/openapi-generator/blob/master/docs/customization.md#default-values";
+
+    // Vendor extensions
+    public static final String X_EXAMPLE = "x-example";
+    public static final String X_INTERNAL = "x-internal";
+    public static final String X_PARENT = "x-parent";
+    public static final String X_COMPOSED_DATA_TYPE = "x-composed-data-type";
+    public static final String X_BASE_NAME = "x-base-name";
+    public static final String X_IS_VALUE_TYPE = "x-is-value-type";
+    public static final String X_IS_REFERENCE_TYPE = "x-is-reference-type";
+    public static final String X_IS_NULLABLE_TYPE = "x-is-nullable-type";
+    public static final String X_IS_BASE_OR_NEW_DISCRIMINATOR = "x-is-base-or-new-discriminator";
+    public static final String X_ENUM_BYTE = "x-enum-byte";
+    public static final String X_HTTP_STATUS = "x-http-status";
+    public static final String X_HTTP_STATUSES_WITH_RETURN = "x-http-statuses-with-return";
+    public static final String X_SET_COOKIE = "x-set-cookie";
+    public static final String X_DUPLICATES = "x-duplicates";
+    public static final String X_HTTP_STATUS_IS_DEFAULT = "x-http-status-is-default";
+    public static final String X_ONLY_DEFAULT = "x-only-default";
+    public static final String X_HTTP_STATUS_RANGE = "x-http-status-range";
+    public static final String X_NOT_NULLABLE_REFERENCE_TYPES = "x-not-nullable-reference-types";
+    public static final String X_HAS_NOT_NULLABLE_REFERENCE_TYPES = "x-has-not-nullable-reference-types";
+    public static final String X_NULLABLE_VALUE_TYPE = "x-nullable-value-type";
+    public static final String X_NULLABLE_TYPE = "x-nullable-type";
+    public static final String X_CSHARP_VALUE_TYPE = "x-csharp-value-type";
+    public static final String X_REGEX = "x-regex";
+    public static final String X_PATTERN = "x-pattern";
+    public static final String X_MODIFIERS = "x-modifiers";
+    public static final String X_MODIFIER_PREFIX = "x-modifier-";
+    public static final String X_MODEL_IS_MUTABLE = "x-model-is-mutable";
+    public static final String X_MODEL_IS_OPERATION_INPUT = "x-model-is-operation-input";
+    public static final String X_ENUM_AS_STRING = "x-enum-as-string";
+    public static final String X_IS_JACKSON_OPTIONAL_NULLABLE = "x-is-jackson-optional-nullable";
+    public static final String X_IMPLEMENTS = "x-implements";
+    public static final String X_IS_ONE_OF_INTERFACE = "x-is-one-of-interface";
+    public static final String USE_ENUM_VALUE_INTERFACE = "useEnumValueInterface";
+    public static final String USE_ENUM_VALUE_INTERFACE_DESC =
+            "Generate a ValuedEnum<T> interface in the config package and make all generated enums " +
+                    "implement it, providing a common typed way to access the underlying enum value. " +
+                    "Use `importMappings.ValuedEnum` to substitute a custom/library-provided interface " +
+                    "instead of generating one.";
+
+    public static final String USE_DEDUCTION_FOR_ONE_OF_INTERFACES = "useDeductionForOneOfInterfaces";
+    public static final String USE_DEDUCTION_FOR_ONE_OF_INTERFACES_DESC =
+            "Annotate discriminator-free oneOf interfaces with Jackson's " +
+                    "@JsonTypeInfo(use = Id.DEDUCTION) and @JsonSubTypes so the concrete subtype " +
+                    "is resolved from the JSON field set rather than a type-tag property. " +
+                    "Has no effect when a discriminator is present (name-based resolution is used instead). " +
+                    "Requires subtypes to have structurally distinct sets of properties.";
+    public static final String X_DISCRIMINATOR_VALUE = "x-discriminator-value";
+    public static final String X_ONE_OF_NAME = "x-one-of-name";
+    public static final String X_NULLABLE = "x-nullable";
+    public static final String X_ENUM_VARNAMES = "x-enum-varnames";
+    public static final String X_ENUM_DESCRIPTIONS = "x-enum-descriptions";
+    public static final String X_ENUM_DEPRECATED = "x-enum-deprecated";
+    public static final String X_PY_TYPING = "x-py-typing";
+    public static final String X_PY_EXAMPLE = "x-py-example";
+    public static final String X_PY_EXAMPLE_IMPORT = "x-py-example-import";
+    public static final String X_PY_FASTAPI_EXAMPLE = "x-py-fastapi-example";
+    public static final String X_PY_NAME = "x-py-name";
+    public static final String X_PY_EXPLICIT_PUBLIC_NAME = "x-py-explicit-public-name";
+    public static final String X_PY_LEGACY_PUBLIC_NAME = "x-py-legacy-public-name";
+    public static final String X_PY_HAS_PUBLIC_NAME_PROPERTIES = "x-py-has-public-name-properties";
+    public static final String X_PY_HIDDEN_STORAGE_NAMES = "x-py-hidden-storage-names";
+    public static final String X_PY_INPUT_NAME_PROPERTIES = "x-py-input-name-properties";
+    public static final String X_PY_PREPROCESSES_INPUT_NAMES = "x-py-preprocesses-input-names";
+    public static final String X_PY_VALIDATES_INPUT_NAMES = "x-py-validates-input-names";
+    public static final String X_PY_PUBLIC_NAME = "x-py-public-name";
+    public static final String X_PY_PUBLIC_NAME_DIFFERS_FROM_STORAGE = "x-py-public-name-differs-from-storage";
+    public static final String X_PY_PUBLIC_NAME_DIFFERS_FROM_WIRE = "x-py-public-name-differs-from-wire";
+    public static final String X_PY_PUBLIC_NAME_LITERAL = "x-py-public-name-literal";
+    public static final String X_PY_PUBLIC_NAME_OVERRIDES_BASE_MODEL = "x-py-public-name-overrides-base-model";
+    public static final String X_PY_PUBLIC_NAME_TYPING = "x-py-public-name-typing";
+    public static final String X_PY_WIRE_NAME_LITERAL = "x-py-wire-name-literal";
+    public static final String X_PY_ENUM_TYPE = "x-py-enum-type";
+    public static final String X_PY_READONLY = "x-py-readonly";
+    public static final String X_PY_MODEL_IMPORTS = "x-py-model-imports";
+    public static final String X_PY_OTHER_IMPORTS = "x-py-other-imports";
+    public static final String X_PY_POSTPONED_MODEL_IMPORTS = "x-py-postponed-model-imports";
+    public static final String X_PY_TYPING_IMPORTS = "x-py-typing-imports";
+    public static final String X_PY_PYDANTIC_IMPORTS = "x-py-pydantic-imports";
+    public static final String X_PY_DATETIME_IMPORTS = "x-py-datetime-imports";
 }

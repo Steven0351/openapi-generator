@@ -8,14 +8,10 @@
 export interface Category {
     /**
      * 
-     * @type {number}
-     * @memberof Category
      */
     id?: number;
     /**
      * 
-     * @type {string}
-     * @memberof Category
      */
     name?: string;
 }
@@ -27,20 +23,14 @@ export interface Category {
 export interface ModelApiResponse {
     /**
      * 
-     * @type {number}
-     * @memberof ModelApiResponse
      */
     code?: number;
     /**
      * 
-     * @type {string}
-     * @memberof ModelApiResponse
      */
     type?: string;
     /**
      * 
-     * @type {string}
-     * @memberof ModelApiResponse
      */
     message?: string;
 }
@@ -52,51 +42,41 @@ export interface ModelApiResponse {
 export interface Order {
     /**
      * 
-     * @type {number}
-     * @memberof Order
      */
     id?: number;
     /**
      * 
-     * @type {number}
-     * @memberof Order
      */
     petId?: number;
     /**
      * 
-     * @type {number}
-     * @memberof Order
      */
     quantity?: number;
     /**
      * 
-     * @type {Date}
-     * @memberof Order
      */
-    shipDate?: Date;
+    shipDate?: string;
     /**
      * Order Status
-     * @type {string}
-     * @memberof Order
      */
     status?: OrderStatusEnum;
     /**
      * 
-     * @type {boolean}
-     * @memberof Order
      */
     complete?: boolean;
 }
 
+
 /**
-* @export
-* @enum {string}
-*/
-export enum OrderStatusEnum {
-    Placed = 'placed',
-    Approved = 'approved',
-    Delivered = 'delivered'
-}
+ * @export
+ */
+export const OrderStatusEnum = {
+    Placed: 'placed',
+    Approved: 'approved',
+    Delivered: 'delivered',
+} as const;
+export type OrderStatusEnum = typeof OrderStatusEnum[keyof typeof OrderStatusEnum];
+
 /**
  * A pet for sale in the pet store
  * @export
@@ -105,51 +85,41 @@ export enum OrderStatusEnum {
 export interface Pet {
     /**
      * 
-     * @type {number}
-     * @memberof Pet
      */
     id?: number;
     /**
      * 
-     * @type {Category}
-     * @memberof Pet
      */
     category?: Category;
     /**
      * 
-     * @type {string}
-     * @memberof Pet
      */
     name: string;
     /**
      * 
-     * @type {Array<string>}
-     * @memberof Pet
      */
     photoUrls: Array<string>;
     /**
      * 
-     * @type {Array<Tag>}
-     * @memberof Pet
      */
     tags?: Array<Tag>;
     /**
      * pet status in the store
-     * @type {string}
-     * @memberof Pet
      */
     status?: PetStatusEnum;
 }
 
+
 /**
-* @export
-* @enum {string}
-*/
-export enum PetStatusEnum {
-    Available = 'available',
-    Pending = 'pending',
-    Sold = 'sold'
-}
+ * @export
+ */
+export const PetStatusEnum = {
+    Available: 'available',
+    Pending: 'pending',
+    Sold: 'sold',
+} as const;
+export type PetStatusEnum = typeof PetStatusEnum[keyof typeof PetStatusEnum];
+
 /**
  * A tag for a pet
  * @export
@@ -158,14 +128,10 @@ export enum PetStatusEnum {
 export interface Tag {
     /**
      * 
-     * @type {number}
-     * @memberof Tag
      */
     id?: number;
     /**
      * 
-     * @type {string}
-     * @memberof Tag
      */
     name?: string;
 }
@@ -177,50 +143,34 @@ export interface Tag {
 export interface User {
     /**
      * 
-     * @type {number}
-     * @memberof User
      */
     id?: number;
     /**
      * 
-     * @type {string}
-     * @memberof User
      */
     username?: string;
     /**
      * 
-     * @type {string}
-     * @memberof User
      */
     firstName?: string;
     /**
      * 
-     * @type {string}
-     * @memberof User
      */
     lastName?: string;
     /**
      * 
-     * @type {string}
-     * @memberof User
      */
     email?: string;
     /**
      * 
-     * @type {string}
-     * @memberof User
      */
     password?: string;
     /**
      * 
-     * @type {string}
-     * @memberof User
      */
     phone?: string;
     /**
      * User Status
-     * @type {number}
-     * @memberof User
      */
     userStatus?: number;
 }

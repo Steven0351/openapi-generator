@@ -55,7 +55,7 @@ export class StoreApi {
     { response: JQueryXHR; body?: any;  },
     { response: JQueryXHR; errorThrown: string }
     > {
-        let localVarPath = this.basePath + '/store/order/{orderId}'.replace('{' + 'orderId' + '}', encodeURIComponent(String(orderId)));
+        let localVarPath = this.basePath + '/store/order/{orderId}'.replace('{orderId}', encodeURIComponent(String(orderId)));
 
         let queryParameters: any = {};
         let headerParams: any = {};
@@ -169,7 +169,7 @@ export class StoreApi {
     }
 
     /**
-     * For valid response try integer IDs with value <= 5 or > 10. Other values will generated exceptions
+     * For valid response try integer IDs with value <= 5 or > 10. Other values will generate exceptions
      * @summary Find purchase order by ID
      * @param orderId ID of pet that needs to be fetched
      */
@@ -177,7 +177,7 @@ export class StoreApi {
     { response: JQueryXHR; body: models.Order;  },
     { response: JQueryXHR; errorThrown: string }
     > {
-        let localVarPath = this.basePath + '/store/order/{orderId}'.replace('{' + 'orderId' + '}', encodeURIComponent(String(orderId)));
+        let localVarPath = this.basePath + '/store/order/{orderId}'.replace('{orderId}', encodeURIComponent(String(orderId)));
 
         let queryParameters: any = {};
         let headerParams: any = {};

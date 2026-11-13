@@ -19,27 +19,41 @@ package org.openapitools.codegen.php;
 
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.media.Schema;
-
-import org.openapitools.codegen.CodegenConstants;
-import org.openapitools.codegen.CodegenModel;
-import org.openapitools.codegen.CodegenOperation;
-import org.openapitools.codegen.CodegenProperty;
-import org.openapitools.codegen.CodegenType;
+import org.junit.jupiter.api.Assertions;
+import org.mockito.Answers;
+import org.openapitools.codegen.*;
 import org.openapitools.codegen.languages.AbstractPhpCodegen;
-import org.openapitools.codegen.TestUtils;
+import org.openapitools.codegen.model.ModelsMap;
 import org.testng.Assert;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
+import java.util.*;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.withSettings;
+import static org.openapitools.codegen.CodegenConstants.X_ENUM_DESCRIPTIONS;
+import static org.openapitools.codegen.CodegenConstants.X_ENUM_VARNAMES;
 
 public class AbstractPhpCodegenTest {
 
+    private AbstractPhpCodegen codegen;
+
+    /**
+     * In TEST-NG, test class (and its fields) is only constructed once (vs. for every test in Jupiter),
+     * using @BeforeMethod to have a fresh codegen mock for each test
+     */
+    @BeforeMethod
+    void mockAbstractCodegen() {
+        codegen = mock(
+                AbstractPhpCodegen.class, withSettings().defaultAnswer(Answers.CALLS_REAL_METHODS).useConstructor()
+        );
+    }
+
     @Test
     public void testInitialConfigValues() throws Exception {
-        final AbstractPhpCodegen codegen = new P_AbstractPhpCodegen();
         codegen.processOpts();
 
         Assert.assertEquals(codegen.additionalProperties().get(CodegenConstants.HIDE_GENERATION_TIMESTAMP), Boolean.TRUE);
@@ -54,7 +68,6 @@ public class AbstractPhpCodegenTest {
 
     @Test
     public void testSettersForConfigValues() throws Exception {
-        final AbstractPhpCodegen codegen = new P_AbstractPhpCodegen();
         codegen.setHideGenerationTimestamp(false);
         codegen.setModelPackage("My\\Client\\Model");
         codegen.setApiPackage("My\\Client\\Api");
@@ -66,14 +79,13 @@ public class AbstractPhpCodegenTest {
         Assert.assertEquals(codegen.modelPackage(), "My\\Client\\Model");
         Assert.assertEquals(codegen.additionalProperties().get(CodegenConstants.MODEL_PACKAGE), "My\\Client\\Model");
         Assert.assertEquals(codegen.apiPackage(), "My\\Client\\Api");
-        Assert.assertEquals(codegen.additionalProperties().get(CodegenConstants.API_PACKAGE),"My\\Client\\Api");
+        Assert.assertEquals(codegen.additionalProperties().get(CodegenConstants.API_PACKAGE), "My\\Client\\Api");
         Assert.assertEquals(codegen.getInvokerPackage(), "My\\Client\\Invoker");
         Assert.assertEquals(codegen.additionalProperties().get(CodegenConstants.INVOKER_PACKAGE), "My\\Client\\Invoker");
     }
 
     @Test
     public void testAdditionalPropertiesPutForConfigValues() throws Exception {
-        final AbstractPhpCodegen codegen = new P_AbstractPhpCodegen();
         codegen.additionalProperties().put(CodegenConstants.HIDE_GENERATION_TIMESTAMP, false);
         codegen.additionalProperties().put(CodegenConstants.MODEL_PACKAGE, "PHPmodel");
         codegen.additionalProperties().put(CodegenConstants.API_PACKAGE, "PHPapi");
@@ -101,7 +113,6 @@ public class AbstractPhpCodegenTest {
         codegenOperation.hasProduces = true;
         codegenOperation.produces = Arrays.asList(all, applicationJson);
 
-        final AbstractPhpCodegen codegen = new P_AbstractPhpCodegen();
         codegen.escapeMediaType(Arrays.asList(codegenOperation));
 
         Assert.assertEquals(codegenOperation.produces.get(0).get("mediaType"), "*_/_*");
@@ -110,7 +121,6 @@ public class AbstractPhpCodegenTest {
 
     @Test(dataProvider = "composerNames", description = "Issue #9998")
     public void testGetComposerPackageName(String gitUserId, String gitRepoId, String result) {
-        final AbstractPhpCodegen codegen = new P_AbstractPhpCodegen();
         codegen.processOpts();
 
         codegen.setGitUserId(gitUserId);
@@ -120,19 +130,19 @@ public class AbstractPhpCodegenTest {
 
     @DataProvider(name = "composerNames")
     public static Object[][] composerNames() {
-        return new Object[][] {
-            {"", "", ""},
-            {"null", "null", ""},
-            {"GIT_REPO_ID", "GIT_USER_ID", ""},
-            {"git_repo_id", "git_user_id", "git_repo_id/git_user_id"},
-            {"foo", "bar", "foo/bar"},
+        return new Object[][]{
+                {"", "", ""},
+                {"null", "null", ""},
+                {"GIT_REPO_ID", "GIT_USER_ID", ""},
+                {"git_repo_id", "git_user_id", "git_repo_id/git_user_id"},
+                {"foo", "bar", "foo/bar"},
         };
     }
 
     @Test(description = "Issue #8945")
     public void testArrayOfArrays() {
         final OpenAPI openAPI = TestUtils.parseFlattenSpec("src/test/resources/3_0/issue_8945.yaml");
-        final AbstractPhpCodegen codegen = new P_AbstractPhpCodegen();
+        codegen.setOpenAPI(openAPI);
 
         Schema test1 = openAPI.getComponents().getSchemas().get("MyResponse");
         CodegenModel cm1 = codegen.fromModel("MyResponse", test1);
@@ -150,7 +160,7 @@ public class AbstractPhpCodegenTest {
     @Test(description = "Issue #10244")
     public void testEnumPropertyWithDefaultValue() {
         final OpenAPI openAPI = TestUtils.parseFlattenSpec("src/test/resources/3_0/php/issue_10244.yaml");
-        final AbstractPhpCodegen codegen = new P_AbstractPhpCodegen();
+        codegen.setOpenAPI(openAPI);
 
         Schema test1 = openAPI.getComponents().getSchemas().get("ModelWithEnumPropertyHavingDefault");
         CodegenModel cm1 = codegen.fromModel("ModelWithEnumPropertyHavingDefault", test1);
@@ -160,27 +170,58 @@ public class AbstractPhpCodegenTest {
         Assert.assertEquals(codegen.getTypeDeclaration("MyResponse"), "\\php\\Model\\MyResponse");
 
         // We need to postProcess the model for enums to be processed
-        codegen.postProcessModels(Collections.singletonMap("models", Collections.singletonList(Collections.singletonMap("model", cm1))));
+        codegen.postProcessModels(TestUtils.createCodegenModelWrapper(cm1));
 
         // Assert the enum default value is properly generated
         CodegenProperty cp1 = cm1.vars.get(0);
         Assert.assertEquals(cp1.getDefaultValue(), "'VALUE'");
     }
 
-    private static class P_AbstractPhpCodegen extends AbstractPhpCodegen {
-        @Override
-        public CodegenType getTag() {
-            return null;
-        }
+    @Test(description = "Enum value with quotes (#17582)")
+    public void testEnumPropertyWithQuotes() {
+        Assert.assertEquals(codegen.toEnumValue("enum-value", "string"), "'enum-value'");
+        Assert.assertEquals(codegen.toEnumValue("won't fix", "string"), "'won\\'t fix'");
+        Assert.assertEquals(codegen.toEnumValue("\"", "string"), "'\"'");
+        Assert.assertEquals(codegen.toEnumValue("1.0", "float"), "1.0");
+        Assert.assertEquals(codegen.toEnumValue("1", "int"), "1");
+    }
 
-        @Override
-        public String getName() {
-            return null;
-        }
+    @Test
+    void postProcessModelsEnumWithMapExtension() {
+        ModelsMap objs = codegenModelWithXEnumVarNameAsMap();
+        CodegenModel cm = objs.getModels().get(0).getModel();
 
-        @Override
-        public String getHelp() {
-            return null;
-        }
+        codegen.postProcessModelsEnum(objs);
+
+        List<Map<String, Object>> enumVars = (List<Map<String, Object>>) cm.getAllowableValues().get("enumVars");
+        Assertions.assertNotNull(enumVars);
+        Assertions.assertNotNull(enumVars.get(0));
+        assertEquals("DOGVAR", enumVars.get(0).getOrDefault("name", ""));
+        assertEquals("'dog'", enumVars.get(0).getOrDefault("value", ""));
+        assertEquals("This is a dog", enumVars.get(0).getOrDefault("enumDescription", ""));
+        Assertions.assertNotNull(enumVars.get(1));
+        assertEquals("CATVAR", enumVars.get(1).getOrDefault("name", ""));
+        assertEquals("'cat'", enumVars.get(1).getOrDefault("value", ""));
+    }
+
+    private ModelsMap codegenModelWithXEnumVarNameAsMap() {
+        final CodegenModel cm = new CodegenModel();
+        cm.isEnum = true;
+        final HashMap<String, Object> allowableValues = new HashMap<>();
+        allowableValues.put("values", Arrays.asList("dog", "cat"));
+        cm.setAllowableValues(allowableValues);
+        cm.dataType = "String";
+        Map<String, String> aliases = new LinkedHashMap<>();
+        aliases.put("dog", "_DOGVAR");
+        aliases.put("cat", "_CATVAR");
+        Map<String, String> descriptions = new LinkedHashMap<>();
+        descriptions.put("dog", "This is a dog");
+        descriptions.put("cat", "This is a cat");
+        Map<String, Object> extensions = new HashMap<>();
+        extensions.put(X_ENUM_VARNAMES, aliases);
+        extensions.put(X_ENUM_DESCRIPTIONS, descriptions);
+        cm.setVendorExtensions(extensions);
+        cm.setVars(Collections.emptyList());
+        return TestUtils.createCodegenModelWrapper(cm);
     }
 }

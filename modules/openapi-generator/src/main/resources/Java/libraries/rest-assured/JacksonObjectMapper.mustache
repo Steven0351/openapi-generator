@@ -1,24 +1,59 @@
 {{>licenseInfo}}
 
+{{#useJackson3}}
 package {{invokerPackage}};
 
-{{#threetenbp}}
-import org.threeten.bp.*;
-{{/threetenbp}}
+import com.fasterxml.jackson.annotation.JsonInclude;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.cfg.DateTimeFeature;
+import tools.jackson.databind.cfg.EnumFeature;
+import tools.jackson.databind.json.JsonMapper;
+{{#openApiNullable}}
+import org.openapitools.jackson.nullable.JsonNullableJackson3Module;
+{{/openApiNullable}}
+
+import io.restassured.internal.mapping.Jackson3Mapper;
+import io.restassured.path.json.mapper.factory.Jackson3ObjectMapperFactory;
+
+
+public class JacksonObjectMapper extends Jackson3Mapper {
+
+    private JacksonObjectMapper() {
+        super(createFactory());
+    }
+
+    private static Jackson3ObjectMapperFactory createFactory() {
+        return (cls, charset) -> JsonMapper.builder()
+                .changeDefaultPropertyInclusion(v -> v.withValueInclusion(JsonInclude.Include.NON_NULL))
+                .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, {{failOnUnknownProperties}})
+                .disable(DeserializationFeature.FAIL_ON_INVALID_SUBTYPE)
+                .disable(DateTimeFeature.WRITE_DATES_AS_TIMESTAMPS)
+                .enable(EnumFeature.WRITE_ENUMS_USING_TO_STRING)
+                .enable(EnumFeature.READ_ENUMS_USING_TO_STRING)
+                .defaultDateFormat(new RFC3339DateFormat())
+                {{#openApiNullable}}
+                .addModule(new JsonNullableJackson3Module())
+                {{/openApiNullable}}
+                .build();
+    }
+
+    public static JacksonObjectMapper jackson() {
+        return new JacksonObjectMapper();
+    }
+}
+{{/useJackson3}}
+{{^useJackson3}}
+package {{invokerPackage}};
+
 import com.fasterxml.jackson.annotation.*;
 import com.fasterxml.jackson.databind.*;
 {{#openApiNullable}}
 import org.openapitools.jackson.nullable.JsonNullableModule;
 {{/openApiNullable}}
-{{#java8}}
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-{{/java8}}
 {{#joda}}
 import com.fasterxml.jackson.datatype.joda.JodaModule;
 {{/joda}}
-{{#threetenbp}}
-import com.fasterxml.jackson.datatype.threetenbp.ThreeTenModule;
-{{/threetenbp}}
 
 import io.restassured.internal.mapping.Jackson2Mapper;
 import io.restassured.path.json.mapper.factory.Jackson2ObjectMapperFactory;
@@ -35,25 +70,16 @@ public class JacksonObjectMapper extends Jackson2Mapper {
             ObjectMapper mapper = new ObjectMapper();
             mapper = new ObjectMapper();
             mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
-            mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+            mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, {{failOnUnknownProperties}});
             mapper.configure(DeserializationFeature.FAIL_ON_INVALID_SUBTYPE, false);
             mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
             mapper.enable(SerializationFeature.WRITE_ENUMS_USING_TO_STRING);
             mapper.enable(DeserializationFeature.READ_ENUMS_USING_TO_STRING);
             mapper.setDateFormat(new RFC3339DateFormat());
-            {{#java8}}
             mapper.registerModule(new JavaTimeModule());
-            {{/java8}}
             {{#joda}}
             mapper.registerModule(new JodaModule());
             {{/joda}}
-            {{#threetenbp}}
-            ThreeTenModule module = new ThreeTenModule();
-            module.addDeserializer(Instant.class, CustomInstantDeserializer.INSTANT);
-            module.addDeserializer(OffsetDateTime.class, CustomInstantDeserializer.OFFSET_DATE_TIME);
-            module.addDeserializer(ZonedDateTime.class, CustomInstantDeserializer.ZONED_DATE_TIME);
-            mapper.registerModule(module);
-            {{/threetenbp}}
             {{#openApiNullable}}
             JsonNullableModule jnm = new JsonNullableModule();
             mapper.registerModule(jnm);
@@ -66,3 +92,4 @@ public class JacksonObjectMapper extends Jackson2Mapper {
         return new JacksonObjectMapper();
     }
 }
+{{/useJackson3}}

@@ -23,7 +23,7 @@ import org.openapitools.codegen.meta.features.annotations.ToolingExtension;
 /**
  * Defines common data types supported by a generator.
  * Some of these features are defined in specs, and some are specific to the tool.
- *
+ * <p>
  * Where data types are listed as tool-specific, this either indicates that the data type is common enough that it is an officially
  * supported custom data type by the toolset (see {@link DataTypeFeature#Decimal}), or that the consideration of a special type isn't
  * explicitly mentioned by the specification(s) but differs enough across languages that it warrants a special callout (see {@link DataTypeFeature#ArrayOfModel}).
@@ -114,14 +114,13 @@ public enum DataTypeFeature {
      *
      *
      * <p>
-     *     This should be used as an indicator for password best practices, such as assigning a variable to
-     *     a character array rather than string, avoiding logging the variable in clear text, and masking the value
-     *     in any user inputs. See OWASP for best practices.
+     * This should be used as an indicator for password best practices, such as assigning a variable to
+     * a character array rather than string, avoiding logging the variable in clear text, and masking the value
+     * in any user inputs. See OWASP for best practices.
      * </p>
      */
     @OAS2 @OAS3
     Password,
-
 
     /**
      * Supports file inputs (e.g. multipart support).
@@ -140,10 +139,33 @@ public enum DataTypeFeature {
     File,
 
     /**
+     * String uuid data
+     */
+    Uuid,
+
+    /**
      * Supports arrays of data
      */
     @OAS2 @OAS3
     Array,
+
+    /**
+     * A JSON "null" value added in openapi v3.1.0
+     */
+    @OAS3
+    Null,
+
+    /**
+     * When no type is defined, any data type is accepted
+     */
+    @OAS2 @OAS3
+    AnyType,
+
+    /**
+     * An unordered set of properties mapping a string to an instance
+     */
+    @OAS2 @OAS3
+    Object,
 
     /**
      * Supports map of data
@@ -236,5 +258,5 @@ public enum DataTypeFeature {
      * Supports a map of arrays (enums)
      */
     @ToolingExtension
-    MapOfCollectionOfEnum
+    MapOfCollectionOfEnum,
 }

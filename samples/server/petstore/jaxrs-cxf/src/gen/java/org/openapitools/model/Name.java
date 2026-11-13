@@ -1,28 +1,34 @@
 package org.openapitools.model;
 
-import io.swagger.annotations.ApiModel;
 import javax.validation.constraints.*;
 import javax.validation.Valid;
 
+import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
+import java.util.Objects;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
-  * Model for testing model name same as property name
- **/
+ * Model for testing model name same as property name
+ */
 @ApiModel(description="Model for testing model name same as property name")
+
 public class Name  {
   
   @ApiModelProperty(required = true, value = "")
+
   private Integer name;
 
   @ApiModelProperty(value = "")
+
   private Integer snakeCase;
 
   @ApiModelProperty(value = "")
+
   private String property;
 
   @ApiModelProperty(value = "")
+
   private Integer _123number;
  /**
    * Get name
@@ -81,6 +87,25 @@ public class Name  {
   }
 
 
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    Name name = (Name) o;
+    return Objects.equals(this.name, name.name) &&
+        Objects.equals(this.snakeCase, name.snakeCase) &&
+        Objects.equals(this.property, name.property) &&
+        Objects.equals(this._123number, name._123number);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(name, snakeCase, property, _123number);
+  }
 
   @Override
   public String toString() {
@@ -100,10 +125,7 @@ public class Name  {
    * (except the first line).
    */
   private static String toIndentedString(Object o) {
-    if (o == null) {
-      return "null";
-    }
-    return o.toString().replace("\n", "\n    ");
+    return o == null ? "null" : o.toString().replace("\n", "\n    ");
   }
 }
 

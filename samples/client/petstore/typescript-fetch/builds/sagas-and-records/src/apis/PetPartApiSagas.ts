@@ -12,23 +12,32 @@
  * Do not edit the class manually.
  */
 
-
-import {Api} from './';
-import {List} from 'immutable';
-import {all, fork, put, takeLatest} from "redux-saga/effects";
-import {apiCall, createSagaAction as originalCreateSagaAction, BaseEntitySupportPayloadApiAction, BasePayloadApiAction, NormalizedRecordEntities, normalizedEntities} from "../runtimeSagasAndRecords";
-import {Action} from "redux-ts-simple";
+import { Api } from './index';
+import { List } from 'immutable';
+import { all, fork, put, takeLatest } from "redux-saga/effects";
+import { apiCall, createSagaAction as originalCreateSagaAction, BaseEntitySupportPayloadApiAction, BasePayloadApiAction, NormalizedRecordEntities, normalizedEntities } from "../runtimeSagasAndRecords";
+import { Action } from "redux-ts-simple";
 
 import {
     GetMatchingPartsResponse,
+} from '../models/GetMatchingPartsResponse';
+import {
     GetMatchingPartsResponseRecord,
     getMatchingPartsResponseRecordUtils,
+} from '../models/GetMatchingPartsResponseRecord';
+import {
     GetPetPartTypeResponse,
+} from '../models/GetPetPartTypeResponse';
+import {
     GetPetPartTypeResponseRecord,
     getPetPartTypeResponseRecordUtils,
+} from '../models/GetPetPartTypeResponseRecord';
+import {
     MatchingPartsRecord,
+} from '../models/MatchingPartsRecord';
+import {
     PetPartType,
-} from '../models';
+} from '../models/PetPartType';
 
 const createSagaAction = <T>(type: string) => originalCreateSagaAction<T>(type, {namespace: "api_petPartApi"});
 
@@ -70,7 +79,7 @@ export function *getFakePetPartTypeSagaImp(_action_: Action<PayloadGetFakePetPar
 
         yield put(getFakePetPartTypeRequest(_action_.payload));
 
-        const response: Required<GetPetPartTypeResponse> = yield apiCall(Api.petPartApi, Api.petPartApi.getFakePetPartType,
+        const response: Required<GetPetPartTypeResponse> = yield apiCall(Api.petPartApi, Api.petPartApi['getFakePetPartType'],
             parseFloat(fakePetPartId),
         );
 
@@ -79,7 +88,7 @@ export function *getFakePetPartTypeSagaImp(_action_: Action<PayloadGetFakePetPar
             yield put(getFakePetPartTypeSuccess(successReturnValue));
 
         return successReturnValue;
-    } catch (error) {
+    } catch (error: any) {
         if (markErrorsAsHandled) {error.wasHandled = true; }
         yield put(getFakePetPartTypeFailure({error, requestPayload: _action_.payload}));
         return error;
@@ -126,7 +135,7 @@ export function *getMatchingPartsSagaImp(_action_: Action<PayloadGetMatchingPart
 
         yield put(getMatchingPartsRequest(requestPayload));
 
-        const response: Required<GetMatchingPartsResponse> = yield apiCall(Api.petPartApi, Api.petPartApi.getMatchingParts,
+        const response: Required<GetMatchingPartsResponse> = yield apiCall(Api.petPartApi, Api.petPartApi['getMatchingParts'],
             parseFloat(fakePetPartId),
             _long,
             smooth,
@@ -147,7 +156,7 @@ export function *getMatchingPartsSagaImp(_action_: Action<PayloadGetMatchingPart
         }
 
         return successReturnValue;
-    } catch (error) {
+    } catch (error: any) {
         if (markErrorsAsHandled) {error.wasHandled = true; }
         yield put(getMatchingPartsFailure({error, requestPayload: _action_.payload}));
         return error;

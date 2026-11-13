@@ -16,23 +16,28 @@
 
 package org.openapitools.codegen.languages;
 
-import org.openapitools.codegen.*;
 import io.swagger.v3.oas.models.media.Schema;
-
 import io.swagger.v3.parser.util.SchemaTypeUtil;
-import org.openapitools.codegen.meta.features.*;
+import org.apache.commons.lang3.StringUtils;
+import org.openapitools.codegen.CliOption;
+import org.openapitools.codegen.CodegenConfig;
+import org.openapitools.codegen.CodegenType;
+import org.openapitools.codegen.SupportingFile;
 import org.openapitools.codegen.meta.GeneratorMetadata;
 import org.openapitools.codegen.meta.Stability;
+import org.openapitools.codegen.meta.features.*;
+import org.openapitools.codegen.model.ModelMap;
+import org.openapitools.codegen.model.OperationsMap;
 import org.openapitools.codegen.utils.ModelUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.util.*;
 
-import org.apache.commons.lang3.StringUtils;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
+/**
+ * <p>Mustache templates are located in {@code src/main/resources/cpp-tiny/}.
+ */
 public class CppTinyClientCodegen extends AbstractCppCodegen implements CodegenConfig {
     public static final String PROJECT_NAME = "TinyClient";
 
@@ -71,7 +76,7 @@ public class CppTinyClientCodegen extends AbstractCppCodegen implements CodegenC
     }
 
     public void addControllerToAdditionalProperties() {
-        Map<String, String> supportedControllers = new HashMap<String, String>();
+        Map<String, String> supportedControllers = new HashMap<>();
         supportedControllers.put("esp32", "isESP32");
         supportedControllers.put("esp8266", "isESP8266");
         if (supportedControllers.containsKey(controller)) {
@@ -152,20 +157,19 @@ public class CppTinyClientCodegen extends AbstractCppCodegen implements CodegenC
 
         // SERVICES: Helpers
         supportingFiles.add(new SupportingFile("service/Response.h.mustache", serviceFolder, "Response.h"));
-        supportingFiles.add(new SupportingFile("service/AbstractService.h.mustache", serviceFolder, "AbstractService.h"));
-        supportingFiles.add(new SupportingFile("service/AbstractService.cpp.mustache", serviceFolder, "AbstractService.cpp"));
+        supportingFiles.add(new SupportingFile("service/Service.h.mustache", serviceFolder, "Service.h"));
+        supportingFiles.add(new SupportingFile("service/Service.cpp.mustache", serviceFolder, "Service.cpp"));
 
         // Main
-        supportingFiles.add(new SupportingFile("main.mustache", CppTinyClientCodegen.sourceFolder, "main.cpp"));
+        supportingFiles.add(new SupportingFile("main.mustache", CppTinyClientCodegen.sourceFolder, "main.cpp")); // TODO no overwrite
 
         // Config files
         supportingFiles.add(new SupportingFile("README.mustache", rootFolder, "README.md"));
-        supportingFiles.add(new SupportingFile("platformio.ini.mustache", rootFolder, "platformio.ini"));
-        supportingFiles.add(new SupportingFile("root.cert.mustache", rootFolder, "root.cert"));
-        supportingFiles.add(new SupportingFile("README.mustache", rootFolder, "README.md"));
+        supportingFiles.add(new SupportingFile("platformio.ini.mustache", rootFolder, "platformio.ini")); // TODO no overwrite
+        supportingFiles.add(new SupportingFile("root.cert.mustache", rootFolder, "root.cert")); // TODO no overwrite
         supportingFiles.add(new SupportingFile("pre_compiling_bourne.py.mustache", rootFolder, "pre_compiling_bourne.py"));
 
-        defaultIncludes = new HashSet<String>(
+        defaultIncludes = new HashSet<>(
                 Arrays.asList(
                         "bool",
                         "int",
@@ -173,7 +177,7 @@ public class CppTinyClientCodegen extends AbstractCppCodegen implements CodegenC
                         "double",
                         "float")
         );
-        languageSpecificPrimitives = new HashSet<String>(
+        languageSpecificPrimitives = new HashSet<>(
                 Arrays.asList(
                         "bool",
                         "int",
@@ -183,7 +187,7 @@ public class CppTinyClientCodegen extends AbstractCppCodegen implements CodegenC
                         "std::string")
         );
 
-        super.typeMapping = new HashMap<String, String>();
+        super.typeMapping = new HashMap<>();
         typeMapping.put("string", "std::string");
         typeMapping.put("integer", "int");
         typeMapping.put("boolean", "bool");
@@ -207,9 +211,23 @@ public class CppTinyClientCodegen extends AbstractCppCodegen implements CodegenC
         return str;
     }
 
+    /**
+     * Resolve a schema reference. If the schema has a $ref, return the referenced schema.
+     * This is for nested maps.
+     */
+    private Schema resolveSchema(Schema schema) {
+        if (schema == null) {
+            return null;
+        }
+        if (StringUtils.isNotEmpty(schema.get$ref())) {
+            String ref = ModelUtils.getSimpleRef(schema.get$ref());
+            Schema resolved = ModelUtils.getSchema(openAPI, ref);
+            return resolved != null ? resolved : schema;
+        }
+        return schema;
+    }
+
     private void makeTypeMappings() {
-        // Types
-        String cpp_array_type = "std::list";
         typeMapping = new HashMap<>();
 
         typeMapping.put("string", "std::string");
@@ -218,7 +236,8 @@ public class CppTinyClientCodegen extends AbstractCppCodegen implements CodegenC
         typeMapping.put("long", "long");
         typeMapping.put("boolean", "bool");
         typeMapping.put("double", "double");
-        typeMapping.put("array", cpp_array_type);
+        typeMapping.put("array", "std::list");
+        typeMapping.put("map", "std::map");
         typeMapping.put("number", "long");
         typeMapping.put("binary", "std::string");
         typeMapping.put("password", "std::string");
@@ -232,7 +251,6 @@ public class CppTinyClientCodegen extends AbstractCppCodegen implements CodegenC
     @Override
     public void processOpts() {
         super.processOpts();
-        // Throw exception if http and esp8266
 
         // -- --additional-properties=controller=<controllername>
         if (additionalProperties.containsKey(MICROCONTROLLER)) {
@@ -255,11 +273,24 @@ public class CppTinyClientCodegen extends AbstractCppCodegen implements CodegenC
 
     @Override
     public String getTypeDeclaration(Schema p) {
+        // Only resolve for nested maps - check if a $ref points to a map schema
+        Schema resolved = resolveSchema(p);
+
+        // Handle nested maps: if a $ref resolves to a map schema, build the nested type
+        if (ModelUtils.isMapSchema(resolved)) {
+            Schema inner = ModelUtils.getAdditionalProperties(resolved);
+            // inner can be null if additionalProperties is a boolean or not present
+            String innerType = inner != null ? getTypeDeclaration(inner) : "std::string";
+            return getSchemaType(p) + "<std::string, " + innerType + ">";
+        }
+
+        // For everything else (including arrays), use the original behavior
+        // The templates handle adding array item types themselves
         String openAPIType = getSchemaType(p);
         if (languageSpecificPrimitives.contains(openAPIType)) {
             return toModelName(openAPIType);
         } else {
-            return openAPIType + "";
+            return openAPIType;
         }
     }
 
@@ -296,7 +327,7 @@ public class CppTinyClientCodegen extends AbstractCppCodegen implements CodegenC
             return "#include <string>";
         } else if (name.equals("std::list")) {
             return "#include <list>";
-        } else if (name.equals("Map")) {
+        } else if (name.equals("Map") || name.equals("std::map")) {
             return "#include <map>";
         }
         return "#include \"" + name + ".h\"";
@@ -316,7 +347,7 @@ public class CppTinyClientCodegen extends AbstractCppCodegen implements CodegenC
         if (isReservedWord(paramName)) {
             return escapeReservedWord(paramName);
         }
-        return "" + paramName;
+        return paramName;
     }
 
     @Override
@@ -342,5 +373,11 @@ public class CppTinyClientCodegen extends AbstractCppCodegen implements CodegenC
         return "null";
     }
 
+    @Override
+    public OperationsMap postProcessOperationsWithModels(OperationsMap objs, List<ModelMap> allModels) {
+        objs = super.postProcessOperationsWithModels(objs, allModels);
+        removeImport(objs, "#include <list>");
+        return objs;
+    }
 
 }

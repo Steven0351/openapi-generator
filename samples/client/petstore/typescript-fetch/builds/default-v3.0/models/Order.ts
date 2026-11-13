@@ -12,7 +12,7 @@
  * Do not edit the class manually.
  */
 
-import { exists, mapValues } from '../runtime';
+import { mapValues, parseDate, parseDateTime, serializeDate, serializeDateTime } from '../runtime';
 /**
  * 
  * @export
@@ -21,50 +21,47 @@ import { exists, mapValues } from '../runtime';
 export interface Order {
     /**
      * 
-     * @type {number}
-     * @memberof Order
      */
     id?: number;
     /**
      * 
-     * @type {number}
-     * @memberof Order
      */
     petId?: number;
     /**
      * 
-     * @type {number}
-     * @memberof Order
      */
     quantity?: number;
     /**
      * 
-     * @type {Date}
-     * @memberof Order
      */
     shipDate?: Date;
     /**
      * Order Status
-     * @type {string}
-     * @memberof Order
      */
     status?: OrderStatusEnum;
     /**
      * 
-     * @type {boolean}
-     * @memberof Order
      */
     complete?: boolean;
 }
 
+
 /**
-* @export
-* @enum {string}
-*/
-export enum OrderStatusEnum {
-    Placed = 'placed',
-    Approved = 'approved',
-    Delivered = 'delivered'
+ * @export
+ */
+export const OrderStatusEnum = {
+    Placed: 'placed',
+    Approved: 'approved',
+    Delivered: 'delivered',
+} as const;
+export type OrderStatusEnum = typeof OrderStatusEnum[keyof typeof OrderStatusEnum];
+
+
+/**
+ * Check if a given object implements the Order interface.
+ */
+export function instanceOfOrder(value: object): value is Order {
+    return true;
 }
 
 export function OrderFromJSON(json: any): Order {
@@ -72,35 +69,37 @@ export function OrderFromJSON(json: any): Order {
 }
 
 export function OrderFromJSONTyped(json: any, ignoreDiscriminator: boolean): Order {
-    if ((json === undefined) || (json === null)) {
+    if (json == null) {
         return json;
     }
     return {
         
-        'id': !exists(json, 'id') ? undefined : json['id'],
-        'petId': !exists(json, 'petId') ? undefined : json['petId'],
-        'quantity': !exists(json, 'quantity') ? undefined : json['quantity'],
-        'shipDate': !exists(json, 'shipDate') ? undefined : (new Date(json['shipDate'])),
-        'status': !exists(json, 'status') ? undefined : json['status'],
-        'complete': !exists(json, 'complete') ? undefined : json['complete'],
+        'id': json['id'] == null ? undefined : json['id'],
+        'petId': json['petId'] == null ? undefined : json['petId'],
+        'quantity': json['quantity'] == null ? undefined : json['quantity'],
+        'shipDate': json['shipDate'] == null ? undefined : (parseDateTime(json['shipDate'])),
+        'status': json['status'] == null ? undefined : json['status'],
+        'complete': json['complete'] == null ? undefined : json['complete'],
     };
 }
 
-export function OrderToJSON(value?: Order | null): any {
-    if (value === undefined) {
-        return undefined;
+export function OrderToJSON(json: any): Order {
+    return OrderToJSONTyped(json, false);
+}
+
+export function OrderToJSONTyped(value?: Order | null, ignoreDiscriminator: boolean = false): any {
+    if (value == null) {
+        return value;
     }
-    if (value === null) {
-        return null;
-    }
+
     return {
         
-        'id': value.id,
-        'petId': value.petId,
-        'quantity': value.quantity,
-        'shipDate': value.shipDate === undefined ? undefined : (value.shipDate.toISOString()),
-        'status': value.status,
-        'complete': value.complete,
+        'id': value['id'],
+        'petId': value['petId'],
+        'quantity': value['quantity'],
+        'shipDate': value['shipDate'] == null ? value['shipDate'] : serializeDateTime(value['shipDate']),
+        'status': value['status'],
+        'complete': value['complete'],
     };
 }
 

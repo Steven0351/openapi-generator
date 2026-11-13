@@ -6,12 +6,32 @@
     <name>{{artifactId}}</name>
     <version>{{artifactVersion}}</version>
     <properties>
-        <java.version>{{#java8}}1.8{{/java8}}{{^java8}}1.7{{/java8}}</java.version>
+        {{#useSealed}}
+        <java.version>17</java.version>
+        {{/useSealed}}
+        {{^useSealed}}
+        <java.version>1.8</java.version>
+        {{/useSealed}}
         <maven.compiler.source>${java.version}</maven.compiler.source>
         <maven.compiler.target>${java.version}</maven.compiler.target>
-        {{#useSpringfox}}
-        <springfox-version>2.9.2</springfox-version>
-        {{/useSpringfox}}
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        {{#springDocDocumentationProvider}}
+        <springdoc.version>1.6.14</springdoc.version>
+        {{/springDocDocumentationProvider}}
+        {{^springDocDocumentationProvider}}
+        {{#swagger1AnnotationLibrary}}
+        <swagger-annotations.version>1.6.6</swagger-annotations.version>
+        {{/swagger1AnnotationLibrary}}
+        {{#swagger2AnnotationLibrary}}
+        <swagger-annotations.version>2.2.7</swagger-annotations.version>
+        {{/swagger2AnnotationLibrary}}
+        {{/springDocDocumentationProvider}}
+        {{#virtualService}}
+        <virtualan.version>2.5.2</virtualan.version>
+        {{/virtualService}}
+        {{#useSwaggerUI}}
+        <swagger-ui.version>5.3.1</swagger-ui.version>
+        {{/useSwaggerUI}}
     </properties>
 {{#parentOverridden}}
     <parent>
@@ -24,24 +44,46 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>{{#java8}}2.3.3.RELEASE{{/java8}}{{^java8}}1.5.12.RELEASE{{/java8}}</version>
+        <version>2.7.15</version>
+        <relativePath/> <!-- lookup parent from repository -->
     </parent>
 {{/parentOverridden}}
     <build>
         <sourceDirectory>src/main/java</sourceDirectory>
-        {{^interfaceOnly}}
         <plugins>
+            {{^interfaceOnly}}
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+                <configuration>
+                {{#classifier}}
+                  <classifier>{{{classifier}}}</classifier>
+                {{/classifier}}
+                {{#lombok}}
+                    <excludes>
+                        <exclude>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                        </exclude>
+                    </excludes>
+                {{/lombok}}
+                </configuration>
+            </plugin>
+            {{/interfaceOnly}}
+            {{#interfaceOnly}}
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
                 <executions>
                     <execution>
+                        <id>attach-sources</id>
                         <goals>
-                            <goal>repackage</goal>
+                            <goal>jar</goal>
                         </goals>
                     </execution>
                 </executions>
             </plugin>
+            {{/interfaceOnly}}
             {{#apiFirst}}
             <plugin>
                 <groupId>org.openapitools</groupId>
@@ -75,9 +117,14 @@
             </plugin>
             {{/apiFirst}}
         </plugins>
-        {{/interfaceOnly}}
     </build>
     <dependencies>
+        {{#useSpringSecurityPreAuthorize}}
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security</artifactId>
+        </dependency>
+        {{/useSpringSecurityPreAuthorize}}
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web{{#reactive}}flux{{/reactive}}</artifactId>
@@ -86,88 +133,93 @@
             <groupId>org.springframework.data</groupId>
             <artifactId>spring-data-commons</artifactId>
         </dependency>
-        {{#useSpringfox}}
-        <!--SpringFox dependencies -->
+        {{#springDocDocumentationProvider}}
+          <!--SpringDoc dependencies -->
+        {{#useSwaggerUI}}
         <dependency>
-            <groupId>io.springfox</groupId>
-            <artifactId>springfox-swagger2</artifactId>
-            <version>${springfox-version}</version>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-{{#reactive}}webflux-{{/reactive}}ui</artifactId>
+            <version>${springdoc.version}</version>
         </dependency>
+        {{/useSwaggerUI}}
+        {{^useSwaggerUI}}
         <dependency>
-            <groupId>io.springfox</groupId>
-            <artifactId>springfox-swagger-ui</artifactId>
-            <version>${springfox-version}</version>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-{{#reactive}}webflux{{/reactive}}{{^reactive}}webmvc{{/reactive}}-core</artifactId>
+            <version>${springdoc.version}</version>
         </dependency>
-        <dependency>
-            <groupId>jakarta.xml.bind</groupId>
-            <artifactId>jakarta.xml.bind-api</artifactId>
-        </dependency>
-        {{/useSpringfox}}
-        {{^useSpringfox}}
-        <dependency>
-            <groupId>io.springfox</groupId>
-            <artifactId>springfox-swagger2</artifactId>
-            <version>2.8.0</version>
-        </dependency>
+        {{/useSwaggerUI}}
+        {{/springDocDocumentationProvider}}
+        {{#useSwaggerUI}}
+        {{^springDocDocumentationProvider}}
         <dependency>
             <groupId>org.webjars</groupId>
             <artifactId>swagger-ui</artifactId>
-            <version>3.14.2</version>
+            <version>${swagger-ui.version}</version>
         </dependency>
+        <dependency>
+            <groupId>org.webjars</groupId>
+            <artifactId>webjars-locator-core</artifactId>
+        </dependency>
+        {{/springDocDocumentationProvider}}
+        {{/useSwaggerUI}}
+        {{^springDocDocumentationProvider}}
+        {{#swagger1AnnotationLibrary}}
         <dependency>
             <groupId>io.swagger</groupId>
             <artifactId>swagger-annotations</artifactId>
-            <version>1.5.14</version>
+            <version>${swagger-annotations.version}</version>
         </dependency>
+        {{/swagger1AnnotationLibrary}}
+        {{#swagger2AnnotationLibrary}}
+        <dependency>
+            <groupId>io.swagger.core.v3</groupId>
+            <artifactId>swagger-annotations</artifactId>
+            <version>${swagger-annotations.version}</version>
+        </dependency>
+        {{/swagger2AnnotationLibrary}}
+        {{/springDocDocumentationProvider}}
+        {{^useJspecify}}
         <!-- @Nullable annotation -->
         <dependency>
             <groupId>com.google.code.findbugs</groupId>
             <artifactId>jsr305</artifactId>
             <version>3.0.2</version>
         </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.dataformat</groupId>
-            <artifactId>jackson-dataformat-yaml</artifactId>
-        </dependency>
-        {{/useSpringfox}}
+        {{/useJspecify}}
         {{#withXml}}
         <!-- XML processing: Jackson -->
+        <dependency>
+          <groupId>jakarta.xml.bind</groupId>
+          <artifactId>jakarta.xml.bind-api</artifactId>
+        </dependency>
         <dependency>
           <groupId>com.fasterxml.jackson.dataformat</groupId>
           <artifactId>jackson-dataformat-xml</artifactId>
         </dependency>
         {{/withXml}}
-        {{#java8}}
         <dependency>
             <groupId>com.fasterxml.jackson.datatype</groupId>
             <artifactId>jackson-datatype-jsr310</artifactId>
         </dependency>
-        {{/java8}}
         {{#joda}}
         <dependency>
             <groupId>com.fasterxml.jackson.datatype</groupId>
             <artifactId>jackson-datatype-joda</artifactId>
         </dependency>
         {{/joda}}
-        {{#threetenbp}}
-        <dependency>
-            <groupId>com.github.joschi.jackson</groupId>
-            <artifactId>jackson-datatype-threetenbp</artifactId>
-            <version>2.8.4</version>
-        </dependency>
-        {{/threetenbp}}
         {{#openApiNullable}}
         <dependency>
             <groupId>org.openapitools</groupId>
             <artifactId>jackson-databind-nullable</artifactId>
-            <version>0.2.1</version>
+            <version>0.2.8</version>
         </dependency>
         {{/openApiNullable}}
 {{#useBeanValidation}}
-    <!-- Bean Validation API support -->
+        <!-- Bean Validation API support -->
         <dependency>
-            <groupId>jakarta.validation</groupId>
-            <artifactId>jakarta.validation-api</artifactId>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-validation</artifactId>
         </dependency>
 {{/useBeanValidation}}
 {{#virtualService}}
@@ -175,13 +227,12 @@
         <dependency>
             <groupId>io.virtualan</groupId>
             <artifactId>virtualan-plugin</artifactId>
-            <version>2.2.1</version>
+            <version>${virtualan.version}</version>
         </dependency>
         <!-- HyperSQL DB -->
         <dependency>
             <groupId>org.hsqldb</groupId>
             <artifactId>hsqldb</artifactId>
-            <version>2.5.0</version>
         </dependency>
     <!-- END Virtual Service API support -->
 {{/virtualService}}
@@ -192,9 +243,28 @@
             <artifactId>spring-boot-starter-hateoas</artifactId>
         </dependency>
 {{/hateoas}}
+{{#lombok}}
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <optional>true</optional>
+        </dependency>
+{{/lombok}}
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
+        </dependency>
+{{#useJspecify}}
+        <dependency>
+            <groupId>org.jspecify</groupId>
+            <artifactId>jspecify</artifactId>
+            <version>1.0.0</version>
+        </dependency>
+{{/useJspecify}}
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 </project>

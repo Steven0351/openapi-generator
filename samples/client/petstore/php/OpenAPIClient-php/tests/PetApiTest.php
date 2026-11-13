@@ -41,18 +41,12 @@ class PetApiTest extends TestCase
 
         $newPet->setTags(array($tag));
         $newPet->setCategory($category);
-
-        $config = new Configuration();
-        $petApi = new Api\PetApi(null, $config);
-
-        // add a new pet (model)
-        list(, $status) = $petApi->addPetWithHttpInfo($newPet);
-        Assert::assertEquals(200, $status);
     }
 
     public function setUp(): void
     {
-        $this->api = new Api\PetApi();
+        $config = (new Configuration())->setHost('http://localhost/v2');
+        $this->api = new Api\PetApi(null, $config);
     }
 
     public function testGetPetById()
@@ -60,13 +54,13 @@ class PetApiTest extends TestCase
         $petId = 10005;
 
         $pet = $this->api->getPetById($petId);
-        $this->assertSame($pet->getId(), $petId);
-        $this->assertSame($pet->getName(), 'PHP Unit Test');
-        $this->assertSame($pet->getPhotoUrls()[0], 'http://test_php_unit_test.com');
-        $this->assertSame($pet->getCategory()->getId(), $petId);
-        $this->assertSame($pet->getCategory()->getName(), 'test php category');
-        $this->assertSame($pet->getTags()[0]->getId(), $petId);
-        $this->assertSame($pet->getTags()[0]->getName(), 'test php tag');
+        $this->assertSame($petId, $pet->getId());
+        $this->assertSame('PHP Unit Test', $pet->getName());
+        $this->assertSame('http://test_php_unit_test.com', $pet->getPhotoUrls()[0]);
+        $this->assertSame($petId, $pet->getCategory()->getId());
+        $this->assertSame('test php category', $pet->getCategory()->getName());
+        $this->assertSame($petId, $pet->getTags()[0]->getId());
+        $this->assertSame('test php tag', $pet->getTags()[0]->getName());
     }
 
     /**
@@ -105,14 +99,14 @@ class PetApiTest extends TestCase
 
         /** @var $pet Pet */
         list($pet, $status_code, $response_headers) = $this->api->getPetByIdWithHttpInfo($petId);
-        $this->assertSame($pet->getId(), $petId);
-        $this->assertSame($pet->getName(), 'PHP Unit Test');
-        $this->assertSame($pet->getCategory()->getId(), $petId);
-        $this->assertSame($pet->getCategory()->getName(), 'test php category');
-        $this->assertSame($pet->getTags()[0]->getId(), $petId);
-        $this->assertSame($pet->getTags()[0]->getName(), 'test php tag');
-        $this->assertSame($status_code, 200);
-        $this->assertSame($response_headers['Content-Type'], ['application/json']);
+        $this->assertSame($petId, $pet->getId());
+        $this->assertSame('PHP Unit Test', $pet->getName());
+        $this->assertSame($petId, $pet->getCategory()->getId());
+        $this->assertSame('test php category', $pet->getCategory()->getName());
+        $this->assertSame($petId, $pet->getTags()[0]->getId());
+        $this->assertSame('test php tag', $pet->getTags()[0]->getName());
+        $this->assertSame(200, $status_code);
+        $this->assertSame(['application/json'], $response_headers['Content-Type']);
     }
 
     public function testFindPetByStatus()
@@ -120,9 +114,9 @@ class PetApiTest extends TestCase
         $response = $this->api->findPetsByStatus('available');
         $this->assertGreaterThan(0, count($response)); // at least one object returned
 
-        $this->assertSame(get_class($response[0]), Pet::class); // verify the object is Pet
+        $this->assertInstanceOf(Pet::class, $response[0]); // verify the object is Pet
         foreach ($response as $pet) {
-            $this->assertSame($pet->getStatus(), 'available');
+            $this->assertSame('available', $pet->getStatus());
         }
 
         $response = $this->api->findPetsByStatus('unknown_and_incorrect_status');
@@ -141,9 +135,9 @@ class PetApiTest extends TestCase
 
         // verify updated Pet
         $result = $this->api->getPetById($petId);
-        $this->assertSame($result->getId(), $petId);
-        $this->assertSame($result->getStatus(), 'pending');
-        $this->assertSame($result->getName(), 'updatePet');
+        $this->assertSame($petId, $result->getId());
+        $this->assertSame('pending', $result->getStatus());
+        $this->assertSame('updatePet', $result->getName());
     }
 
     // test updatePetWithFormWithHttpInfo and verify by the "name" of the response
@@ -158,11 +152,11 @@ class PetApiTest extends TestCase
         );
         // return nothing (void)
         $this->assertNull($update_response);
-        $this->assertSame($status_code, 200);
-        $this->assertSame($http_headers['Content-Type'], ['application/json']);
+        $this->assertSame(200, $status_code);
+        $this->assertSame(['application/json'], $http_headers['Content-Type']);
         $response = $this->api->getPetById($petId);
-        $this->assertSame($response->getId(), $petId);
-        $this->assertSame($response->getName(), 'update pet with form with http info');
+        $this->assertSame($petId, $response->getId());
+        $this->assertSame('update pet with form with http info', $response->getName());
     }
 
     // test updatePetWithForm and verify by the "name" and "status" of the response
@@ -174,9 +168,9 @@ class PetApiTest extends TestCase
         $this->assertNull($result);
 
         $response = $this->api->getPetById($pet_id);
-        $this->assertSame($response->getId(), $pet_id);
-        $this->assertSame($response->getName(), 'update pet with form');
-        $this->assertSame($response->getStatus(), 'sold');
+        $this->assertSame($pet_id, $response->getId());
+        $this->assertSame('update pet with form', $response->getName());
+        $this->assertSame('sold', $response->getStatus());
     }
 
     // test addPet and verify by the "id" and "name" of the response
@@ -194,8 +188,8 @@ class PetApiTest extends TestCase
 
         // verify added Pet
         $response = $this->api->getPetById($new_pet_id);
-        $this->assertSame($response->getId(), $new_pet_id);
-        $this->assertSame($response->getName(), 'PHP Unit Test 2');
+        $this->assertSame($new_pet_id, $response->getId());
+        $this->assertSame('PHP Unit Test 2', $response->getName());
     }
 
     /*
@@ -369,6 +363,82 @@ class PetApiTest extends TestCase
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage('Missing the required parameter $status when calling findPetsByStatus');
         $this->api->findPetsByStatus([]);
+    }
+
+    public function testObjectInFormData()
+    {
+        $category = (new Model\Category())
+            ->setId(12345)
+            ->setName("Category_Name");
+
+        $tags_1 = (new Model\Tag())
+            ->setId(12345)
+            ->setName("tag_1");
+
+        $tags_2 = (new Model\Tag())
+            ->setId(98765)
+            ->setName("tag_2");
+
+        /** @var Model\Tag[] $tags */
+        $tags = [
+            $tags_1,
+            $tags_2,
+        ];
+
+        $pet_id = 56;
+        $name = "My pet name";
+        $photo_urls = [
+            "https://example.com/picture_1.jpg",
+            "https://example.com/picture_2.jpg",
+        ];
+        $id = 12345;
+        $status = Model\Pet::STATUS_AVAILABLE;
+        $file = new \SplFileObject(__DIR__ . '/../.openapi-generator/VERSION');
+        $multiple_files = [
+            $file,
+            $file,
+        ];
+
+        $request = (new Api\PetApi())->uploadImageFullFormDataRequest(
+            $pet_id,
+            $name,
+            $photo_urls,
+            $id,
+            $category,
+            $tags,
+            $status,
+            $file,
+            $multiple_files,
+        );
+
+        $contents = $request->getBody()->getContents();
+
+        $this->assertBodyContents('name', $name, $contents);
+        $this->assertBodyContents('photoUrls[0]', $photo_urls[0], $contents);
+        $this->assertBodyContents('photoUrls[1]', $photo_urls[1], $contents);
+        $this->assertBodyContents('category[id]', $category->getId(), $contents);
+        $this->assertBodyContents('category[name]', $category->getName(), $contents);
+        $this->assertBodyContents('tags[0][id]', $tags[0]->getId(), $contents);
+        $this->assertBodyContents('tags[0][name]', $tags[0]->getName(), $contents);
+        $this->assertBodyContents('tags[1][id]', $tags[1]->getId(), $contents);
+        $this->assertBodyContents('tags[1][name]', $tags[1]->getName(), $contents);
+        $this->assertBodyContents('status', $status, $contents);
+    }
+
+    private function assertBodyContents(
+        string $name,
+        mixed $value,
+        string $contents,
+    ) {
+        $length = strlen((string) ($value));
+        $contents = implode("\n", array_map('trim', explode("\n", $contents)));
+
+        // guzzlehttp/psr7 3.x no longer adds a Content-Length header to each part
+        $expected = '/' . preg_quote("Content-Disposition: form-data; name=\"{$name}\"", '/')
+            . "\n(Content-Length: {$length}\n)?\n"
+            . preg_quote((string) $value, '/') . "\n/";
+
+        $this->assertMatchesRegularExpression($expected, $contents);
     }
 
 //    Disabled as currently we don't have any endpoint that would return file

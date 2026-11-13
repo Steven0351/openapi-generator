@@ -22,7 +22,7 @@ class PFXObject {
 public:
     PFXObject() {}
 
-    PFXObject(QString jsonString) {
+    PFXObject(const QString &jsonString) {
         fromJson(jsonString);
     }
 
@@ -37,7 +37,7 @@ public:
         return doc.toJson(QJsonDocument::Compact);
     }
 
-    virtual void fromJson(QString jsonString) {
+    virtual void fromJson(const QString &jsonString) {
         QJsonDocument doc = QJsonDocument::fromJson(jsonString.toUtf8());
         jObj = doc.object();
     }
@@ -57,6 +57,20 @@ public:
 private:
     QJsonObject jObj;
 };
+
+inline bool operator==(const PFXObject& left, const PFXObject& right){  
+    return (left.asJsonObject() == right.asJsonObject());  
+}
+
+inline
+#if QT_VERSION < 0x060000
+uint
+#else
+size_t
+#endif
+qHash(const PFXObject& obj, uint seed = 0) noexcept{
+    return qHash(obj.asJsonObject(), seed);
+}
 
 } // namespace test_namespace
 

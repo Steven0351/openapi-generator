@@ -1,21 +1,29 @@
 package org.openapitools.client;
 
 import org.openapitools.client.auth.*;
+import org.openapitools.client.RFC3339DateFormat;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
-import org.junit.*;
-import static org.junit.Assert.*;
+import org.junit.jupiter.api.*;
 
+import static org.junit.jupiter.api.Assertions.*;
 
 public class ApiClientTest {
     ApiClient apiClient = null;
 
-    @Before
+    @BeforeEach
     public void setup() {
         apiClient = new ApiClient();
+    }
+
+    @Test
+    public void testRFC3339DateFormat() {
+        // test the constructor and the clone method to ensure there's no NPE
+        RFC3339DateFormat r = new RFC3339DateFormat();
+        RFC3339DateFormat r2 = (RFC3339DateFormat) r.clone();
     }
 
     @Test
@@ -245,5 +253,21 @@ public class ApiClientTest {
             // must equal input values
             assertEquals(values.size(), pairValueSplit.length);
         }
+    }
+
+    @Test
+    public void testCollectionPathParameterToString() {
+        // items are escaped individually, the csv delimiter is kept raw
+        assertEquals("a%2Cb,c", apiClient.collectionPathParameterToString("csv", Arrays.asList("a,b", "c")));
+        assertEquals("a,b", apiClient.collectionPathParameterToString("", Arrays.asList("a", "b")));
+        assertEquals("a,b", apiClient.collectionPathParameterToString("multi", Arrays.asList("a", "b")));
+        assertEquals("a%7Cb", apiClient.collectionPathParameterToString("pipes", Arrays.asList("a", "b")));
+        assertEquals("a%20b", apiClient.collectionPathParameterToString("ssv", Arrays.asList("a", "b")));
+        assertEquals("a%09b", apiClient.collectionPathParameterToString("tsv", Arrays.asList("a", "b")));
+        // leading empty or null items keep their delimiter
+        assertEquals(",b", apiClient.collectionPathParameterToString("csv", Arrays.asList("", "b")));
+        assertEquals(",b", apiClient.collectionPathParameterToString("csv", Arrays.asList(null, "b")));
+        assertEquals("", apiClient.collectionPathParameterToString("csv", Collections.emptyList()));
+        assertEquals("", apiClient.collectionPathParameterToString("csv", null));
     }
 }

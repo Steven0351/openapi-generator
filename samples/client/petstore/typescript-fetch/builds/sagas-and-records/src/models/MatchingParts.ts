@@ -12,13 +12,14 @@
  * Do not edit the class manually.
  */
 
-import { exists, mapValues } from '../runtime';
+import { mapValues } from '../runtime';
+import type { Part } from './Part';
 import {
-    Part,
     PartFromJSON,
     PartFromJSONTyped,
     PartToJSON,
-} from './';
+    PartToJSONTyped,
+} from './Part';
 
 /**
  * Contains all the matching parts
@@ -28,16 +29,21 @@ import {
 export interface MatchingParts {
     /**
      * List of all the connected parts
-     * @type {Array<Part>}
-     * @memberof MatchingParts
      */
     connected: Array<Part>;
     /**
      * List of all the related parts
-     * @type {Array<Part>}
-     * @memberof MatchingParts
      */
     related: Array<Part>;
+}
+
+/**
+ * Check if a given object implements the MatchingParts interface.
+ */
+export function instanceOfMatchingParts(value: object): value is MatchingParts {
+    if (!('connected' in value) || value['connected'] === undefined) return false;
+    if (!('related' in value) || value['related'] === undefined) return false;
+    return true;
 }
 
 export function MatchingPartsFromJSON(json: any): MatchingParts {
@@ -45,7 +51,7 @@ export function MatchingPartsFromJSON(json: any): MatchingParts {
 }
 
 export function MatchingPartsFromJSONTyped(json: any, ignoreDiscriminator: boolean): MatchingParts {
-    if ((json === undefined) || (json === null)) {
+    if (json == null) {
         return json;
     }
     return {
@@ -55,17 +61,19 @@ export function MatchingPartsFromJSONTyped(json: any, ignoreDiscriminator: boole
     };
 }
 
-export function MatchingPartsToJSON(value?: MatchingParts | null): any {
-    if (value === undefined) {
-        return undefined;
+export function MatchingPartsToJSON(json: any): MatchingParts {
+    return MatchingPartsToJSONTyped(json, false);
+}
+
+export function MatchingPartsToJSONTyped(value?: MatchingParts | null, ignoreDiscriminator: boolean = false): any {
+    if (value == null) {
+        return value;
     }
-    if (value === null) {
-        return null;
-    }
+
     return {
         
-        'connected': ((value.connected as Array<any>).map(PartToJSON)),
-        'related': ((value.related as Array<any>).map(PartToJSON)),
+        'connected': ((value['connected'] as Array<any>).map(PartToJSON)),
+        'related': ((value['related'] as Array<any>).map(PartToJSON)),
     };
 }
 

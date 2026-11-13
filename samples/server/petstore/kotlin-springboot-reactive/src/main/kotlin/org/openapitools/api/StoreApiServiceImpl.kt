@@ -1,7 +1,7 @@
 package org.openapitools.api
 
 import org.openapitools.model.Order
-import kotlinx.coroutines.flow.Flow;
+import kotlinx.coroutines.flow.Flow
 import org.springframework.stereotype.Service
 @Service
 class StoreApiServiceImpl : StoreApiService {
@@ -18,7 +18,7 @@ class StoreApiServiceImpl : StoreApiService {
         TODO("Implement me")
     }
 
-    override suspend fun placeOrder(body: Order): Order {
+    override suspend fun placeOrder(order: Order): Order {
         TODO("Implement me")
     }
 }

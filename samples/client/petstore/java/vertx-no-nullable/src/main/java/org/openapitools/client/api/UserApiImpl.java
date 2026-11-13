@@ -1,5 +1,6 @@
 package org.openapitools.client.api;
 
+import java.time.OffsetDateTime;
 import org.openapitools.client.model.User;
 
 import io.vertx.core.AsyncResult;
@@ -19,7 +20,7 @@ import org.openapitools.client.ApiException;
 import org.openapitools.client.Configuration;
 import org.openapitools.client.Pair;
 
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.28.0-SNAPSHOT")
 public class UserApiImpl implements UserApi {
 
     private ApiClient apiClient;
@@ -437,7 +438,7 @@ public class UserApiImpl implements UserApi {
 
     private String encodeParameter(String parameter) {
         try {
-            return URLEncoder.encode(parameter, StandardCharsets.UTF_8.name());
+            return URLEncoder.encode(parameter, StandardCharsets.UTF_8.name()).replaceAll("\\+", "%20");
         } catch (UnsupportedEncodingException e) {
             return parameter;
         }

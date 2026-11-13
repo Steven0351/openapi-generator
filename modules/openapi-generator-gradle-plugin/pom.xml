@@ -4,9 +4,9 @@
         <groupId>org.openapitools</groupId>
         <artifactId>openapi-generator-project</artifactId>
         <!-- RELEASE_VERSION -->
-        <version>5.3.0-SNAPSHOT</version>
+        <version>7.28.0-SNAPSHOT</version>
         <!-- /RELEASE_VERSION -->
-        <relativePath>../..</relativePath>
+        <relativePath>../../pom.xml</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -17,14 +17,15 @@
 
     <properties>
         <skipNexusStagingDeployMojo>true</skipNexusStagingDeployMojo>
-        <gradleVersion>5.6.4</gradleVersion>
+        <gradleVersion>8.14.4</gradleVersion>
+        <gradle-tooling.version>7.4.2</gradle-tooling.version>
     </properties>
 
     <pluginRepositories>
         <pluginRepository>
             <id>Gradle Releases</id>
             <name>Gradle Releases repository</name>
-            <url>https://repo.gradle.org/gradle/libs-releases-local/</url>
+            <url>https://repo.gradle.org/gradle/libs-releases/</url>
             <releases>
                 <enabled>true</enabled>
             </releases>
@@ -77,14 +78,35 @@
                 <groupId>org.fortasoft</groupId>
                 <artifactId>gradle-maven-plugin</artifactId>
                 <version>1.0.8</version>
+
+                <!-- The plugin is no longer supported, so dependency has to be overridden -->
+                <!-- https://github.com/LendingClub/gradle-maven-plugin/issues/39 -->
+                <dependencies>
+                    <dependency>
+                        <groupId>org.gradle</groupId>
+                        <artifactId>gradle-tooling-api</artifactId>
+                        <version>${gradle-tooling.version}</version>
+                    </dependency>
+                </dependencies>
+
                 <configuration>
                     <gradleVersion>${gradleVersion}</gradleVersion>
+                    <!-- Force the Gradle daemon to use the same JVM Maven is running with.
+                         This prevents Gradle from picking up a system-level JDK (e.g. JDK 25)
+                         when Maven is configured to run on a different JDK (e.g. JDK 21). -->
+                    <javaHome>${java.home}</javaHome>
                     <args>
                         <arg>-P openApiGeneratorVersion=${project.version}</arg>
+                        <!--
+                        <arg>-Psigning.keyId=${env.SIGNING_KEY}</arg>
+                        <arg>-Psigning.password=${env.SIGNING_PASSPHRASE}</arg>
+                        <arg>-Psigning.secretKeyRingFile=${env.TRAVIS_BUILD_DIR}/sec.gpg</arg>
+                        -->
                     </args>
                 </configuration>
                 <executions>
                     <execution>
+                        <id>gradle-build</id>
                         <phase>install</phase>
                         <goals>
                             <!-- goal must be "invoke" -->
@@ -92,28 +114,96 @@
                         </goals>
                         <configuration>
                             <tasks>
-                                <!-- calls "clean assemble install" -->
+                                <!-- calls "clean build publishToMavenLocal" (build includes tests) -->
                                 <task>clean</task>
-                                <task>check</task>
-                                <task>assemble</task>
+                                <task>build</task>
                                 <task>publishToMavenLocal</task>
-                                <task>publishPluginMavenPublicationToMavenLocal</task>
                             </tasks>
                         </configuration>
                     </execution>
                 </executions>
-                <dependencies>
-                    <dependency>
-                        <groupId>org.gradle</groupId>
-                        <artifactId>gradle-tooling-api</artifactId>
-                        <version>5.6.4</version>
-                    </dependency>
-                </dependencies>
             </plugin>
         </plugins>
     </build>
 
     <profiles>
+        <profile>
+            <id>skip-gradle-tests</id>
+            <activation>
+                <property>
+                    <name>maven.test.skip</name>
+                    <value>true</value>
+                </property>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.fortasoft</groupId>
+                        <artifactId>gradle-maven-plugin</artifactId>
+                        <executions>
+                            <!-- Override the gradle-build execution: keep `build` (so checkstyle,
+                                 spotbugs, and other check-lifecycle tasks still run) but add
+                                 `-x test` to exclude only the Gradle test task, mirroring
+                                 Maven's maven.test.skip behaviour which does not skip quality checks. -->
+                            <execution>
+                                <id>gradle-build</id>
+                                <configuration>
+                                    <args combine.children="append">
+                                        <arg>-x</arg>
+                                        <arg>test</arg>
+                                    </args>
+                                    <tasks>
+                                        <task>clean</task>
+                                        <task>build</task>
+                                        <task>publishToMavenLocal</task>
+                                    </tasks>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>skip-gradle-tests-skipTests</id>
+            <activation>
+                <property>
+                    <name>skipTests</name>
+                    <!-- Maven maps bare -DskipTests to the string "true", so this matches
+                         both -DskipTests and -DskipTests=true but NOT -DskipTests=false. -->
+                    <value>true</value>
+                </property>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.fortasoft</groupId>
+                        <artifactId>gradle-maven-plugin</artifactId>
+                        <executions>
+                            <!-- Override the gradle-build execution: keep `build` (so checkstyle,
+                                 spotbugs, and other check-lifecycle tasks still run) but add
+                                 `-x test` to exclude only the Gradle test task.
+                                 combine.children="append" appends to the plugin-level <args>
+                                 instead of replacing them, preserving -P openApiGeneratorVersion. -->
+                            <execution>
+                                <id>gradle-build</id>
+                                <configuration>
+                                    <args combine.children="append">
+                                        <arg>-x</arg>
+                                        <arg>test</arg>
+                                    </args>
+                                    <tasks>
+                                        <task>clean</task>
+                                        <task>build</task>
+                                        <task>publishToMavenLocal</task>
+                                    </tasks>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
         <profile>
             <id>static-analysis</id>
             <build>

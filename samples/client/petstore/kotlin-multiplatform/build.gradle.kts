@@ -1,17 +1,17 @@
 import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget
 
 plugins {
-    kotlin("multiplatform") version "1.5.10" // kotlin_version
-    kotlin("plugin.serialization") version "1.5.10" // kotlin_version
+    kotlin("multiplatform") version "2.4.0" // kotlin_version
+    kotlin("plugin.serialization") version "2.4.0" // kotlin_version
 }
 
 group = "org.openapitools"
 version = "1.0.0"
 
-val kotlin_version = "1.5.10"
-val coroutines_version = "1.5.0"
-val serialization_version = "1.2.1"
-val ktor_version = "1.6.0"
+val kotlin_version = "2.4.0"
+val coroutines_version = "1.11.0"
+val serialization_version = "1.11.0"
+val ktor_version = "3.5.1"
 
 repositories {
     mavenCentral()
@@ -19,78 +19,73 @@ repositories {
 
 kotlin {
     jvm()
-    ios { binaries { framework { freeCompilerArgs += "-Xobjc-generics" } } }
+    iosX64()
+    iosArm64()
+    iosSimulatorArm64()
     js {
         browser()
         nodejs()
     }
 
     sourceSets {
-        val commonMain by getting {
+        commonMain {
             dependencies {
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:$coroutines_version")
                 implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:$serialization_version")
+
                 api("io.ktor:ktor-client-core:$ktor_version")
-                api("io.ktor:ktor-client-json:$ktor_version")
                 api("io.ktor:ktor-client-serialization:$ktor_version")
+                api("io.ktor:ktor-client-content-negotiation:$ktor_version")
+                api("io.ktor:ktor-serialization-kotlinx-json:$ktor_version")
+
+                api("org.jetbrains.kotlinx:kotlinx-datetime:0.8.0")
             }
         }
 
-        val commonTest by getting {
+        commonTest {
             dependencies {
                 implementation(kotlin("test"))
                 implementation("io.ktor:ktor-client-mock:$ktor_version")
             }
         }
 
-        val jvmMain by getting {
+        jvmMain {
             dependencies {
                 implementation(kotlin("stdlib-jdk7"))
                 implementation("io.ktor:ktor-client-cio-jvm:$ktor_version")
             }
         }
 
-        val jvmTest by getting {
+        jvmTest {
             dependencies {
                 implementation(kotlin("test-junit"))
             }
         }
 
-        val iosMain by getting {
+        iosMain {
             dependencies {
                 api("io.ktor:ktor-client-ios:$ktor_version")
             }
         }
 
-        val iosTest by getting
-
-        val jsMain by getting {
+        jsMain {
             dependencies {
                 api("io.ktor:ktor-client-js:$ktor_version")
-            }
-        }
-
-        val jsTest by getting
-
-        all {
-            languageSettings.apply {
-                useExperimentalAnnotation("kotlin.Experimental")
             }
         }
     }
 }
 
 tasks {
-    register("iosTest") {
+    register<Exec>("iosTest") {
         val device = project.findProperty("device")?.toString() ?: "iPhone 8"
         dependsOn("linkDebugTestIosX64")
         group = JavaBasePlugin.VERIFICATION_GROUP
         description = "Execute unit tests on ${device} simulator"
-        doLast {
-            val binary = kotlin.targets.getByName<KotlinNativeTarget>("iosX64").binaries.getTest("DEBUG")
-            exec {
-                commandLine("xcrun", "simctl", "spawn", device, binary.outputFile)
-            }
-        }
+        val binary = kotlin.targets.getByName<KotlinNativeTarget>("iosX64").binaries.getTest("DEBUG")
+        commandLine("xcrun", "simctl", "spawn", device, binary.outputFile)
+    }
+    register("test") {
+        dependsOn("allTests")
     }
 }

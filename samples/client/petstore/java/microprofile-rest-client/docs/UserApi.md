@@ -1,23 +1,23 @@
 # UserApi
 
-All URIs are relative to *http://petstore.swagger.io/v2*
+All URIs are relative to *http://petstore.swagger.io:80/v2*
 
-Method | HTTP request | Description
-------------- | ------------- | -------------
-[**createUser**](UserApi.md#createUser) | **POST** /user | Create user
-[**createUsersWithArrayInput**](UserApi.md#createUsersWithArrayInput) | **POST** /user/createWithArray | Creates list of users with given input array
-[**createUsersWithListInput**](UserApi.md#createUsersWithListInput) | **POST** /user/createWithList | Creates list of users with given input array
-[**deleteUser**](UserApi.md#deleteUser) | **DELETE** /user/{username} | Delete user
-[**getUserByName**](UserApi.md#getUserByName) | **GET** /user/{username} | Get user by user name
-[**loginUser**](UserApi.md#loginUser) | **GET** /user/login | Logs user into the system
-[**logoutUser**](UserApi.md#logoutUser) | **GET** /user/logout | Logs out current logged in user session
-[**updateUser**](UserApi.md#updateUser) | **PUT** /user/{username} | Updated user
+| Method | HTTP request | Description |
+|------------- | ------------- | -------------|
+| [**createUser**](UserApi.md#createUser) | **POST** /user | Create user |
+| [**createUsersWithArrayInput**](UserApi.md#createUsersWithArrayInput) | **POST** /user/createWithArray | Creates list of users with given input array |
+| [**createUsersWithListInput**](UserApi.md#createUsersWithListInput) | **POST** /user/createWithList | Creates list of users with given input array |
+| [**deleteUser**](UserApi.md#deleteUser) | **DELETE** /user/{username} | Delete user |
+| [**getUserByName**](UserApi.md#getUserByName) | **GET** /user/{username} | Get user by user name |
+| [**loginUser**](UserApi.md#loginUser) | **GET** /user/login | Logs user into the system |
+| [**logoutUser**](UserApi.md#logoutUser) | **GET** /user/logout | Logs out current logged in user session |
+| [**updateUser**](UserApi.md#updateUser) | **PUT** /user/{username} | Updated user |
 
 
 
 ## createUser
 
-> void createUser(body)
+> void createUser(user)
 
 Create user
 
@@ -36,12 +36,12 @@ import org.openapitools.client.api.UserApi;
 public class Example {
     public static void main(String[] args) {
         ApiClient defaultClient = Configuration.getDefaultApiClient();
-        defaultClient.setBasePath("http://petstore.swagger.io/v2");
+        defaultClient.setBasePath("http://petstore.swagger.io:80/v2");
 
         UserApi apiInstance = new UserApi(defaultClient);
-        User body = new User(); // User | Created user object
+        User user = new User(); // User | Created user object
         try {
-            void result = apiInstance.createUser(body);
+            void result = apiInstance.createUser(user);
             System.out.println(result);
         } catch (ApiException e) {
             System.err.println("Exception when calling UserApi#createUser");
@@ -57,9 +57,9 @@ public class Example {
 ### Parameters
 
 
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **body** | [**User**](User.md)| Created user object |
+| Name | Type | Description  | Notes |
+|------------- | ------------- | ------------- | -------------|
+| **user** | [**User**](User.md)| Created user object | |
 
 ### Return type
 
@@ -71,7 +71,7 @@ No authorization required
 
 ### HTTP request headers
 
-- **Content-Type**: Not defined
+- **Content-Type**: application/json
 - **Accept**: Not defined
 
 
@@ -83,9 +83,11 @@ No authorization required
 
 ## createUsersWithArrayInput
 
-> void createUsersWithArrayInput(body)
+> void createUsersWithArrayInput(user)
 
 Creates list of users with given input array
+
+
 
 ### Example
 
@@ -100,12 +102,12 @@ import org.openapitools.client.api.UserApi;
 public class Example {
     public static void main(String[] args) {
         ApiClient defaultClient = Configuration.getDefaultApiClient();
-        defaultClient.setBasePath("http://petstore.swagger.io/v2");
+        defaultClient.setBasePath("http://petstore.swagger.io:80/v2");
 
         UserApi apiInstance = new UserApi(defaultClient);
-        List<User> body = Arrays.asList(); // List<User> | List of user object
+        List<User> user = Arrays.asList(); // List<User> | List of user object
         try {
-            void result = apiInstance.createUsersWithArrayInput(body);
+            void result = apiInstance.createUsersWithArrayInput(user);
             System.out.println(result);
         } catch (ApiException e) {
             System.err.println("Exception when calling UserApi#createUsersWithArrayInput");
@@ -121,9 +123,9 @@ public class Example {
 ### Parameters
 
 
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **body** | [**List&lt;User&gt;**](User.md)| List of user object |
+| Name | Type | Description  | Notes |
+|------------- | ------------- | ------------- | -------------|
+| **user** | [**List&lt;User&gt;**](User.md)| List of user object | |
 
 ### Return type
 
@@ -135,7 +137,7 @@ No authorization required
 
 ### HTTP request headers
 
-- **Content-Type**: Not defined
+- **Content-Type**: application/json
 - **Accept**: Not defined
 
 
@@ -147,9 +149,11 @@ No authorization required
 
 ## createUsersWithListInput
 
-> void createUsersWithListInput(body)
+> void createUsersWithListInput(user)
 
 Creates list of users with given input array
+
+
 
 ### Example
 
@@ -164,12 +168,12 @@ import org.openapitools.client.api.UserApi;
 public class Example {
     public static void main(String[] args) {
         ApiClient defaultClient = Configuration.getDefaultApiClient();
-        defaultClient.setBasePath("http://petstore.swagger.io/v2");
+        defaultClient.setBasePath("http://petstore.swagger.io:80/v2");
 
         UserApi apiInstance = new UserApi(defaultClient);
-        List<User> body = Arrays.asList(); // List<User> | List of user object
+        List<User> user = Arrays.asList(); // List<User> | List of user object
         try {
-            void result = apiInstance.createUsersWithListInput(body);
+            void result = apiInstance.createUsersWithListInput(user);
             System.out.println(result);
         } catch (ApiException e) {
             System.err.println("Exception when calling UserApi#createUsersWithListInput");
@@ -185,9 +189,9 @@ public class Example {
 ### Parameters
 
 
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **body** | [**List&lt;User&gt;**](User.md)| List of user object |
+| Name | Type | Description  | Notes |
+|------------- | ------------- | ------------- | -------------|
+| **user** | [**List&lt;User&gt;**](User.md)| List of user object | |
 
 ### Return type
 
@@ -199,7 +203,7 @@ No authorization required
 
 ### HTTP request headers
 
-- **Content-Type**: Not defined
+- **Content-Type**: application/json
 - **Accept**: Not defined
 
 
@@ -230,7 +234,7 @@ import org.openapitools.client.api.UserApi;
 public class Example {
     public static void main(String[] args) {
         ApiClient defaultClient = Configuration.getDefaultApiClient();
-        defaultClient.setBasePath("http://petstore.swagger.io/v2");
+        defaultClient.setBasePath("http://petstore.swagger.io:80/v2");
 
         UserApi apiInstance = new UserApi(defaultClient);
         String username = "username_example"; // String | The name that needs to be deleted
@@ -251,9 +255,9 @@ public class Example {
 ### Parameters
 
 
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **username** | **String**| The name that needs to be deleted |
+| Name | Type | Description  | Notes |
+|------------- | ------------- | ------------- | -------------|
+| **username** | **String**| The name that needs to be deleted | |
 
 ### Return type
 
@@ -282,6 +286,8 @@ No authorization required
 
 Get user by user name
 
+
+
 ### Example
 
 ```java
@@ -295,7 +301,7 @@ import org.openapitools.client.api.UserApi;
 public class Example {
     public static void main(String[] args) {
         ApiClient defaultClient = Configuration.getDefaultApiClient();
-        defaultClient.setBasePath("http://petstore.swagger.io/v2");
+        defaultClient.setBasePath("http://petstore.swagger.io:80/v2");
 
         UserApi apiInstance = new UserApi(defaultClient);
         String username = "username_example"; // String | The name that needs to be fetched. Use user1 for testing.
@@ -316,9 +322,9 @@ public class Example {
 ### Parameters
 
 
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **username** | **String**| The name that needs to be fetched. Use user1 for testing. |
+| Name | Type | Description  | Notes |
+|------------- | ------------- | ------------- | -------------|
+| **username** | **String**| The name that needs to be fetched. Use user1 for testing. | |
 
 ### Return type
 
@@ -348,6 +354,8 @@ No authorization required
 
 Logs user into the system
 
+
+
 ### Example
 
 ```java
@@ -361,7 +369,7 @@ import org.openapitools.client.api.UserApi;
 public class Example {
     public static void main(String[] args) {
         ApiClient defaultClient = Configuration.getDefaultApiClient();
-        defaultClient.setBasePath("http://petstore.swagger.io/v2");
+        defaultClient.setBasePath("http://petstore.swagger.io:80/v2");
 
         UserApi apiInstance = new UserApi(defaultClient);
         String username = "username_example"; // String | The user name for login
@@ -383,10 +391,10 @@ public class Example {
 ### Parameters
 
 
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **username** | **String**| The user name for login |
- **password** | **String**| The password for login in clear text |
+| Name | Type | Description  | Notes |
+|------------- | ------------- | ------------- | -------------|
+| **username** | **String**| The user name for login | |
+| **password** | **String**| The password for login in clear text | |
 
 ### Return type
 
@@ -415,6 +423,8 @@ No authorization required
 
 Logs out current logged in user session
 
+
+
 ### Example
 
 ```java
@@ -428,7 +438,7 @@ import org.openapitools.client.api.UserApi;
 public class Example {
     public static void main(String[] args) {
         ApiClient defaultClient = Configuration.getDefaultApiClient();
-        defaultClient.setBasePath("http://petstore.swagger.io/v2");
+        defaultClient.setBasePath("http://petstore.swagger.io:80/v2");
 
         UserApi apiInstance = new UserApi(defaultClient);
         try {
@@ -471,7 +481,7 @@ No authorization required
 
 ## updateUser
 
-> void updateUser(username, body)
+> void updateUser(username, user)
 
 Updated user
 
@@ -490,13 +500,13 @@ import org.openapitools.client.api.UserApi;
 public class Example {
     public static void main(String[] args) {
         ApiClient defaultClient = Configuration.getDefaultApiClient();
-        defaultClient.setBasePath("http://petstore.swagger.io/v2");
+        defaultClient.setBasePath("http://petstore.swagger.io:80/v2");
 
         UserApi apiInstance = new UserApi(defaultClient);
         String username = "username_example"; // String | name that need to be deleted
-        User body = new User(); // User | Updated user object
+        User user = new User(); // User | Updated user object
         try {
-            void result = apiInstance.updateUser(username, body);
+            void result = apiInstance.updateUser(username, user);
             System.out.println(result);
         } catch (ApiException e) {
             System.err.println("Exception when calling UserApi#updateUser");
@@ -512,10 +522,10 @@ public class Example {
 ### Parameters
 
 
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **username** | **String**| name that need to be deleted |
- **body** | [**User**](User.md)| Updated user object |
+| Name | Type | Description  | Notes |
+|------------- | ------------- | ------------- | -------------|
+| **username** | **String**| name that need to be deleted | |
+| **user** | [**User**](User.md)| Updated user object | |
 
 ### Return type
 
@@ -527,7 +537,7 @@ No authorization required
 
 ### HTTP request headers
 
-- **Content-Type**: Not defined
+- **Content-Type**: application/json
 - **Accept**: Not defined
 
 

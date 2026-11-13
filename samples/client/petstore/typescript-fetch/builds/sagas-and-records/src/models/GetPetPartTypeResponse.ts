@@ -12,17 +12,21 @@
  * Do not edit the class manually.
  */
 
-import { exists, mapValues } from '../runtime';
+import { mapValues } from '../runtime';
+import type { ResponseMeta } from './ResponseMeta';
 import {
-    PetPartType,
-    PetPartTypeFromJSON,
-    PetPartTypeFromJSONTyped,
-    PetPartTypeToJSON,
-    ResponseMeta,
     ResponseMetaFromJSON,
     ResponseMetaFromJSONTyped,
     ResponseMetaToJSON,
-} from './';
+    ResponseMetaToJSONTyped,
+} from './ResponseMeta';
+import type { PetPartType } from './PetPartType';
+import {
+    PetPartTypeFromJSON,
+    PetPartTypeFromJSONTyped,
+    PetPartTypeToJSON,
+    PetPartTypeToJSONTyped,
+} from './PetPartType';
 
 /**
  * 
@@ -32,16 +36,22 @@ import {
 export interface GetPetPartTypeResponse {
     /**
      * 
-     * @type {ResponseMeta}
-     * @memberof GetPetPartTypeResponse
      */
     meta: ResponseMeta;
     /**
      * 
-     * @type {PetPartType}
-     * @memberof GetPetPartTypeResponse
      */
     data?: PetPartType;
+}
+
+
+
+/**
+ * Check if a given object implements the GetPetPartTypeResponse interface.
+ */
+export function instanceOfGetPetPartTypeResponse(value: object): value is GetPetPartTypeResponse {
+    if (!('meta' in value) || value['meta'] === undefined) return false;
+    return true;
 }
 
 export function GetPetPartTypeResponseFromJSON(json: any): GetPetPartTypeResponse {
@@ -49,27 +59,29 @@ export function GetPetPartTypeResponseFromJSON(json: any): GetPetPartTypeRespons
 }
 
 export function GetPetPartTypeResponseFromJSONTyped(json: any, ignoreDiscriminator: boolean): GetPetPartTypeResponse {
-    if ((json === undefined) || (json === null)) {
+    if (json == null) {
         return json;
     }
     return {
         
         'meta': ResponseMetaFromJSON(json['meta']),
-        'data': !exists(json, 'data') ? undefined : PetPartTypeFromJSON(json['data']),
+        'data': json['data'] == null ? undefined : PetPartTypeFromJSON(json['data']),
     };
 }
 
-export function GetPetPartTypeResponseToJSON(value?: GetPetPartTypeResponse | null): any {
-    if (value === undefined) {
-        return undefined;
+export function GetPetPartTypeResponseToJSON(json: any): GetPetPartTypeResponse {
+    return GetPetPartTypeResponseToJSONTyped(json, false);
+}
+
+export function GetPetPartTypeResponseToJSONTyped(value?: GetPetPartTypeResponse | null, ignoreDiscriminator: boolean = false): any {
+    if (value == null) {
+        return value;
     }
-    if (value === null) {
-        return null;
-    }
+
     return {
         
-        'meta': ResponseMetaToJSON(value.meta),
-        'data': PetPartTypeToJSON(value.data),
+        'meta': ResponseMetaToJSON(value['meta']),
+        'data': PetPartTypeToJSON(value['data']),
     };
 }
 

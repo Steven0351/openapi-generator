@@ -19,6 +19,8 @@ package org.openapitools.codegen.languages;
 import org.openapitools.codegen.*;
 import org.openapitools.codegen.meta.GeneratorMetadata;
 import org.openapitools.codegen.meta.Stability;
+import org.openapitools.codegen.model.ModelMap;
+import org.openapitools.codegen.utils.ModelUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,19 +28,27 @@ import java.io.File;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static org.openapitools.codegen.utils.ModelUtils.hasAllOf;
+
+/**
+ * <p>Mustache templates are located in {@code src/main/resources/plantuml/}.
+ */
 public class PlantumlDocumentationCodegen extends DefaultCodegen implements CodegenConfig {
     public static final String ALL_OF_SUFFIX = "AllOf";
 
-     final Logger LOGGER = LoggerFactory.getLogger(PlantumlDocumentationCodegen.class);
+    final Logger LOGGER = LoggerFactory.getLogger(PlantumlDocumentationCodegen.class);
 
+    @Override
     public CodegenType getTag() {
         return CodegenType.DOCUMENTATION;
     }
 
+    @Override
     public String getName() {
         return "plantuml";
     }
 
+    @Override
     public String getHelp() {
         return "Generates a plantuml documentation.";
     }
@@ -58,11 +68,9 @@ public class PlantumlDocumentationCodegen extends DefaultCodegen implements Code
     @SuppressWarnings("unchecked")
     @Override
     public Map<String, Object> postProcessSupportingFileData(Map<String, Object> objs) {
-        Object models = objs.get("models");
-        List<Object> modelsList = (List<Object>) models;
-        List<CodegenModel> codegenModelList = modelsList.stream()
-                .filter(listItem -> listItem instanceof HashMap<?, ?>)
-                .map(listItem -> (CodegenModel) ((HashMap<?, ?>) listItem).get("model"))
+        List<ModelMap> models = (List<ModelMap>) objs.get("models");
+        List<CodegenModel> codegenModelList = models.stream()
+                .map(ModelMap::getModel)
                 .collect(Collectors.toList());
 
         List<CodegenModel> inlineAllOfCodegenModelList = codegenModelList.stream()
@@ -74,7 +82,7 @@ public class PlantumlDocumentationCodegen extends DefaultCodegen implements Code
                 .collect(Collectors.toList());
 
         List<CodegenModel> subtypeCodegenModelList = codegenModelList.stream()
-                .filter(codegenModel -> !codegenModel.allOf.isEmpty())
+                .filter(ModelUtils::hasAllOf)
                 .collect(Collectors.toList());
 
 
@@ -214,5 +222,10 @@ public class PlantumlDocumentationCodegen extends DefaultCodegen implements Code
     public String escapeUnsafeCharacters(String input) {
         // to suppress the warning message
         return input;
+    }
+
+    @Override
+    public GeneratorLanguage generatorLanguage() {
+        return null;
     }
 }

@@ -12,11 +12,11 @@
  * Do not edit the class manually.
  */
 
-import {ApiRecordUtils, knownRecordFactories} from "../runtimeSagasAndRecords";
-import {getApiEntitiesState} from "../ApiEntitiesSelectors"
-import {List, Record, RecordOf, Map} from 'immutable';
-import {Schema, schema, NormalizedSchema} from "normalizr";
-import {select, call} from "redux-saga/effects";
+import { ApiRecordUtils, knownRecordFactories } from "../runtimeSagasAndRecords";
+import { getApiEntitiesState } from "../ApiEntitiesSelectors"
+import { List, Record, RecordOf, Map } from 'immutable';
+import { Schema, schema, NormalizedSchema } from "normalizr";
+import { select, call } from "redux-saga/effects";
 
 import {
     Part,
@@ -40,13 +40,13 @@ knownRecordFactories.set(PartRecordProps.recType, PartRecord);
 class PartRecordUtils extends ApiRecordUtils<Part, PartRecord> {
     public normalize(apiObject: Part, asEntity?: boolean): Part {
         (apiObject as any).recType = PartRecordProps.recType;
-        (apiObject as any).id = apiObject.id.toString();
+        (apiObject as any)['id'] = apiObject['id'].toString();
         return apiObject;
     }
 
     public toApi(record: PartRecord): Part {
         const apiObject = super.toApi(record);
-        apiObject.id = parseFloat(record.id);
+        apiObject['id'] = parseFloat(record['id']);
         return apiObject;
     }
 }

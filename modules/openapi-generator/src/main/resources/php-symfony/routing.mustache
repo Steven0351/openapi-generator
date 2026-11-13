@@ -8,16 +8,16 @@
 # {{pathPrefix}}
 {{#operation}}
 {{bundleAlias}}_{{pathPrefix}}_{{operationIdLowerCase}}:
-    path:     {{path}}
+    path:     {{{path}}}
     methods:  [{{httpMethod}}]
     defaults:
-        _controller: {{bundleAlias}}.controller.{{pathPrefix}}:{{operationId}}Action
+        _controller: {{bundleAlias}}.controller.{{pathPrefix}}::{{operationId}}Action
     {{#hasPathParams}}
     requirements:
     {{/hasPathParams}}
     {{#pathParams}}
         {{#pattern}}
-        {{paramName}}: '{{pattern}}'
+        {{paramName}}: '{{{pattern}}}'
         {{/pattern}}
         {{^pattern}}
         {{#isLong}}

@@ -312,8 +312,8 @@ SYNOPSIS
                 [--model-name-suffix <model name suffix>]
                 [--model-package <model package>]
                 [(-o <output directory> | --output <output directory>)] [(-p <additional properties> | --additional-properties <additional properties>)...]
-                [--package-name <package name>] [--release-note <release note>]
-                [--remove-operation-id-prefix]
+                [--package-name <package name>] [(-q | --quiet)]
+                [--release-note <release note>] [--remove-operation-id-prefix]
                 [--reserved-words-mappings <reserved word mappings>...]
                 [(-s | --skip-overwrite)] [--server-variables <server variables>...]
                 [--skip-operation-example] [--skip-validate-spec]
@@ -464,6 +464,9 @@ OPTIONS
         --package-name <package name>
             package for generated classes (where supported)
 
+        -q, --quiet
+            quiet mode
+
         --release-note <release note>
             Release note, default to 'Minor update'.
 
@@ -555,7 +558,7 @@ openapi-generator-cli generate \
     -i petstore.yaml \
     -g kotlin-spring \
     -o out \
-    --additional-properties=library=spring-boot,beanValidations=true,swaggerAnnotations=true,serviceImplementation=true \
+    --additional-properties=library=spring-boot,useBeanValidation=true,serviceImplementation=true \
     --import-mappings=DateTime=java.time.LocalDateTime \
     --type-mappings=DateTime=java.time.LocalDateTime
 ```
@@ -629,7 +632,7 @@ supportsES6: true
 ```
 
 The settings are passed exactly the same as for `config.json`. The most important part is the file extension. Supported values are `yml` or `yaml`. 
-The name of the file should be `config.yml` or `config.yaml` (in our example it will be `config.yaml`.
+The name of the file should be `config.yml` or `config.yaml` (in our example it will be `config.yaml`).
 
 ```bash
 openapi-generator-cli generate -i petstore.yaml -g typescript-fetch -o out \
@@ -642,7 +645,7 @@ openapi-generator-cli generate -i petstore.yaml -g typescript-fetch -o out \
 The `batch` command allows you to move all CLI arguments supported by the `generate` command into a YAML or JSON file.
 
 *NOTE*: This command supports an additional `!include` property which may point to another "shared" file, the base path to which can be
-modified by `--includes-base-dir`. Starting with 5.0.0, the `!batch` command supports multiple `!include` properties, either sequential or nested. In order to support multiple `!include` properties in a JSON file, the property name can have a suffix, e.g. `!include1`, `!include2`, etc. The suffix have no meaning other than providing unique property names.
+modified by `--includes-base-dir`. Starting with 5.0.0, the `!batch` command supports multiple `!include` properties, either sequential or nested under other keys. In order to support multiple `!include` properties in a JSON file, the property name can have a suffix, e.g. `!include1`, `!include2`, etc. The suffix have no meaning other than providing unique property names.
 
 ```text
 openapi-generator-cli help batch
@@ -697,6 +700,11 @@ additionalProperties:
     x-ext-name: "Your Name"
 EOF
 
+# create nested "shared" config
+cat > shared/nested.yaml <<EOF
+useCompareNetObjects: "true"
+EOF
+
 # create "standard" configs
 cat > kotlin.yaml <<EOF
 '!include': 'shared/common.yaml'
@@ -714,7 +722,7 @@ outputDir: out/csharp-netcore
 generatorName: csharp-netcore
 additionalProperties:
   packageGuid: "{321C8C3F-0156-40C1-AE42-D59761FB9B6C}"
-  useCompareNetObjects: "true"
+  '!include': 'shared/nested.yaml'
 EOF
 
 # Generate them

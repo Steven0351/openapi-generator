@@ -4,11 +4,21 @@ package {{package}};
 
 {{#imports}}import {{import}};
 {{/imports}}
+{{#generateSpringBootApplication}}
 import org.junit.Test;
 import org.junit.Before;
 import static org.junit.Assert.*;
+{{/generateSpringBootApplication}}
+{{^generateSpringBootApplication}}
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.BeforeEach;
+import static org.junit.jupiter.api.Assertions.*;
+{{/generateSpringBootApplication}}
 
-import javax.ws.rs.core.Response;
+{{#useBeanValidation}}
+import {{javaxPackage}}.validation.Valid;
+{{/useBeanValidation}}
+import {{javaxPackage}}.ws.rs.core.Response;
 import org.apache.cxf.jaxrs.client.JAXRSClientFactory;
 import org.apache.cxf.jaxrs.client.ClientConfiguration;
 import org.apache.cxf.jaxrs.client.WebClient;
@@ -21,14 +31,22 @@ import org.apache.cxf.transport.common.gzip.GZIPOutInterceptor;
 import org.apache.cxf.interceptor.LoggingOutInterceptor;
 {{/useLoggingFeature}}
 
+{{#useJackson3}}
+import {{jacksonPackage}}.jakarta.rs.json.JacksonJsonProvider;
+{{/useJackson3}}
+{{^useJackson3}}
+{{#useJakartaEe}}
+import {{jacksonPackage}}.jakarta.rs.json.JacksonJsonProvider;
+{{/useJakartaEe}}
+{{^useJakartaEe}}
 import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
+{{/useJakartaEe}}
+{{/useJackson3}}
 
-{{^fullJavaUtil}}
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-{{/fullJavaUtil}}
 
 {{#generateSpringBootApplication}}
 import org.junit.runner.RunWith;
@@ -67,7 +85,7 @@ public class {{classname}}Test {
 
     private {{classname}} api;
 
-    @Before
+    {{#generateSpringBootApplication}}@Before{{/generateSpringBootApplication}}{{^generateSpringBootApplication}}@BeforeEach{{/generateSpringBootApplication}}
     public void setup() {
         JacksonJsonProvider provider = new JacksonJsonProvider();
         List providers = new ArrayList();
@@ -113,7 +131,7 @@ public class {{classname}}Test {
     @Test
     public void {{operationId}}Test() {
         {{#allParams}}
-        {{^isFile}}{{{dataType}}} {{paramName}} = null;{{/isFile}}{{#isFile}}org.apache.cxf.jaxrs.ext.multipart.Attachment {{paramName}} = null;{{/isFile}}
+        {{#isFile}}{{#useAbstractionForFiles}}{{#collectionFormat}}java.util.Collection<InputStream>{{/collectionFormat}}{{^collectionFormat}}InputStream{{/collectionFormat}}{{/useAbstractionForFiles}}{{^useAbstractionForFiles}}{{{dataType}}}{{/useAbstractionForFiles}} {{paramName}} = null;{{/isFile}}{{^isFile}}{{{dataType}}} {{paramName}} = null;{{/isFile}}
         {{/allParams}}
         //{{^vendorExtensions.x-java-is-response-void}}{{>returnTypes}} response = {{/vendorExtensions.x-java-is-response-void}}api.{{operationId}}({{#allParams}}{{paramName}}{{^-last}}, {{/-last}}{{/allParams}});
         {{^vendorExtensions.x-java-is-response-void}}//assertNotNull(response);{{/vendorExtensions.x-java-is-response-void}}

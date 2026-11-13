@@ -12,17 +12,21 @@
  * Do not edit the class manually.
  */
 
-import { exists, mapValues } from '../runtime';
+import { mapValues } from '../runtime';
+import type { Category } from './Category';
 import {
-    Category,
     CategoryFromJSON,
     CategoryFromJSONTyped,
     CategoryToJSON,
-    Tag,
+    CategoryToJSONTyped,
+} from './Category';
+import type { Tag } from './Tag';
+import {
     TagFromJSON,
     TagFromJSONTyped,
     TagToJSON,
-} from './';
+    TagToJSONTyped,
+} from './Tag';
 
 /**
  * 
@@ -32,50 +36,49 @@ import {
 export interface Pet {
     /**
      * 
-     * @type {number}
-     * @memberof Pet
      */
     id?: number;
     /**
      * 
-     * @type {Category}
-     * @memberof Pet
      */
     category?: Category;
     /**
      * 
-     * @type {string}
-     * @memberof Pet
      */
     name: string;
     /**
      * 
-     * @type {Set<string>}
-     * @memberof Pet
      */
     photoUrls: Set<string>;
     /**
      * 
-     * @type {Array<Tag>}
-     * @memberof Pet
      */
     tags?: Array<Tag>;
     /**
      * pet status in the store
-     * @type {string}
-     * @memberof Pet
      */
     status?: PetStatusEnum;
 }
 
+
 /**
-* @export
-* @enum {string}
-*/
-export enum PetStatusEnum {
-    Available = 'available',
-    Pending = 'pending',
-    Sold = 'sold'
+ * @export
+ */
+export const PetStatusEnum = {
+    Available: 'available',
+    Pending: 'pending',
+    Sold: 'sold',
+} as const;
+export type PetStatusEnum = typeof PetStatusEnum[keyof typeof PetStatusEnum];
+
+
+/**
+ * Check if a given object implements the Pet interface.
+ */
+export function instanceOfPet(value: object): value is Pet {
+    if (!('name' in value) || value['name'] === undefined) return false;
+    if (!('photoUrls' in value) || value['photoUrls'] === undefined) return false;
+    return true;
 }
 
 export function PetFromJSON(json: any): Pet {
@@ -83,35 +86,37 @@ export function PetFromJSON(json: any): Pet {
 }
 
 export function PetFromJSONTyped(json: any, ignoreDiscriminator: boolean): Pet {
-    if ((json === undefined) || (json === null)) {
+    if (json == null) {
         return json;
     }
     return {
         
-        'id': !exists(json, 'id') ? undefined : json['id'],
-        'category': !exists(json, 'category') ? undefined : CategoryFromJSON(json['category']),
+        'id': json['id'] == null ? undefined : json['id'],
+        'category': json['category'] == null ? undefined : CategoryFromJSON(json['category']),
         'name': json['name'],
-        'photoUrls': json['photoUrls'],
-        'tags': !exists(json, 'tags') ? undefined : ((json['tags'] as Array<any>).map(TagFromJSON)),
-        'status': !exists(json, 'status') ? undefined : json['status'],
+        'photoUrls': new Set(json['photoUrls']),
+        'tags': json['tags'] == null ? undefined : ((json['tags'] as Array<any>).map(TagFromJSON)),
+        'status': json['status'] == null ? undefined : json['status'],
     };
 }
 
-export function PetToJSON(value?: Pet | null): any {
-    if (value === undefined) {
-        return undefined;
+export function PetToJSON(json: any): Pet {
+    return PetToJSONTyped(json, false);
+}
+
+export function PetToJSONTyped(value?: Pet | null, ignoreDiscriminator: boolean = false): any {
+    if (value == null) {
+        return value;
     }
-    if (value === null) {
-        return null;
-    }
+
     return {
         
-        'id': value.id,
-        'category': CategoryToJSON(value.category),
-        'name': value.name,
-        'photoUrls': value.photoUrls,
-        'tags': value.tags === undefined ? undefined : ((value.tags as Array<any>).map(TagToJSON)),
-        'status': value.status,
+        'id': value['id'],
+        'category': CategoryToJSON(value['category']),
+        'name': value['name'],
+        'photoUrls': Array.from(value['photoUrls'] as Set<any>),
+        'tags': value['tags'] == null ? undefined : ((value['tags'] as Array<any>).map(TagToJSON)),
+        'status': value['status'],
     };
 }
 

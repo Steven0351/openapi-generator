@@ -4,6 +4,7 @@ import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.io.Serializable;
 import javax.validation.constraints.*;
@@ -15,13 +16,21 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.annotation.JsonTypeName;
+import org.openapitools.jackson.nullable.JsonNullable;
 
 
 
 @JsonTypeName("ArrayOfNumberOnly")
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaJAXRSSpecServerCodegen")public class ArrayOfNumberOnly  implements Serializable {
-  
-  private @Valid List<BigDecimal> arrayNumber = new ArrayList<BigDecimal>();
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaJAXRSSpecServerCodegen", comments = "Generator version: 7.28.0-SNAPSHOT")
+public class ArrayOfNumberOnly  implements Serializable {
+  private List<BigDecimal> arrayNumber = new ArrayList<>();
+
+  protected ArrayOfNumberOnly(ArrayOfNumberOnlyBuilder<?, ?> b) {
+    this.arrayNumber = b.arrayNumber;
+  }
+
+  public ArrayOfNumberOnly() {
+  }
 
   /**
    **/
@@ -31,11 +40,9 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
   }
 
   
-
-  
   @ApiModelProperty(value = "")
   @JsonProperty("ArrayNumber")
-  public List<BigDecimal> getArrayNumber() {
+  public List<@Valid BigDecimal> getArrayNumber() {
     return arrayNumber;
   }
 
@@ -44,6 +51,22 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
     this.arrayNumber = arrayNumber;
   }
 
+  public ArrayOfNumberOnly addArrayNumberItem(BigDecimal arrayNumberItem) {
+    if (this.arrayNumber == null) {
+      this.arrayNumber = new ArrayList<>();
+    }
+
+    this.arrayNumber.add(arrayNumberItem);
+    return this;
+  }
+
+  public ArrayOfNumberOnly removeArrayNumberItem(BigDecimal arrayNumberItem) {
+    if (arrayNumberItem != null && this.arrayNumber != null) {
+      this.arrayNumber.remove(arrayNumberItem);
+    }
+
+    return this;
+  }
 
   @Override
   public boolean equals(Object o) {
@@ -77,12 +100,36 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
    * (except the first line).
    */
   private String toIndentedString(Object o) {
-    if (o == null) {
-      return "null";
-    }
-    return o.toString().replace("\n", "\n    ");
+    return o == null ? "null" : o.toString().replace("\n", "\n    ");
   }
 
 
-}
+  public static ArrayOfNumberOnlyBuilder<?, ?> builder() {
+    return new ArrayOfNumberOnlyBuilderImpl();
+  }
 
+  private static final class ArrayOfNumberOnlyBuilderImpl extends ArrayOfNumberOnlyBuilder<ArrayOfNumberOnly, ArrayOfNumberOnlyBuilderImpl> {
+
+    @Override
+    protected ArrayOfNumberOnlyBuilderImpl self() {
+      return this;
+    }
+
+    @Override
+    public ArrayOfNumberOnly build() {
+      return new ArrayOfNumberOnly(this);
+    }
+  }
+
+  public static abstract class ArrayOfNumberOnlyBuilder<C extends ArrayOfNumberOnly, B extends ArrayOfNumberOnlyBuilder<C, B>>  {
+    private List<BigDecimal> arrayNumber = new ArrayList<>();
+    protected abstract B self();
+
+    public abstract C build();
+
+    public B arrayNumber(List<BigDecimal> arrayNumber) {
+      this.arrayNumber = arrayNumber;
+      return self();
+    }
+  }
+}

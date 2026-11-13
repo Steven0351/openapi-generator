@@ -3,7 +3,6 @@ package org.openapitools.model;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import org.openapitools.model.Animal;
-import org.openapitools.model.CatAllOf;
 import java.io.Serializable;
 import javax.validation.constraints.*;
 import javax.validation.Valid;
@@ -14,13 +13,31 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.annotation.JsonTypeName;
+import org.openapitools.jackson.nullable.JsonNullable;
 
 
 
-@JsonTypeName("Cat")
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaJAXRSSpecServerCodegen")public class Cat extends Animal implements Serializable {
-  
-  private @Valid Boolean declawed;
+@JsonTypeName("CAT")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaJAXRSSpecServerCodegen", comments = "Generator version: 7.28.0-SNAPSHOT")
+public class Cat extends Animal implements Serializable {
+  private Boolean declawed;
+
+  protected Cat(CatBuilder<?, ?> b) {
+    super(b);
+    this.declawed = b.declawed;
+  }
+
+  public Cat() {
+  }
+
+  @JsonCreator
+  public Cat(
+    @JsonProperty(required = true, value = "className") String className
+  ) {
+    super(
+      className
+    );
+  }
 
   /**
    **/
@@ -28,8 +45,6 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
     this.declawed = declawed;
     return this;
   }
-
-  
 
   
   @ApiModelProperty(value = "")
@@ -77,12 +92,33 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
    * (except the first line).
    */
   private String toIndentedString(Object o) {
-    if (o == null) {
-      return "null";
-    }
-    return o.toString().replace("\n", "\n    ");
+    return o == null ? "null" : o.toString().replace("\n", "\n    ");
   }
 
 
-}
+  public static CatBuilder<?, ?> builder() {
+    return new CatBuilderImpl();
+  }
 
+  private static final class CatBuilderImpl extends CatBuilder<Cat, CatBuilderImpl> {
+
+    @Override
+    protected CatBuilderImpl self() {
+      return this;
+    }
+
+    @Override
+    public Cat build() {
+      return new Cat(this);
+    }
+  }
+
+  public static abstract class CatBuilder<C extends Cat, B extends CatBuilder<C, B>> extends AnimalBuilder<C, B> {
+    private Boolean declawed;
+
+    public B declawed(Boolean declawed) {
+      this.declawed = declawed;
+      return self();
+    }
+  }
+}

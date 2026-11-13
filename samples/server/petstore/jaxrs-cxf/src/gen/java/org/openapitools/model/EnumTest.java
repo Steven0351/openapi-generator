@@ -1,13 +1,16 @@
 package org.openapitools.model;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import org.openapitools.model.OuterEnum;
 import javax.validation.constraints.*;
 import javax.validation.Valid;
 
 import io.swagger.annotations.ApiModelProperty;
+import java.util.Objects;
 import com.fasterxml.jackson.annotation.JsonProperty;
+
 
 public class EnumTest  {
   
@@ -44,6 +47,7 @@ UPPER(String.valueOf("UPPER")), LOWER(String.valueOf("lower")), EMPTY(String.val
 }
 
   @ApiModelProperty(value = "")
+
   private EnumStringEnum enumString;
 
 public enum EnumStringRequiredEnum {
@@ -79,6 +83,7 @@ UPPER(String.valueOf("UPPER")), LOWER(String.valueOf("lower")), EMPTY(String.val
 }
 
   @ApiModelProperty(required = true, value = "")
+
   private EnumStringRequiredEnum enumStringRequired;
 
 public enum EnumIntegerEnum {
@@ -114,6 +119,7 @@ NUMBER_1(Integer.valueOf(1)), NUMBER_MINUS_1(Integer.valueOf(-1));
 }
 
   @ApiModelProperty(value = "")
+
   private EnumIntegerEnum enumInteger;
 
 public enum EnumNumberEnum {
@@ -149,10 +155,13 @@ NUMBER_1_DOT_1(Double.valueOf(1.1)), NUMBER_MINUS_1_DOT_2(Double.valueOf(-1.2));
 }
 
   @ApiModelProperty(value = "")
+
   private EnumNumberEnum enumNumber;
 
   @ApiModelProperty(value = "")
+
   @Valid
+
   private OuterEnum outerEnum;
  /**
    * Get enumString
@@ -257,6 +266,26 @@ NUMBER_1_DOT_1(Double.valueOf(1.1)), NUMBER_MINUS_1_DOT_2(Double.valueOf(-1.2));
     return this;
   }
 
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    EnumTest enumTest = (EnumTest) o;
+    return Objects.equals(this.enumString, enumTest.enumString) &&
+        Objects.equals(this.enumStringRequired, enumTest.enumStringRequired) &&
+        Objects.equals(this.enumInteger, enumTest.enumInteger) &&
+        Objects.equals(this.enumNumber, enumTest.enumNumber) &&
+        Objects.equals(this.outerEnum, enumTest.outerEnum);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(enumString, enumStringRequired, enumInteger, enumNumber, outerEnum);
+  }
 
   @Override
   public String toString() {
@@ -277,10 +306,7 @@ NUMBER_1_DOT_1(Double.valueOf(1.1)), NUMBER_MINUS_1_DOT_2(Double.valueOf(-1.2));
    * (except the first line).
    */
   private static String toIndentedString(Object o) {
-    if (o == null) {
-      return "null";
-    }
-    return o.toString().replace("\n", "\n    ");
+    return o == null ? "null" : o.toString().replace("\n", "\n    ");
   }
 }
 

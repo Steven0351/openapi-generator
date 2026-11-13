@@ -17,12 +17,14 @@
         <maven-surefire-plugin.version>2.22.2</maven-surefire-plugin.version>
         <exec-maven-plugin.version>1.5.0</exec-maven-plugin.version>
 
-        <vertx.version>4.0.0</vertx.version>
-        <junit-jupiter.version>5.7.0</junit-jupiter.version>
+        <vertx.version>4.2.4</vertx.version>
+        <junit-jupiter.version>5.10.0</junit-jupiter.version>
         <slf4j.version>1.7.30</slf4j.version>
-        <jackson.version>2.11.2</jackson.version>
+        <jackson.version>2.18.11</jackson.version>
 
+{{^interfaceOnly}}
         <main.verticle>{{invokerPackage}}.HttpServerVerticle</main.verticle>
+{{/interfaceOnly}}
     </properties>
 
     <!-- Vert.x BOM -->
@@ -86,6 +88,7 @@
                     <target>1.8</target>
                 </configuration>
             </plugin>
+{{^interfaceOnly}}
             <plugin>
                 <artifactId>maven-shade-plugin</artifactId>
                 <version>${maven-shade-plugin.version}</version>
@@ -117,10 +120,12 @@
                     </execution>
                 </executions>
             </plugin>
+{{/interfaceOnly}}
             <plugin>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>${maven-surefire-plugin.version}</version>
             </plugin>
+{{^interfaceOnly}}
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>exec-maven-plugin</artifactId>
@@ -133,6 +138,7 @@
                     </arguments>
                 </configuration>
             </plugin>
+{{/interfaceOnly}}
         </plugins>
     </build>
 </project>

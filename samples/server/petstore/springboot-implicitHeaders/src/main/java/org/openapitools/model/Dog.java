@@ -1,25 +1,48 @@
 package org.openapitools.model;
 
+import java.net.URI;
 import java.util.Objects;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
-import io.swagger.annotations.ApiModel;
-import io.swagger.annotations.ApiModelProperty;
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import org.openapitools.model.Animal;
-import org.openapitools.model.DogAllOf;
+import org.springframework.lang.Nullable;
 import org.openapitools.jackson.nullable.JsonNullable;
+import java.time.OffsetDateTime;
 import javax.validation.Valid;
 import javax.validation.constraints.*;
+import io.swagger.v3.oas.annotations.media.Schema;
+
+
+import java.util.*;
+import javax.annotation.Generated;
 
 /**
  * Dog
  */
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.SpringCodegen")
-public class Dog extends Animal  {
-  @JsonProperty("breed")
-  private String breed;
 
-  public Dog breed(String breed) {
+
+@Generated(value = "org.openapitools.codegen.languages.SpringCodegen", comments = "Generator version: 7.28.0-SNAPSHOT")
+public class Dog extends Animal {
+
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private @Nullable String breed;
+
+  public Dog() {
+    super();
+  }
+
+  /**
+   * Constructor with only required parameters
+   */
+  public Dog(String className) {
+    super(className);
+  }
+
+  public Dog breed(@Nullable String breed) {
     this.breed = breed;
     return this;
   }
@@ -27,19 +50,29 @@ public class Dog extends Animal  {
   /**
    * Get breed
    * @return breed
-  */
-  @ApiModelProperty(value = "")
-
-
-  public String getBreed() {
+   */
+  
+  @Schema(name = "breed", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+  @JsonProperty("breed")
+  public @Nullable String getBreed() {
     return breed;
   }
 
-  public void setBreed(String breed) {
+  @JsonProperty("breed")
+  public void setBreed(@Nullable String breed) {
     this.breed = breed;
   }
 
 
+  public Dog className(String className) {
+    super.className(className);
+    return this;
+  }
+
+  public Dog color(String color) {
+    super.color(color);
+    return this;
+  }
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -72,11 +105,8 @@ public class Dog extends Animal  {
    * Convert the given object to string with each line indented by 4 spaces
    * (except the first line).
    */
-  private String toIndentedString(Object o) {
-    if (o == null) {
-      return "null";
-    }
-    return o.toString().replace("\n", "\n    ");
+  private String toIndentedString(@Nullable Object o) {
+    return o == null ? "null" : o.toString().replace("\n", "\n    ");
   }
 }
 

@@ -19,14 +19,25 @@ package org.openapitools.codegen.languages;
 
 import org.apache.commons.lang3.StringUtils;
 import org.openapitools.codegen.*;
+import org.openapitools.codegen.meta.GeneratorMetadata;
+import org.openapitools.codegen.meta.Stability;
 import org.openapitools.codegen.meta.features.*;
+import org.openapitools.codegen.model.ModelMap;
+import org.openapitools.codegen.model.ModelsMap;
+import org.openapitools.codegen.model.OperationMap;
+import org.openapitools.codegen.model.OperationsMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
+import static org.openapitools.codegen.utils.CamelizeOption.LOWERCASE_FIRST_LETTER;
+import static org.openapitools.codegen.utils.EnumUtils.getEnumValues;
 import static org.openapitools.codegen.utils.StringUtils.camelize;
 
+/**
+ * <p>Mustache templates are located in {@code src/main/resources/scala-lagom-server/}.
+ */
 public class ScalaLagomServerCodegen extends AbstractScalaCodegen implements CodegenConfig {
     private final Logger LOGGER = LoggerFactory.getLogger(ScalaLagomServerCodegen.class);
 
@@ -55,6 +66,10 @@ public class ScalaLagomServerCodegen extends AbstractScalaCodegen implements Cod
                         ParameterFeature.Cookie
                 )
         );
+
+        generatorMetadata = GeneratorMetadata.newBuilder(generatorMetadata)
+                .stability(Stability.DEPRECATED)
+                .build();
 
         outputFolder = "generated-code/scala-lagom-server";
         modelTemplateFiles.put("model.mustache", ".scala");
@@ -128,6 +143,11 @@ public class ScalaLagomServerCodegen extends AbstractScalaCodegen implements Cod
 
     @Override
     public String toParamName(String name) {
+        // obtain the name from parameterNameMapping directly if provided
+        if (parameterNameMapping.containsKey(name)) {
+            return parameterNameMapping.get(name);
+        }
+
         // should be the same as variable name
         return toVarName(name);
     }
@@ -139,12 +159,12 @@ public class ScalaLagomServerCodegen extends AbstractScalaCodegen implements Cod
 
     @Override
     public String getName() {
-        return "scala-lagom-server";
+        return "scala-lagom-server-deprecated";
     }
 
     @Override
     public String getHelp() {
-        return "Generates a Lagom API server (Beta) in scala";
+        return "Generates a Lagom API server (Beta) in scala. IMPORTANT: this generator has been deprecated";
     }
 
     @Override
@@ -159,20 +179,18 @@ public class ScalaLagomServerCodegen extends AbstractScalaCodegen implements Cod
             throw new RuntimeException(operationId + " (reserved word) cannot be used as method name");
         }
 
-        return camelize(operationId, true);
+        return camelize(operationId, LOWERCASE_FIRST_LETTER);
     }
 
     @Override
-    public Map<String, Object> postProcessModelsEnum(Map<String, Object> objs) {
+    public ModelsMap postProcessModelsEnum(ModelsMap objs) {
         objs = super.postProcessModelsEnum(objs);
-        List<Object> models = (List<Object>) objs.get("models");
-        for (Object _mo : models) {
-            Map<String, Object> mo = (Map<String, Object>) _mo;
-            CodegenModel cm = (CodegenModel) mo.get("model");
+        for (ModelMap mo : objs.getModels()) {
+            CodegenModel cm = mo.getModel();
 
             for (CodegenProperty var : cm.vars) {
                 if (var.isEnum) {
-                    List<Object> enumValues = (List<Object>) var.allowableValues.get("values");
+                    List<Object> enumValues = getEnumValues(var.allowableValues);
 
                     for (final ListIterator<Object> i = enumValues.listIterator(); i.hasNext(); ) {
                         final String element = String.valueOf(i.next());
@@ -186,9 +204,8 @@ public class ScalaLagomServerCodegen extends AbstractScalaCodegen implements Cod
         if (additionalProperties.containsKey("gson")) {
             List<Map<String, String>> imports = (List<Map<String, String>>) objs.get("imports");
 
-            for (Object _mo : models) {
-                Map<String, Object> mo = (Map<String, Object>) _mo;
-                CodegenModel cm = (CodegenModel) mo.get("model");
+            for (ModelMap mo : objs.getModels()) {
+                CodegenModel cm = mo.getModel();
                 // for enum model
                 if (Boolean.TRUE.equals(cm.isEnum) && cm.allowableValues != null) {
                     cm.imports.add(importMapping.get("SerializedName"));
@@ -203,9 +220,9 @@ public class ScalaLagomServerCodegen extends AbstractScalaCodegen implements Cod
     }
 
     @Override
-    public Map<String, Object> postProcessOperationsWithModels(Map<String, Object> objs, List<Object> allModels) {
-        Map<String, Object> operations = (Map<String, Object>) objs.get("operations");
-        ArrayList<CodegenOperation> oplist = (ArrayList<CodegenOperation>) operations.get("operation");
+    public OperationsMap postProcessOperationsWithModels(OperationsMap objs, List<ModelMap> allModels) {
+        OperationMap operations = objs.getOperations();
+        List<CodegenOperation> oplist = operations.getOperation();
 
         for (CodegenOperation codegenOperation : oplist) {
             String path = codegenOperation.path;
@@ -213,6 +230,4 @@ public class ScalaLagomServerCodegen extends AbstractScalaCodegen implements Cod
         }
         return objs;
     }
-
-
 }

@@ -1,16 +1,18 @@
 package org.openapitools.model;
 
 import org.openapitools.model.Animal;
-import org.openapitools.model.CatAllOf;
 import javax.validation.constraints.*;
 import javax.validation.Valid;
 
 import io.swagger.annotations.ApiModelProperty;
+import java.util.Objects;
 import com.fasterxml.jackson.annotation.JsonProperty;
+
 
 public class Cat extends Animal {
   
   @ApiModelProperty(value = "")
+
   private Boolean declawed;
  /**
    * Get declawed
@@ -30,6 +32,23 @@ public class Cat extends Animal {
     return this;
   }
 
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    Cat cat = (Cat) o;
+    return Objects.equals(this.declawed, cat.declawed) &&
+        super.equals(o);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(declawed, super.hashCode());
+  }
 
   @Override
   public String toString() {
@@ -46,10 +65,7 @@ public class Cat extends Animal {
    * (except the first line).
    */
   private static String toIndentedString(Object o) {
-    if (o == null) {
-      return "null";
-    }
-    return o.toString().replace("\n", "\n    ");
+    return o == null ? "null" : o.toString().replace("\n", "\n    ");
   }
 }
 

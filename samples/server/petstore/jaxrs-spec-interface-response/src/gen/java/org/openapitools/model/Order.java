@@ -12,17 +12,21 @@ import java.util.Objects;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.fasterxml.jackson.annotation.JsonTypeName;
+import org.openapitools.jackson.nullable.JsonNullable;
 
-
-
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaJAXRSSpecServerCodegen")public class Order  implements Serializable {
-  
-  private @Valid Long id;
-  private @Valid Long petId;
-  private @Valid Integer quantity;
-  private @Valid Date shipDate;
-
-public enum StatusEnum {
+/**
+ * An order for a pets from the pet store
+ **/
+@ApiModel(description = "An order for a pets from the pet store")
+@JsonTypeName("Order")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaJAXRSSpecServerCodegen", comments = "Generator version: 7.28.0-SNAPSHOT")
+public class Order  implements Serializable {
+  private Long id;
+  private Long petId;
+  private Integer quantity;
+  private Date shipDate;
+  public enum StatusEnum {
 
     PLACED(String.valueOf("placed")), APPROVED(String.valueOf("approved")), DELIVERED(String.valueOf("delivered"));
 
@@ -43,6 +47,21 @@ public enum StatusEnum {
         return String.valueOf(value);
     }
 
+    /**
+     * Convert a String into String, as specified in the
+     * <a href="https://download.oracle.com/otndocs/jcp/jaxrs-2_0-fr-eval-spec/index.html">See JAX RS 2.0 Specification, section 3.2, p. 12</a>
+     */
+    public static StatusEnum fromString(String s) {
+        for (StatusEnum b : StatusEnum.values()) {
+            // using Objects.toString() to be safe if value type non-object type
+            // because types like 'int' etc. will be auto-boxed
+            if (java.util.Objects.toString(b.value).equals(s)) {
+                return b;
+            }
+        }
+        throw new IllegalArgumentException("Unexpected string value '" + s + "'");
+    }
+
     @JsonCreator
     public static StatusEnum fromValue(String value) {
         for (StatusEnum b : StatusEnum.values()) {
@@ -54,8 +73,11 @@ public enum StatusEnum {
     }
 }
 
-  private @Valid StatusEnum status;
-  private @Valid Boolean complete = false;
+  private StatusEnum status;
+  private Boolean complete = false;
+
+  public Order() {
+  }
 
   /**
    **/
@@ -65,26 +87,23 @@ public enum StatusEnum {
   }
 
   
-
-  
   @ApiModelProperty(value = "")
   @JsonProperty("id")
   public Long getId() {
     return id;
   }
 
+  @JsonProperty("id")
   public void setId(Long id) {
     this.id = id;
   }
 
-/**
+  /**
    **/
   public Order petId(Long petId) {
     this.petId = petId;
     return this;
   }
-
-  
 
   
   @ApiModelProperty(value = "")
@@ -93,18 +112,17 @@ public enum StatusEnum {
     return petId;
   }
 
+  @JsonProperty("petId")
   public void setPetId(Long petId) {
     this.petId = petId;
   }
 
-/**
+  /**
    **/
   public Order quantity(Integer quantity) {
     this.quantity = quantity;
     return this;
   }
-
-  
 
   
   @ApiModelProperty(value = "")
@@ -113,18 +131,17 @@ public enum StatusEnum {
     return quantity;
   }
 
+  @JsonProperty("quantity")
   public void setQuantity(Integer quantity) {
     this.quantity = quantity;
   }
 
-/**
+  /**
    **/
   public Order shipDate(Date shipDate) {
     this.shipDate = shipDate;
     return this;
   }
-
-  
 
   
   @ApiModelProperty(value = "")
@@ -133,11 +150,12 @@ public enum StatusEnum {
     return shipDate;
   }
 
+  @JsonProperty("shipDate")
   public void setShipDate(Date shipDate) {
     this.shipDate = shipDate;
   }
 
-/**
+  /**
    * Order Status
    **/
   public Order status(StatusEnum status) {
@@ -146,26 +164,23 @@ public enum StatusEnum {
   }
 
   
-
-  
   @ApiModelProperty(value = "Order Status")
   @JsonProperty("status")
   public StatusEnum getStatus() {
     return status;
   }
 
+  @JsonProperty("status")
   public void setStatus(StatusEnum status) {
     this.status = status;
   }
 
-/**
+  /**
    **/
   public Order complete(Boolean complete) {
     this.complete = complete;
     return this;
   }
-
-  
 
   
   @ApiModelProperty(value = "")
@@ -174,6 +189,7 @@ public enum StatusEnum {
     return complete;
   }
 
+  @JsonProperty("complete")
   public void setComplete(Boolean complete) {
     this.complete = complete;
   }
@@ -221,12 +237,8 @@ public enum StatusEnum {
    * (except the first line).
    */
   private String toIndentedString(Object o) {
-    if (o == null) {
-      return "null";
-    }
-    return o.toString().replace("\n", "\n    ");
+    return o == null ? "null" : o.toString().replace("\n", "\n    ");
   }
 
 
 }
-

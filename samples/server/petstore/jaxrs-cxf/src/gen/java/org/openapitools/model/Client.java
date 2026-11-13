@@ -4,11 +4,14 @@ import javax.validation.constraints.*;
 import javax.validation.Valid;
 
 import io.swagger.annotations.ApiModelProperty;
+import java.util.Objects;
 import com.fasterxml.jackson.annotation.JsonProperty;
+
 
 public class Client  {
   
   @ApiModelProperty(value = "")
+
   private String client;
  /**
    * Get client
@@ -28,6 +31,22 @@ public class Client  {
     return this;
   }
 
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    Client client = (Client) o;
+    return Objects.equals(this.client, client.client);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(client);
+  }
 
   @Override
   public String toString() {
@@ -44,10 +63,7 @@ public class Client  {
    * (except the first line).
    */
   private static String toIndentedString(Object o) {
-    if (o == null) {
-      return "null";
-    }
-    return o.toString().replace("\n", "\n    ");
+    return o == null ? "null" : o.toString().replace("\n", "\n    ");
   }
 }
 

@@ -15,9 +15,9 @@
 #include "PFXHelpers.h"
 #include "PFXHttpRequest.h"
 #include "PFXServerConfiguration.h"
+#include "PFXOauth.h"
 
 #include "PFXUser.h"
-#include <QList>
 #include <QString>
 
 #include <QObject>
@@ -38,6 +38,7 @@ public:
     void initializeServerConfigs();
     int setDefaultServerValue(int serverIndex,const QString &operation, const QString &variable,const QString &val);
     void setServerIndex(const QString &operation, int serverIndex);
+    void setServerIndex(int serverIndex);
     void setApiKey(const QString &apiKeyName, const QString &apiKey);
     void setBearerToken(const QString &token);
     void setUsername(const QString &username);
@@ -57,47 +58,54 @@ public:
     QString getParamStyleDelimiter(const QString &style, const QString &name, bool isExplode);
 
     /**
-    * @param[in]  body PFXUser [required]
+    * @param[in]  pfx_user PFXUser [required]
     */
-    void createUser(const PFXUser &body);
+    virtual void createUser(const PFXUser &pfx_user);
 
     /**
-    * @param[in]  body QList<PFXUser> [required]
+    * @param[in]  pfx_user QList<PFXUser> [required]
     */
-    void createUsersWithArrayInput(const QList<PFXUser> &body);
+    virtual void createUsersWithArrayInput(const QList<PFXUser> &pfx_user);
 
     /**
-    * @param[in]  body QList<PFXUser> [required]
+    * @param[in]  pfx_user QList<PFXUser> [required]
     */
-    void createUsersWithListInput(const QList<PFXUser> &body);
-
-    /**
-    * @param[in]  username QString [required]
-    */
-    void deleteUser(const QString &username);
+    virtual void createUsersWithListInput(const QList<PFXUser> &pfx_user);
 
     /**
     * @param[in]  username QString [required]
     */
-    void getUserByName(const QString &username);
+    virtual void deleteUser(const QString &username);
+
+    /**
+    * @param[in]  username QString [required]
+    */
+    virtual void getUserByName(const QString &username);
 
     /**
     * @param[in]  username QString [required]
     * @param[in]  password QString [required]
     */
-    void loginUser(const QString &username, const QString &password);
+    virtual void loginUser(const QString &username, const QString &password);
 
 
-    void logoutUser();
+    virtual void logoutUser();
 
     /**
     * @param[in]  username QString [required]
-    * @param[in]  body PFXUser [required]
+    * @param[in]  pfx_user PFXUser [required]
     */
-    void updateUser(const QString &username, const PFXUser &body);
+    virtual void updateUser(const QString &username, const PFXUser &pfx_user);
 
 
 private:
+    enum class OauthMethod : int {
+        INVALID_VALUE_OPENAPI_GENERATED = 0,
+        ImplicitFlow = 1,
+        AuthorizationFlow = 2,
+        ClientCredentialsFlow = 3,
+        ResourceOwnerPasswordFlow = 4
+    };
     QMap<QString,int> _serverIndices;
     QMap<QString,QList<PFXServerConfiguration>> _serverConfigs;
     QMap<QString, QString> _apiKeys;
@@ -110,6 +118,14 @@ private:
     QMap<QString, QString> _defaultHeaders;
     bool _isResponseCompressionEnabled;
     bool _isRequestCompressionEnabled;
+    PFXHttpRequestInput _latestInput;
+    PFXHttpRequestWorker *_latestWorker;
+    QStringList _latestScope;
+    OauthCode _authFlow;
+    OauthImplicit _implicitFlow;
+    OauthCredentials _credentialFlow;
+    OauthPassword _passwordFlow;
+    OauthMethod _OauthMethod = OauthMethod::INVALID_VALUE_OPENAPI_GENERATED;
 
     void createUserCallback(PFXHttpRequestWorker *worker);
     void createUsersWithArrayInputCallback(PFXHttpRequestWorker *worker);
@@ -120,7 +136,7 @@ private:
     void logoutUserCallback(PFXHttpRequestWorker *worker);
     void updateUserCallback(PFXHttpRequestWorker *worker);
 
-signals:
+Q_SIGNALS:
 
     void createUserSignal();
     void createUsersWithArrayInputSignal();
@@ -131,6 +147,7 @@ signals:
     void logoutUserSignal();
     void updateUserSignal();
 
+
     void createUserSignalFull(PFXHttpRequestWorker *worker);
     void createUsersWithArrayInputSignalFull(PFXHttpRequestWorker *worker);
     void createUsersWithListInputSignalFull(PFXHttpRequestWorker *worker);
@@ -140,26 +157,29 @@ signals:
     void logoutUserSignalFull(PFXHttpRequestWorker *worker);
     void updateUserSignalFull(PFXHttpRequestWorker *worker);
 
-    void createUserSignalE(QNetworkReply::NetworkError error_type, QString error_str);
-    void createUsersWithArrayInputSignalE(QNetworkReply::NetworkError error_type, QString error_str);
-    void createUsersWithListInputSignalE(QNetworkReply::NetworkError error_type, QString error_str);
-    void deleteUserSignalE(QNetworkReply::NetworkError error_type, QString error_str);
-    void getUserByNameSignalE(PFXUser summary, QNetworkReply::NetworkError error_type, QString error_str);
-    void loginUserSignalE(QString summary, QNetworkReply::NetworkError error_type, QString error_str);
-    void logoutUserSignalE(QNetworkReply::NetworkError error_type, QString error_str);
-    void updateUserSignalE(QNetworkReply::NetworkError error_type, QString error_str);
+    void createUserSignalError(QNetworkReply::NetworkError error_type, const QString &error_str);
+    void createUsersWithArrayInputSignalError(QNetworkReply::NetworkError error_type, const QString &error_str);
+    void createUsersWithListInputSignalError(QNetworkReply::NetworkError error_type, const QString &error_str);
+    void deleteUserSignalError(QNetworkReply::NetworkError error_type, const QString &error_str);
+    void getUserByNameSignalError(PFXUser summary, QNetworkReply::NetworkError error_type, const QString &error_str);
+    void loginUserSignalError(QString summary, QNetworkReply::NetworkError error_type, const QString &error_str);
+    void logoutUserSignalError(QNetworkReply::NetworkError error_type, const QString &error_str);
+    void updateUserSignalError(QNetworkReply::NetworkError error_type, const QString &error_str);
 
-    void createUserSignalEFull(PFXHttpRequestWorker *worker, QNetworkReply::NetworkError error_type, QString error_str);
-    void createUsersWithArrayInputSignalEFull(PFXHttpRequestWorker *worker, QNetworkReply::NetworkError error_type, QString error_str);
-    void createUsersWithListInputSignalEFull(PFXHttpRequestWorker *worker, QNetworkReply::NetworkError error_type, QString error_str);
-    void deleteUserSignalEFull(PFXHttpRequestWorker *worker, QNetworkReply::NetworkError error_type, QString error_str);
-    void getUserByNameSignalEFull(PFXHttpRequestWorker *worker, QNetworkReply::NetworkError error_type, QString error_str);
-    void loginUserSignalEFull(PFXHttpRequestWorker *worker, QNetworkReply::NetworkError error_type, QString error_str);
-    void logoutUserSignalEFull(PFXHttpRequestWorker *worker, QNetworkReply::NetworkError error_type, QString error_str);
-    void updateUserSignalEFull(PFXHttpRequestWorker *worker, QNetworkReply::NetworkError error_type, QString error_str);
+    void createUserSignalErrorFull(PFXHttpRequestWorker *worker, QNetworkReply::NetworkError error_type, const QString &error_str);
+    void createUsersWithArrayInputSignalErrorFull(PFXHttpRequestWorker *worker, QNetworkReply::NetworkError error_type, const QString &error_str);
+    void createUsersWithListInputSignalErrorFull(PFXHttpRequestWorker *worker, QNetworkReply::NetworkError error_type, const QString &error_str);
+    void deleteUserSignalErrorFull(PFXHttpRequestWorker *worker, QNetworkReply::NetworkError error_type, const QString &error_str);
+    void getUserByNameSignalErrorFull(PFXHttpRequestWorker *worker, QNetworkReply::NetworkError error_type, const QString &error_str);
+    void loginUserSignalErrorFull(PFXHttpRequestWorker *worker, QNetworkReply::NetworkError error_type, const QString &error_str);
+    void logoutUserSignalErrorFull(PFXHttpRequestWorker *worker, QNetworkReply::NetworkError error_type, const QString &error_str);
+    void updateUserSignalErrorFull(PFXHttpRequestWorker *worker, QNetworkReply::NetworkError error_type, const QString &error_str);
 
     void abortRequestsSignal();
     void allPendingRequestsCompleted();
+
+public Q_SLOTS:
+    void tokenAvailable();
 };
 
 } // namespace test_namespace

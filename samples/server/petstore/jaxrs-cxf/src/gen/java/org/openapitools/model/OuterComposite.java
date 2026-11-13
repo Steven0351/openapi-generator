@@ -5,18 +5,24 @@ import javax.validation.constraints.*;
 import javax.validation.Valid;
 
 import io.swagger.annotations.ApiModelProperty;
+import java.util.Objects;
 import com.fasterxml.jackson.annotation.JsonProperty;
+
 
 public class OuterComposite  {
   
   @ApiModelProperty(value = "")
+
   @Valid
+
   private BigDecimal myNumber;
 
   @ApiModelProperty(value = "")
+
   private String myString;
 
   @ApiModelProperty(value = "")
+
   private Boolean myBoolean;
  /**
    * Get myNumber
@@ -72,6 +78,24 @@ public class OuterComposite  {
     return this;
   }
 
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    OuterComposite outerComposite = (OuterComposite) o;
+    return Objects.equals(this.myNumber, outerComposite.myNumber) &&
+        Objects.equals(this.myString, outerComposite.myString) &&
+        Objects.equals(this.myBoolean, outerComposite.myBoolean);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(myNumber, myString, myBoolean);
+  }
 
   @Override
   public String toString() {
@@ -90,10 +114,7 @@ public class OuterComposite  {
    * (except the first line).
    */
   private static String toIndentedString(Object o) {
-    if (o == null) {
-      return "null";
-    }
-    return o.toString().replace("\n", "\n    ");
+    return o == null ? "null" : o.toString().replace("\n", "\n    ");
   }
 }
 

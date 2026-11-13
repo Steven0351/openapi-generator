@@ -12,15 +12,28 @@
  * Do not edit the class manually.
  */
 
+
 /**
  * 
  * @export
- * @enum {string}
  */
-export enum EnumClass {
-    Abc = '_abc',
-    Efg = '-efg',
-    Xyz = '(xyz)'
+export const EnumClass = {
+    Abc: '_abc',
+    Efg: '-efg',
+    Xyz: '(xyz)',
+} as const;
+export type EnumClass = typeof EnumClass[keyof typeof EnumClass];
+
+
+export function instanceOfEnumClass(value: any): boolean {
+    for (const key in EnumClass) {
+        if (Object.prototype.hasOwnProperty.call(EnumClass, key)) {
+            if (EnumClass[key as keyof typeof EnumClass] === value) {
+                return true;
+            }
+        }
+    }
+    return false;
 }
 
 export function EnumClassFromJSON(json: any): EnumClass {
@@ -33,5 +46,9 @@ export function EnumClassFromJSONTyped(json: any, ignoreDiscriminator: boolean):
 
 export function EnumClassToJSON(value?: EnumClass | null): any {
     return value as any;
+}
+
+export function EnumClassToJSONTyped(value: any, ignoreDiscriminator: boolean): EnumClass {
+    return value as EnumClass;
 }
 

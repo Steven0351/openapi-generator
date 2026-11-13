@@ -1,16 +1,25 @@
-#![allow(missing_docs, trivial_casts, unused_variables, unused_mut, unused_imports, unused_extern_crates, non_camel_case_types)]
+#![allow(missing_docs, trivial_casts, unused_variables, unused_mut, unused_imports, unused_extern_crates, unused_attributes, non_camel_case_types)]
+#![allow(clippy::derive_partial_eq_without_eq, clippy::disallowed_names)]
 
 use async_trait::async_trait;
 use futures::Stream;
+#[cfg(feature = "mock")]
+use mockall::automock;
 use std::error::Error;
+use std::collections::BTreeSet;
 use std::task::{Poll, Context};
-use swagger::{ApiError, ContextWrapper};
+use swagger::{ApiError, ContextWrapper, auth::Authorization};
 use serde::{Serialize, Deserialize};
 
+#[cfg(any(feature = "client", feature = "server"))]
 type ServiceError = Box<dyn Error + Send + Sync + 'static>;
 
-pub const BASE_PATH: &'static str = "";
-pub const API_VERSION: &'static str = "2.3.4";
+pub const BASE_PATH: &str = "";
+pub const API_VERSION: &str = "2.3.4";
+
+mod auth;
+pub use auth::{AuthenticationApi, Claims};
+
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub enum AllOfGetResponse {
@@ -72,12 +81,10 @@ pub enum SoloObjectPostResponse {
 }
 
 /// API
+#[cfg_attr(feature = "mock", automock)]
 #[async_trait]
+#[allow(clippy::too_many_arguments, clippy::ptr_arg)]
 pub trait Api<C: Send + Sync> {
-    fn poll_ready(&self, _cx: &mut Context) -> Poll<Result<(), Box<dyn Error + Send + Sync + 'static>>> {
-        Poll::Ready(Ok(()))
-    }
-
     async fn all_of_get(
         &self,
         context: &C) -> Result<AllOfGetResponse, ApiError>;
@@ -89,7 +96,7 @@ pub trait Api<C: Send + Sync> {
 
     async fn dummy_put(
         &self,
-        nested_response: models::InlineObject,
+        nested_response: models::DummyPutRequest,
         context: &C) -> Result<DummyPutResponse, ApiError>;
 
     /// Get a file
@@ -126,10 +133,14 @@ pub trait Api<C: Send + Sync> {
 }
 
 /// API where `Context` isn't passed on every API call
+#[cfg_attr(feature = "mock", automock)]
 #[async_trait]
+#[allow(clippy::too_many_arguments, clippy::ptr_arg)]
 pub trait ApiNoContext<C: Send + Sync> {
-
-    fn poll_ready(&self, _cx: &mut Context) -> Poll<Result<(), Box<dyn Error + Send + Sync + 'static>>>;
+    // The std::task::Context struct houses a reference to std::task::Waker with the lifetime <'a>.
+    // Adding an anonymous lifetime `'a` to allow mockall to create a mock object with the right lifetimes.
+    // This is needed because the compiler is unable to determine the lifetimes on F's trait bound
+    // where F is the closure created by mockall. We use higher-rank trait bounds here to get around this.
 
     fn context(&self) -> &C;
 
@@ -144,7 +155,7 @@ pub trait ApiNoContext<C: Send + Sync> {
 
     async fn dummy_put(
         &self,
-        nested_response: models::InlineObject,
+        nested_response: models::DummyPutRequest,
         ) -> Result<DummyPutResponse, ApiError>;
 
     /// Get a file
@@ -184,7 +195,7 @@ pub trait ApiNoContext<C: Send + Sync> {
 pub trait ContextWrapperExt<C: Send + Sync> where Self: Sized
 {
     /// Binds this API to a context.
-    fn with_context(self: Self, context: C) -> ContextWrapper<Self, C>;
+    fn with_context(self, context: C) -> ContextWrapper<Self, C>;
 }
 
 impl<T: Api<C> + Send + Sync, C: Clone + Send + Sync> ContextWrapperExt<C> for T {
@@ -195,10 +206,6 @@ impl<T: Api<C> + Send + Sync, C: Clone + Send + Sync> ContextWrapperExt<C> for T
 
 #[async_trait]
 impl<T: Api<C> + Send + Sync, C: Clone + Send + Sync> ApiNoContext<C> for ContextWrapper<T, C> {
-    fn poll_ready(&self, cx: &mut Context) -> Poll<Result<(), ServiceError>> {
-        self.api().poll_ready(cx)
-    }
-
     fn context(&self) -> &C {
         ContextWrapper::context(self)
     }
@@ -222,7 +229,7 @@ impl<T: Api<C> + Send + Sync, C: Clone + Send + Sync> ApiNoContext<C> for Contex
 
     async fn dummy_put(
         &self,
-        nested_response: models::InlineObject,
+        nested_response: models::DummyPutRequest,
         ) -> Result<DummyPutResponse, ApiError>
     {
         let context = self.context().clone();

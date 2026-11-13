@@ -18,11 +18,16 @@
 package org.openapitools.codegen.languages;
 
 import io.swagger.v3.oas.models.Operation;
+import io.swagger.v3.oas.models.media.Schema;
+import lombok.Getter;
+import lombok.Setter;
 import org.openapitools.codegen.*;
 import org.openapitools.codegen.languages.features.BeanValidationFeatures;
 import org.openapitools.codegen.languages.features.GzipTestFeatures;
 import org.openapitools.codegen.languages.features.LoggingTestFeatures;
 import org.openapitools.codegen.languages.features.UseGenericResponseFeatures;
+import org.openapitools.codegen.model.ModelMap;
+import org.openapitools.codegen.model.OperationsMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,6 +35,11 @@ import java.io.File;
 import java.util.List;
 import java.util.Map;
 
+import static org.openapitools.codegen.CodegenConstants.X_IS_JACKSON_OPTIONAL_NULLABLE;
+
+/**
+ * <p>Mustache templates are located in {@code src/main/resources/JavaJaxRS/cxf/}.
+ */
 public class JavaCXFClientCodegen extends AbstractJavaCodegen
         implements BeanValidationFeatures, UseGenericResponseFeatures, GzipTestFeatures, LoggingTestFeatures {
 
@@ -41,22 +51,29 @@ public class JavaCXFClientCodegen extends AbstractJavaCodegen
      */
     protected static final String JAXRS_TEMPLATE_DIRECTORY_NAME = "JavaJaxRS";
 
-    protected boolean useBeanValidation = false;
+    public static final String USE_ABSTRACTION_FOR_FILES = "useAbstractionForFiles";
 
-    protected boolean useGenericResponse = false;
+    public static final String USE_JACKSON_3 = "useJackson3";
+    public static final String JACKSON2_PACKAGE = "com.fasterxml.jackson";
+    public static final String JACKSON3_PACKAGE = "tools.jackson";
+    public static final String JACKSON_PACKAGE = "jacksonPackage";
 
-    protected boolean useGzipFeatureForTests = false;
+    @Getter protected boolean useGenericResponse = false;
 
-    protected boolean useLoggingFeatureForTests = false;
+    @Getter protected boolean useGzipFeatureForTests = false;
 
-    private boolean useJackson = false;
+    @Getter protected boolean useLoggingFeatureForTests = false;
+
+    @Setter protected boolean useAbstractionForFiles = false;
+
+    @Getter @Setter protected boolean useJackson3 = false;
 
     public JavaCXFClientCodegen() {
         super();
 
         supportsInheritance = true;
 
-        sourceFolder = "src"+ File.separator +"gen"+ File.separator +"java";
+        sourceFolder = "src" + File.separator + "gen" + File.separator + "java";
         invokerPackage = "org.openapitools.api";
         artifactId = "openapi-jaxrs-client";
         dateLibrary = "legacy"; //TODO: add joda support to all jax-rs
@@ -70,7 +87,7 @@ public class JavaCXFClientCodegen extends AbstractJavaCodegen
         updateOption(CodegenConstants.ARTIFACT_ID, this.getArtifactId());
         updateOption(CodegenConstants.API_PACKAGE, apiPackage);
         updateOption(CodegenConstants.MODEL_PACKAGE, modelPackage);
-        updateOption(this.DATE_LIBRARY, this.getDateLibrary());
+        updateOption(DATE_LIBRARY, this.getDateLibrary());
 
         // clear model and api doc template as this codegen
         // does not support auto-generated markdown doc at the moment
@@ -88,36 +105,30 @@ public class JavaCXFClientCodegen extends AbstractJavaCodegen
         cliOptions.add(CliOption.newBoolean(USE_GZIP_FEATURE_FOR_TESTS, "Use Gzip Feature for tests"));
         cliOptions.add(CliOption.newBoolean(USE_LOGGING_FEATURE_FOR_TESTS, "Use Logging Feature for tests"));
         cliOptions.add(CliOption.newBoolean(USE_GENERIC_RESPONSE, "Use generic response"));
+        cliOptions.add(CliOption.newBoolean(USE_ABSTRACTION_FOR_FILES, "Use alternative types instead of java.io.File to allow passing bytes without a file on disk."));
+        cliOptions.add(CliOption.newBoolean(USE_JACKSON_3, "Use Jackson 3 instead of Jackson 2.", this.useJackson3));
+
     }
 
     @Override
     public void processOpts() {
         super.processOpts();
+        convertPropertyToBooleanAndWriteBack(USE_GENERIC_RESPONSE, this::setUseGenericResponse);
+        convertPropertyToBooleanAndWriteBack(USE_GZIP_FEATURE_FOR_TESTS, this::setUseGzipFeatureForTests);
+        convertPropertyToBooleanAndWriteBack(USE_LOGGING_FEATURE_FOR_TESTS, this::setUseLoggingFeatureForTests);
+        convertPropertyToBooleanAndWriteBack(JACKSON, this::setJackson);
+        convertPropertyToBooleanAndWriteBack(USE_ABSTRACTION_FOR_FILES, this::setUseAbstractionForFiles);
+        convertPropertyToBooleanAndWriteBack(USE_JACKSON_3, this::setUseJackson3);
 
-        if (additionalProperties.containsKey(USE_BEANVALIDATION)) {
-            this.setUseBeanValidation(convertPropertyToBooleanAndWriteBack(USE_BEANVALIDATION));
+        if (this.useJackson3) {
+            this.applyJackson3Package();
+        } else {
+            this.applyJackson2Package();
         }
-
-        if (additionalProperties.containsKey(USE_GENERIC_RESPONSE)) {
-            this.setUseGenericResponse(convertPropertyToBooleanAndWriteBack(USE_GENERIC_RESPONSE));
-        }
-
-        if (additionalProperties.containsKey(USE_GZIP_FEATURE_FOR_TESTS)) {
-            this.setUseGzipFeatureForTests(convertPropertyToBooleanAndWriteBack(USE_GZIP_FEATURE_FOR_TESTS));
-        }
-
-        if (additionalProperties.containsKey(USE_LOGGING_FEATURE_FOR_TESTS)) {
-            this.setUseLoggingFeatureForTests(convertPropertyToBooleanAndWriteBack(USE_LOGGING_FEATURE_FOR_TESTS));
-        }
-
-        if (additionalProperties.containsKey(JACKSON)) {
-            useJackson = convertPropertyToBooleanAndWriteBack(JACKSON);
-        }
-
         supportingFiles.clear(); // Don't need extra files provided by AbstractJAX-RS & Java Codegen
 
         supportingFiles.add(new SupportingFile("pom.mustache", "", "pom.xml")
-            .doNotOverwrite());
+                .doNotOverwrite());
     }
 
     @Override
@@ -125,6 +136,20 @@ public class JavaCXFClientCodegen extends AbstractJavaCodegen
         return "jaxrs-cxf-client";
     }
 
+    @Override
+    public List<DocumentationProvider> supportedDocumentationProvider() {
+        return List.of(DocumentationProvider.NONE, DocumentationProvider.SWAGGER1, DocumentationProvider.SWAGGER2);
+    }
+
+    @Override
+    public List<AnnotationLibrary> supportedAnnotationLibraries() {
+        return List.of(AnnotationLibrary.NONE, AnnotationLibrary.SWAGGER1, AnnotationLibrary.SWAGGER2);
+    }
+
+    @Override
+    public DocumentationProvider defaultDocumentationProvider() {
+        return DocumentationProvider.SWAGGER1;
+    }
 
     @Override
     public CodegenType getTag() {
@@ -138,15 +163,20 @@ public class JavaCXFClientCodegen extends AbstractJavaCodegen
     }
 
     @Override
+    public CodegenModel fromModel(String name, Schema model) {
+        CodegenModel m = super.fromModel(name, model);
+        m.imports.remove("ApiModel");
+        return m;
+    }
+
+    @Override
     public void postProcessModelProperty(CodegenModel model, CodegenProperty property) {
         super.postProcessModelProperty(model, property);
         model.imports.remove("ApiModelProperty");
         model.imports.remove("ApiModel");
-        model.imports.remove("JsonSerialize");
-        model.imports.remove("ToStringSerializer");
+        model.imports.remove("JsonTypeName");
 
-
-        if (useJackson) {
+        if (jackson) {
             //Add jackson imports when model has inner enum
             if (Boolean.FALSE.equals(model.isEnum) && Boolean.TRUE.equals(model.hasEnums)) {
                 model.imports.add("JsonCreator");
@@ -156,7 +186,9 @@ public class JavaCXFClientCodegen extends AbstractJavaCodegen
             //Add JsonNullable import and mark property nullable for templating if necessary
             if (openApiNullable) {
                 if (Boolean.FALSE.equals(property.required) && Boolean.TRUE.equals(property.isNullable)) {
-                    property.getVendorExtensions().put("x-is-jackson-optional-nullable", true);
+                    property.getVendorExtensions().put(X_IS_JACKSON_OPTIONAL_NULLABLE, true);
+                    findByName(property.name, model.readOnlyVars)
+                            .ifPresent(p -> p.getVendorExtensions().put(X_IS_JACKSON_OPTIONAL_NULLABLE, true));
                     model.imports.add("JsonNullable");
                     model.imports.add("JsonIgnore");
                 }
@@ -165,7 +197,7 @@ public class JavaCXFClientCodegen extends AbstractJavaCodegen
     }
 
     @Override
-    public Map<String, Object> postProcessOperationsWithModels(Map<String, Object> objs, List<Object> allModels) {
+    public OperationsMap postProcessOperationsWithModels(OperationsMap objs, List<ModelMap> allModels) {
         objs = super.postProcessOperationsWithModels(objs, allModels);
         return AbstractJavaJAXRSServerCodegen.jaxrsPostProcessOperations(objs);
     }
@@ -175,22 +207,10 @@ public class JavaCXFClientCodegen extends AbstractJavaCodegen
         return "Generates a Java JAXRS Client based on Apache CXF framework.";
     }
 
-    @Override
-    public void setUseBeanValidation(boolean useBeanValidation) {
-        this.useBeanValidation = useBeanValidation;
-    }
-
-    public boolean isUseBeanValidation() {
-        return useBeanValidation;
-    }
 
     @Override
     public void setUseGzipFeatureForTests(boolean useGzipFeatureForTests) {
         this.useGzipFeatureForTests = useGzipFeatureForTests;
-    }
-
-    public boolean isUseGzipFeatureForTests() {
-        return useGzipFeatureForTests;
     }
 
     @Override
@@ -198,20 +218,17 @@ public class JavaCXFClientCodegen extends AbstractJavaCodegen
         this.useLoggingFeatureForTests = useLoggingFeatureForTests;
     }
 
-    public boolean isUseLoggingFeatureForTests() {
-        return useLoggingFeatureForTests;
-    }
-
     @Override
     public void setUseGenericResponse(boolean useGenericResponse) {
         this.useGenericResponse = useGenericResponse;
     }
 
-    public boolean isUseGenericResponse() {
-        return useGenericResponse;
+
+    protected void applyJackson2Package() {
+        writePropertyBack(JACKSON_PACKAGE, JACKSON2_PACKAGE);
     }
 
-    public boolean isUseJackson() {
-        return useJackson;
+    protected void applyJackson3Package() {
+        writePropertyBack(JACKSON_PACKAGE, JACKSON3_PACKAGE);
     }
 }

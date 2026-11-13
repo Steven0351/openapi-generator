@@ -4,35 +4,45 @@ import javax.validation.constraints.*;
 import javax.validation.Valid;
 
 import io.swagger.annotations.ApiModelProperty;
+import java.util.Objects;
 import com.fasterxml.jackson.annotation.JsonProperty;
+
 
 public class User  {
   
   @ApiModelProperty(value = "")
+
   private Long id;
 
   @ApiModelProperty(value = "")
+
   private String username;
 
   @ApiModelProperty(value = "")
+
   private String firstName;
 
   @ApiModelProperty(value = "")
+
   private String lastName;
 
   @ApiModelProperty(value = "")
+
   private String email;
 
   @ApiModelProperty(value = "")
+
   private String password;
 
   @ApiModelProperty(value = "")
+
   private String phone;
 
-  @ApiModelProperty(value = "User Status")
  /**
-   * User Status
-  **/
+  * User Status
+  */
+  @ApiModelProperty(value = "User Status")
+
   private Integer userStatus;
  /**
    * Get id
@@ -178,6 +188,29 @@ public class User  {
     return this;
   }
 
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    User user = (User) o;
+    return Objects.equals(this.id, user.id) &&
+        Objects.equals(this.username, user.username) &&
+        Objects.equals(this.firstName, user.firstName) &&
+        Objects.equals(this.lastName, user.lastName) &&
+        Objects.equals(this.email, user.email) &&
+        Objects.equals(this.password, user.password) &&
+        Objects.equals(this.phone, user.phone) &&
+        Objects.equals(this.userStatus, user.userStatus);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(id, username, firstName, lastName, email, password, phone, userStatus);
+  }
 
   @Override
   public String toString() {
@@ -201,10 +234,7 @@ public class User  {
    * (except the first line).
    */
   private static String toIndentedString(Object o) {
-    if (o == null) {
-      return "null";
-    }
-    return o.toString().replace("\n", "\n    ");
+    return o == null ? "null" : o.toString().replace("\n", "\n    ");
   }
 }
 

@@ -12,18 +12,31 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.annotation.JsonTypeName;
+import org.openapitools.jackson.nullable.JsonNullable;
 
 
 
 @JsonTypeName("Capitalization")
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaJAXRSSpecServerCodegen")public class Capitalization  implements Serializable {
-  
-  private @Valid String smallCamel;
-  private @Valid String capitalCamel;
-  private @Valid String smallSnake;
-  private @Valid String capitalSnake;
-  private @Valid String scAETHFlowPoints;
-  private @Valid String ATT_NAME;
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaJAXRSSpecServerCodegen", comments = "Generator version: 7.28.0-SNAPSHOT")
+public class Capitalization  implements Serializable {
+  private String smallCamel;
+  private String capitalCamel;
+  private String smallSnake;
+  private String capitalSnake;
+  private String scAETHFlowPoints;
+  private String ATT_NAME;
+
+  protected Capitalization(CapitalizationBuilder<?, ?> b) {
+    this.smallCamel = b.smallCamel;
+    this.capitalCamel = b.capitalCamel;
+    this.smallSnake = b.smallSnake;
+    this.capitalSnake = b.capitalSnake;
+    this.scAETHFlowPoints = b.scAETHFlowPoints;
+    this.ATT_NAME = b.ATT_NAME;
+  }
+
+  public Capitalization() {
+  }
 
   /**
    **/
@@ -31,8 +44,6 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
     this.smallCamel = smallCamel;
     return this;
   }
-
-  
 
   
   @ApiModelProperty(value = "")
@@ -46,14 +57,12 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
     this.smallCamel = smallCamel;
   }
 
-/**
+  /**
    **/
   public Capitalization capitalCamel(String capitalCamel) {
     this.capitalCamel = capitalCamel;
     return this;
   }
-
-  
 
   
   @ApiModelProperty(value = "")
@@ -67,14 +76,12 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
     this.capitalCamel = capitalCamel;
   }
 
-/**
+  /**
    **/
   public Capitalization smallSnake(String smallSnake) {
     this.smallSnake = smallSnake;
     return this;
   }
-
-  
 
   
   @ApiModelProperty(value = "")
@@ -88,14 +95,12 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
     this.smallSnake = smallSnake;
   }
 
-/**
+  /**
    **/
   public Capitalization capitalSnake(String capitalSnake) {
     this.capitalSnake = capitalSnake;
     return this;
   }
-
-  
 
   
   @ApiModelProperty(value = "")
@@ -109,14 +114,12 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
     this.capitalSnake = capitalSnake;
   }
 
-/**
+  /**
    **/
   public Capitalization scAETHFlowPoints(String scAETHFlowPoints) {
     this.scAETHFlowPoints = scAETHFlowPoints;
     return this;
   }
-
-  
 
   
   @ApiModelProperty(value = "")
@@ -130,15 +133,13 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
     this.scAETHFlowPoints = scAETHFlowPoints;
   }
 
-/**
+  /**
    * Name of the pet 
    **/
   public Capitalization ATT_NAME(String ATT_NAME) {
     this.ATT_NAME = ATT_NAME;
     return this;
   }
-
-  
 
   
   @ApiModelProperty(value = "Name of the pet ")
@@ -195,12 +196,61 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
    * (except the first line).
    */
   private String toIndentedString(Object o) {
-    if (o == null) {
-      return "null";
-    }
-    return o.toString().replace("\n", "\n    ");
+    return o == null ? "null" : o.toString().replace("\n", "\n    ");
   }
 
 
-}
+  public static CapitalizationBuilder<?, ?> builder() {
+    return new CapitalizationBuilderImpl();
+  }
 
+  private static final class CapitalizationBuilderImpl extends CapitalizationBuilder<Capitalization, CapitalizationBuilderImpl> {
+
+    @Override
+    protected CapitalizationBuilderImpl self() {
+      return this;
+    }
+
+    @Override
+    public Capitalization build() {
+      return new Capitalization(this);
+    }
+  }
+
+  public static abstract class CapitalizationBuilder<C extends Capitalization, B extends CapitalizationBuilder<C, B>>  {
+    private String smallCamel;
+    private String capitalCamel;
+    private String smallSnake;
+    private String capitalSnake;
+    private String scAETHFlowPoints;
+    private String ATT_NAME;
+    protected abstract B self();
+
+    public abstract C build();
+
+    public B smallCamel(String smallCamel) {
+      this.smallCamel = smallCamel;
+      return self();
+    }
+    public B capitalCamel(String capitalCamel) {
+      this.capitalCamel = capitalCamel;
+      return self();
+    }
+    public B smallSnake(String smallSnake) {
+      this.smallSnake = smallSnake;
+      return self();
+    }
+    public B capitalSnake(String capitalSnake) {
+      this.capitalSnake = capitalSnake;
+      return self();
+    }
+    public B scAETHFlowPoints(String scAETHFlowPoints) {
+      this.scAETHFlowPoints = scAETHFlowPoints;
+      return self();
+    }
+    public B ATT_NAME(String ATT_NAME) {
+      this.ATT_NAME = ATT_NAME;
+      return self();
+    }
+  }
+}

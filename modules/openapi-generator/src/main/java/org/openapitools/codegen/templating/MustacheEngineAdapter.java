@@ -18,6 +18,9 @@ package org.openapitools.codegen.templating;
 
 import com.samskivert.mustache.Mustache;
 import com.samskivert.mustache.Template;
+import lombok.Getter;
+import lombok.Setter;
+import org.openapitools.codegen.CodegenConstants;
 import org.openapitools.codegen.api.TemplatingEngineAdapter;
 import org.openapitools.codegen.api.TemplatingExecutor;
 import org.slf4j.Logger;
@@ -26,7 +29,9 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
+import java.io.StringWriter;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 
 public class MustacheEngineAdapter implements TemplatingEngineAdapter {
@@ -43,13 +48,28 @@ public class MustacheEngineAdapter implements TemplatingEngineAdapter {
         return "mustache";
     }
 
-    private final String[] extensions = new String[]{"mustache"};
+    private final String[] extensions = {"mustache"};
+    @Getter @Setter
     Mustache.Compiler compiler = Mustache.compiler();
+
+    /**
+     * Per-executor cache of template file name → compiled {@link Template}.
+     * <p>
+     * Keying on the executor instance eliminates the non-atomic check-clear-update invalidation pattern
+     * that the previous single-cache approach required. Each executor gets its own independent inner
+     * map, so different executors (e.g. different generator runs, test fixtures) can never observe
+     * each other's compiled templates, and no state ever needs to be cleared.
+     * <p>
+     * {@link ConcurrentHashMap#computeIfAbsent} guarantees that the inner map for a given executor
+     * is created exactly once even under concurrent access.
+     */
+    private final ConcurrentHashMap<TemplatingExecutor, ConcurrentHashMap<String, Template>> compiledTemplateCaches =
+            new ConcurrentHashMap<>();
 
     /**
      * Compiles a template into a string
      *
-     * @param executor    From where we can fetch the templates content (e.g. an instance of DefaultGenerator)
+     * @param executor     From where we can fetch the templates content (e.g. an instance of DefaultGenerator)
      * @param bundle       The map of values to pass to the template
      * @param templateFile The name of the template (e.g. model.mustache )
      * @return the processed template result
@@ -57,15 +77,38 @@ public class MustacheEngineAdapter implements TemplatingEngineAdapter {
      */
     @Override
     public String compileTemplate(TemplatingExecutor executor, Map<String, Object> bundle, String templateFile) throws IOException {
-        Template tmpl = compiler
-                .withLoader(name -> findTemplate(executor, name))
-                .defaultValue("")
-                .compile(executor.getFullTemplateContents(templateFile));
+        // Each executor gets its own compiled-template cache. computeIfAbsent is atomic, so two threads
+        // racing on the same executor key will share one inner map rather than creating two separate ones.
+        ConcurrentHashMap<String, Template> cache =
+                compiledTemplateCaches.computeIfAbsent(executor, k -> new ConcurrentHashMap<>());
 
-        return tmpl.execute(bundle);
+        // Manual get → compile → put so IOException propagates naturally.
+        // At worst, two threads compile the same template simultaneously; the last writer wins,
+        // which is harmless because compilation is pure/deterministic.
+        Template tmpl = cache.get(templateFile);
+        if (tmpl == null) {
+            tmpl = compiler
+                    .withLoader(name -> findTemplate(executor, name))
+                    .defaultValue("")
+                    .compile(executor.getFullTemplateContents(templateFile));
+            cache.put(templateFile, tmpl);
+        }
+        StringWriter out = new StringWriter();
+
+        // the value of bundle[MUSTACHE_PARENT_CONTEXT] is used a parent content in mustache.
+        // See description in https://mustache.github.io/mustache.5.html#Variables
+        // See DefaultCodegen.processOpts() and DefaultCodegen.useCodegenAsMustacheParentContext
+        Object parent = bundle.get(CodegenConstants.MUSTACHE_PARENT_CONTEXT);
+        if (parent == null) {
+            LOGGER.warn("{} not found. super.processOpts needs to be called in processOpts()", CodegenConstants.MUSTACHE_PARENT_CONTEXT);
+            // avoid NPE
+            parent = new Object();
+        }
+        tmpl.execute(bundle, parent, out);
+        return out.toString();
     }
 
-    @SuppressWarnings({"java:S108"}) // catch-all is expected, and is later thrown
+    @SuppressWarnings("java:S108") // catch-all is expected, and is later thrown
     public Reader findTemplate(TemplatingExecutor generator, String name) {
         for (String extension : extensions) {
             final String templateName = name + "." + extension;
@@ -77,14 +120,6 @@ public class MustacheEngineAdapter implements TemplatingEngineAdapter {
         }
 
         throw new TemplateNotFoundException(name);
-    }
-
-    public Mustache.Compiler getCompiler() {
-        return compiler;
-    }
-
-    public void setCompiler(Mustache.Compiler compiler) {
-        this.compiler = compiler;
     }
 
     @Override

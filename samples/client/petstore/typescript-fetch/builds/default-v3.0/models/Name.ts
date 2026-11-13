@@ -12,7 +12,7 @@
  * Do not edit the class manually.
  */
 
-import { exists, mapValues } from '../runtime';
+import { mapValues } from '../runtime';
 /**
  * Model for testing model name same as property name
  * @export
@@ -21,28 +21,28 @@ import { exists, mapValues } from '../runtime';
 export interface Name {
     /**
      * 
-     * @type {number}
-     * @memberof Name
      */
     name: number;
     /**
      * 
-     * @type {number}
-     * @memberof Name
      */
     readonly snakeCase?: number;
     /**
      * 
-     * @type {string}
-     * @memberof Name
      */
     property?: string;
     /**
      * 
-     * @type {number}
-     * @memberof Name
      */
     readonly _123number?: number;
+}
+
+/**
+ * Check if a given object implements the Name interface.
+ */
+export function instanceOfName(value: object): value is Name {
+    if (!('name' in value) || value['name'] === undefined) return false;
+    return true;
 }
 
 export function NameFromJSON(json: any): Name {
@@ -50,29 +50,31 @@ export function NameFromJSON(json: any): Name {
 }
 
 export function NameFromJSONTyped(json: any, ignoreDiscriminator: boolean): Name {
-    if ((json === undefined) || (json === null)) {
+    if (json == null) {
         return json;
     }
     return {
         
         'name': json['name'],
-        'snakeCase': !exists(json, 'snake_case') ? undefined : json['snake_case'],
-        'property': !exists(json, 'property') ? undefined : json['property'],
-        '_123number': !exists(json, '123Number') ? undefined : json['123Number'],
+        'snakeCase': json['snake_case'] == null ? undefined : json['snake_case'],
+        'property': json['property'] == null ? undefined : json['property'],
+        '_123number': json['123Number'] == null ? undefined : json['123Number'],
     };
 }
 
-export function NameToJSON(value?: Name | null): any {
-    if (value === undefined) {
-        return undefined;
+export function NameToJSON(json: any): Name {
+    return NameToJSONTyped(json, false);
+}
+
+export function NameToJSONTyped(value?: Omit<Name, 'snakeCase'|'_123number'> | null, ignoreDiscriminator: boolean = false): any {
+    if (value == null) {
+        return value;
     }
-    if (value === null) {
-        return null;
-    }
+
     return {
         
-        'name': value.name,
-        'property': value.property,
+        'name': value['name'],
+        'property': value['property'],
     };
 }
 

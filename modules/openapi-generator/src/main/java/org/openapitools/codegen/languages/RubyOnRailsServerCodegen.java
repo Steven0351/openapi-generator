@@ -18,6 +18,7 @@
 package org.openapitools.codegen.languages;
 
 import io.swagger.v3.oas.models.media.Schema;
+import lombok.Setter;
 import org.openapitools.codegen.CliOption;
 import org.openapitools.codegen.CodegenConstants;
 import org.openapitools.codegen.CodegenType;
@@ -33,6 +34,9 @@ import java.util.Map;
 import static org.openapitools.codegen.utils.StringUtils.camelize;
 import static org.openapitools.codegen.utils.StringUtils.underscore;
 
+/**
+ * <p>Mustache templates are located in {@code src/main/resources/ruby-on-rails-server/}.
+ */
 public class RubyOnRailsServerCodegen extends AbstractRubyCodegen {
 
     private final Logger LOGGER = LoggerFactory.getLogger(RubyOnRailsServerCodegen.class);
@@ -66,7 +70,7 @@ public class RubyOnRailsServerCodegen extends AbstractRubyCodegen {
     protected String pidFolder = tmpFolder + File.separator + "pids";
     protected String socketsFolder = tmpFolder + File.separator + "sockets";
     protected String vendorFolder = "vendor";
-    protected String databaseAdapter = "sqlite";
+    @Setter protected String databaseAdapter = "sqlite";
 
 
     public RubyOnRailsServerCodegen() {
@@ -293,9 +297,5 @@ public class RubyOnRailsServerCodegen extends AbstractRubyCodegen {
     public Map<String, Object> postProcessSupportingFileData(Map<String, Object> objs) {
         generateYAMLSpecFile(objs);
         return super.postProcessSupportingFileData(objs);
-    }
-
-    public void setDatabaseAdapter(String databaseAdapter) {
-        this.databaseAdapter = databaseAdapter;
     }
 }

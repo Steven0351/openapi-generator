@@ -17,6 +17,7 @@
 
 package org.openapitools.codegen.languages;
 
+import lombok.Setter;
 import org.openapitools.codegen.CodegenConstants;
 import org.openapitools.codegen.CodegenProperty;
 import org.openapitools.codegen.CodegenType;
@@ -30,12 +31,15 @@ import java.util.EnumSet;
 import java.util.Locale;
 import java.util.UUID;
 
+/**
+ * <p>Mustache templates are located in {@code src/main/resources/Eiffel/}.
+ */
 public class EiffelClientCodegen extends AbstractEiffelCodegen {
     private final Logger LOGGER = LoggerFactory.getLogger(EiffelClientCodegen.class);
 
     protected String libraryTarget = "openapi_eiffel_client";
-    protected String packageName = "Eiffel";
-    protected String packageVersion = "1.0.0";
+    @Setter protected String packageName = "Eiffel";
+    @Setter protected String packageVersion = "1.0.0";
     protected String apiDocPath = "docs";
     protected String modelDocPath = "docs";
     protected String modelPath = "domain";
@@ -170,10 +174,12 @@ public class EiffelClientCodegen extends AbstractEiffelCodegen {
         return outputFolder + File.separator + "src" + File.separator + "api";
     }
 
+    @Override
     public String modelFileFolder() {
         return outputFolder + File.separator + "src" + File.separator + modelPath;
     }
 
+    @Override
     public String apiTestFileFolder() {
         return outputFolder + File.separator + "test" + File.separator + "apis";
     }
@@ -186,14 +192,6 @@ public class EiffelClientCodegen extends AbstractEiffelCodegen {
     @Override
     public String modelDocFileFolder() {
         return (outputFolder + "/" + modelDocPath).replace('/', File.separatorChar);
-    }
-
-    public void setPackageName(String packageName) {
-        this.packageName = packageName;
-    }
-
-    public void setPackageVersion(String packageVersion) {
-        this.packageVersion = packageVersion;
     }
 
 

@@ -25,38 +25,6 @@ import com.google.common.collect.ImmutableMap;
 import com.samskivert.mustache.Mustache;
 import com.samskivert.mustache.Mustache.Compiler;
 import com.samskivert.mustache.Mustache.Lambda;
-
-import org.apache.commons.lang3.ObjectUtils;
-import org.apache.commons.lang3.StringEscapeUtils;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.tuple.Pair;
-import org.openapitools.codegen.CodegenDiscriminator.MappedModel;
-import org.openapitools.codegen.api.TemplatingEngineAdapter;
-import org.openapitools.codegen.config.GlobalSettings;
-import org.openapitools.codegen.examples.ExampleGenerator;
-import org.openapitools.codegen.meta.FeatureSet;
-import org.openapitools.codegen.meta.GeneratorMetadata;
-import org.openapitools.codegen.meta.Stability;
-import org.openapitools.codegen.meta.features.*;
-import org.openapitools.codegen.serializer.SerializerUtils;
-import org.openapitools.codegen.templating.MustacheEngineAdapter;
-import org.openapitools.codegen.templating.mustache.*;
-import org.openapitools.codegen.utils.ModelUtils;
-import org.openapitools.codegen.utils.OneOfImplementorAdditionalData;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.io.File;
-import java.util.*;
-import java.util.Map.Entry;
-import java.util.concurrent.ConcurrentSkipListSet;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
 import io.swagger.v3.core.util.Json;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.Operation;
@@ -74,18 +42,81 @@ import io.swagger.v3.oas.models.security.SecurityScheme;
 import io.swagger.v3.oas.models.servers.Server;
 import io.swagger.v3.oas.models.servers.ServerVariable;
 import io.swagger.v3.parser.util.SchemaTypeUtil;
+import lombok.Getter;
+import lombok.Setter;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.Pair;
+import org.apache.commons.text.StringEscapeUtils;
+import org.openapitools.codegen.CodegenDiscriminator.MappedModel;
+import org.openapitools.codegen.api.TemplatingEngineAdapter;
+import org.openapitools.codegen.config.GlobalSettings;
+import org.openapitools.codegen.examples.ExampleGenerator;
+import org.openapitools.codegen.languages.PhpNextgenClientCodegen;
+import org.openapitools.codegen.languages.RustAxumServerCodegen;
+import org.openapitools.codegen.languages.RustServerCodegen;
+import org.openapitools.codegen.languages.RustServerCodegenDeprecated;
+import org.openapitools.codegen.meta.FeatureSet;
+import org.openapitools.codegen.meta.GeneratorMetadata;
+import org.openapitools.codegen.meta.Stability;
+import org.openapitools.codegen.meta.features.*;
+import org.openapitools.codegen.model.ModelMap;
+import org.openapitools.codegen.model.ModelsMap;
+import org.openapitools.codegen.model.OperationsMap;
+import org.openapitools.codegen.model.WebhooksMap;
+import org.openapitools.codegen.model.EnumVarMap;
+import org.openapitools.codegen.serializer.SerializerUtils;
+import org.openapitools.codegen.templating.MustacheEngineAdapter;
+import org.openapitools.codegen.templating.mustache.*;
+import org.openapitools.codegen.utils.DiscriminatorUtils;
+import org.openapitools.codegen.utils.ExamplesUtils;
+import org.openapitools.codegen.utils.ModelUtils;
+import org.openapitools.codegen.utils.OneOfImplementorAdditionalData;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
+import java.util.Map.Entry;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.concurrent.TimeUnit;
+import java.util.function.BiFunction;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import static org.openapitools.codegen.CodegenConstants.*;
+import static org.openapitools.codegen.model.EnumVarMap.*;
+import static org.openapitools.codegen.utils.CamelizeOption.LOWERCASE_FIRST_LETTER;
+import static org.openapitools.codegen.utils.DiscriminatorUtils.*;
+import static org.openapitools.codegen.utils.EnumUtils.*;
+import static org.openapitools.codegen.utils.ModelUtils.isEnumSchema;
 import static org.openapitools.codegen.utils.OnceLogger.once;
 import static org.openapitools.codegen.utils.StringUtils.*;
 
 public class DefaultCodegen implements CodegenConfig {
+
     private final Logger LOGGER = LoggerFactory.getLogger(DefaultCodegen.class);
+
+    public static final Pattern SPLIT_ON_SEMICOLON_OR_NEWLINE_REGEX = Pattern.compile("\\s*(;|\\r?\\n)\\s*"); // Splits on semicolon or new line, ignoring surrounding whitespace
 
     public static FeatureSet DefaultFeatureSet;
 
     // A cache of sanitized words. The sanitizeName() method is invoked many times with the same
     // arguments, this cache is used to optimized performance.
-    private static Cache<SanitizeNameOptions, String> sanitizedNameCache;
+    private static final Cache<SanitizeNameOptions, String> sanitizedNameCache;
+    private static final String xSchemaTestExamplesKey = "x-schema-test-examples";
+    private static final String xSchemaTestExamplesRefPrefix = "#/components/x-schema-test-examples/";
+    protected static Schema falseSchema;
+    protected static Schema trueSchema = new Schema();
 
     static {
         DefaultFeatureSet = FeatureSet.newBuilder()
@@ -93,7 +124,7 @@ public class DefaultCodegen implements CodegenConfig {
                         DataTypeFeature.Int32, DataTypeFeature.Int64, DataTypeFeature.Float, DataTypeFeature.Double,
                         DataTypeFeature.Decimal, DataTypeFeature.String, DataTypeFeature.Byte, DataTypeFeature.Binary,
                         DataTypeFeature.Boolean, DataTypeFeature.Date, DataTypeFeature.DateTime, DataTypeFeature.Password,
-                        DataTypeFeature.File, DataTypeFeature.Array, DataTypeFeature.Maps, DataTypeFeature.CollectionFormat,
+                        DataTypeFeature.File, DataTypeFeature.Array, DataTypeFeature.Object, DataTypeFeature.Maps, DataTypeFeature.CollectionFormat,
                         DataTypeFeature.CollectionFormatMulti, DataTypeFeature.Enum, DataTypeFeature.ArrayOfEnum, DataTypeFeature.ArrayOfModel,
                         DataTypeFeature.ArrayOfCollectionOfPrimitives, DataTypeFeature.ArrayOfCollectionOfModel, DataTypeFeature.ArrayOfCollectionOfEnum,
                         DataTypeFeature.MapOfEnum, DataTypeFeature.MapOfModel, DataTypeFeature.MapOfCollectionOfPrimitives,
@@ -123,7 +154,7 @@ public class DefaultCodegen implements CodegenConfig {
                         SecurityFeature.BasicAuth, SecurityFeature.ApiKey, SecurityFeature.BearerToken,
                         SecurityFeature.OAuth2_Implicit, SecurityFeature.OAuth2_Password,
                         SecurityFeature.OAuth2_ClientCredentials, SecurityFeature.OAuth2_AuthorizationCode
-                        // OpenIDConnect not yet supported
+                        // OpenIdConnect and SignatureAuth and AW4Signature are not yet 100% supported
                 )
                 .includeWireFormatFeatures(
                         WireFormatFeature.JSON, WireFormatFeature.XML
@@ -138,6 +169,8 @@ public class DefaultCodegen implements CodegenConfig {
                 .expireAfterAccess(cacheExpiry, TimeUnit.SECONDS)
                 .ticker(Ticker.systemTicker())
                 .build();
+        falseSchema = new Schema();
+        falseSchema.setNot(new Schema());
     }
 
     protected GeneratorMetadata generatorMetadata;
@@ -145,48 +178,98 @@ public class DefaultCodegen implements CodegenConfig {
     protected String outputFolder = "";
     protected Set<String> defaultIncludes;
     protected Map<String, String> typeMapping;
+    // instantiationTypes map from container types only: set, map, and array to the in language-type
     protected Map<String, String> instantiationTypes;
     protected Set<String> reservedWords;
-    protected Set<String> languageSpecificPrimitives = new HashSet<String>();
-    protected Map<String, String> importMapping = new HashMap<String, String>();
-    protected String modelPackage = "", apiPackage = "", fileSuffix;
+    protected Set<String> languageSpecificPrimitives = new HashSet<>();
+    protected Set<String> openapiGeneratorIgnoreList = new HashSet<>();
+    protected Map<String, String> importMapping = new HashMap<>();
+    // a map to store the mapping between a schema and the new one
+    protected Map<String, String> schemaMapping = new HashMap<>();
+    // a map to store the mapping between inline schema and the name provided by the user
+    protected Map<String, String> inlineSchemaNameMapping = new HashMap<>();
+    // a map to store the inline schema naming conventions
+    protected Map<String, String> inlineSchemaOption = new HashMap<>();
+    // a map to store the mapping between property name and the name provided by the user
+    protected Map<String, String> nameMapping = new HashMap<>();
+    // a map to store the mapping between parameter name and the name provided by the user
+    protected Map<String, String> parameterNameMapping = new HashMap<>();
+    // a map to store the mapping between model name and the name provided by the user
+    protected Map<String, String> modelNameMapping = new HashMap<>();
+    // a map to store the mapping between enum name and the name provided by the user
+    protected Map<String, String> enumNameMapping = new HashMap<>();
+    // a map to store the mapping between operation id name and the name provided by the user
+    protected Map<String, String> operationIdNameMapping = new HashMap<>();
+    // a map to inject vendor extensions into model classes or their properties: key=ModelName.x-extension-name or ModelName.propertyBaseName.x-extension-name, value=extensionValue
+    protected Map<String, String> injectModelVendorExtensions = new HashMap<>();
+    // a map to store the rules in OpenAPI Normalizer
+    protected Map<String, String> openapiNormalizer = new HashMap<>();
+    @Setter
+    protected String modelPackage = "", apiPackage = "";
+    protected String fileSuffix;
+    @Getter
+    @Setter
     protected String modelNamePrefix = "", modelNameSuffix = "";
+    @Getter
+    @Setter
     protected String apiNamePrefix = "", apiNameSuffix = "Api";
     protected String testPackage = "";
+    @Setter
     protected String filesMetadataFilename = "FILES";
+    @Setter
     protected String versionMetadataFilename = "VERSION";
     /*
     apiTemplateFiles are for API outputs only (controllers/handlers).
     API templates may be written multiple times; APIs are grouped by tag and the file is written once per tag group.
     */
-    protected Map<String, String> apiTemplateFiles = new HashMap<String, String>();
-    protected Map<String, String> modelTemplateFiles = new HashMap<String, String>();
-    protected Map<String, String> apiTestTemplateFiles = new HashMap<String, String>();
-    protected Map<String, String> modelTestTemplateFiles = new HashMap<String, String>();
-    protected Map<String, String> apiDocTemplateFiles = new HashMap<String, String>();
-    protected Map<String, String> modelDocTemplateFiles = new HashMap<String, String>();
-    protected Map<String, String> reservedWordsMappings = new HashMap<String, String>();
+    protected Map<String, String> apiTemplateFiles = new HashMap<>();
+    protected Map<String, String> modelTemplateFiles = new HashMap<>();
+    protected Map<String, String> apiTestTemplateFiles = new HashMap<>();
+    protected Map<String, String> modelTestTemplateFiles = new HashMap<>();
+    protected Map<String, String> apiDocTemplateFiles = new HashMap<>();
+    protected Map<String, String> modelDocTemplateFiles = new HashMap<>();
+    protected Map<String, String> reservedWordsMappings = new HashMap<>();
+    @Setter
     protected String templateDir;
     protected String embeddedTemplateDir;
+    /** Additional embedded (classpath) template directories searched after
+     *  {@link #embeddedTemplateDir}; see {@link #additionalEmbeddedTemplateDirs()}. */
+    protected List<String> additionalEmbeddedTemplateDirs = new ArrayList<>();
     protected Map<String, Object> additionalProperties = new HashMap<>();
-    protected Map<String, String> serverVariables = new HashMap<String, String>();
-    protected Map<String, Object> vendorExtensions = new HashMap<String, Object>();
+    protected Map<String, String> serverVariables = new HashMap<>();
+    protected Map<String, Object> vendorExtensions = new HashMap<>();
+    protected Map<String, String> templateOutputDirs = new HashMap<>();
     /*
     Supporting files are those which aren't models, APIs, or docs.
     These get a different map of data bound to the templates. Supporting files are written once.
     See also 'apiTemplateFiles'.
     */
-    protected List<SupportingFile> supportingFiles = new ArrayList<SupportingFile>();
-    protected List<CliOption> cliOptions = new ArrayList<CliOption>();
+    protected List<SupportingFile> supportingFiles = new ArrayList<>();
+    protected List<CliOption> cliOptions = new ArrayList<>();
     protected boolean skipOverwrite;
     protected boolean removeOperationIdPrefix;
+    @Getter
+    @Setter
     protected String removeOperationIdPrefixDelimiter = "_";
+    @Getter
+    @Setter
     protected int removeOperationIdPrefixCount = 1;
     protected boolean skipOperationExample;
+    // sort operations by default
+    protected boolean skipSortingOperations = false;
 
-    protected final static Pattern JSON_MIME_PATTERN = Pattern.compile("(?i)application\\/json(;.*)?");
-    protected final static Pattern JSON_VENDOR_MIME_PATTERN = Pattern.compile("(?i)application\\/vnd.(.*)+json(;.*)?");
+    protected final static Pattern XML_MIME_PATTERN = Pattern.compile("(?i)application/(.*)[+]?xml(;.*)?");
+    protected final static Pattern JSON_MIME_PATTERN = Pattern.compile("(?i)application/json(;.*)?");
+    protected final static Pattern JSON_VENDOR_MIME_PATTERN = Pattern.compile("(?i)application/vnd.(.*)+json(;.*)?");
     private static final Pattern COMMON_PREFIX_ENUM_NAME = Pattern.compile("[a-zA-Z0-9]+\\z");
+    /** Matches a trailing run of digits at the end of a name, used by {@link #generateNextName}. */
+    private static final Pattern TRAILING_DIGITS = Pattern.compile("\\d+\\z");
+    /**
+     * Cache of removeCharRegEx string → compiled {@link Pattern} with {@link Pattern#UNICODE_CHARACTER_CLASS}.
+     * {@code sanitizeName} is called once per unique (name, regex, exceptions) tuple, so the regex string
+     * (almost always {@code "\\W"}) would otherwise be recompiled for every unique property/model name.
+     */
+    private static final ConcurrentHashMap<String, Pattern> REMOVE_CHAR_UNICODE_PATTERN_CACHE = new ConcurrentHashMap<>();
 
     /**
      * True if the code generator supports multiple class inheritance.
@@ -210,21 +293,31 @@ public class DefaultCodegen implements CodegenConfig {
      */
     protected boolean supportsAdditionalPropertiesWithComposedSchema;
     protected boolean supportsMixins;
-    protected Map<String, String> supportedLibraries = new LinkedHashMap<String, String>();
+    protected Map<String, String> supportedLibraries = new LinkedHashMap<>();
     protected String library;
+    @Getter
+    @Setter
     protected Boolean sortParamsByRequiredFlag = true;
+    @Getter
+    @Setter
     protected Boolean sortModelPropertiesByRequiredFlag = false;
+    @Getter
+    @Setter
     protected Boolean ensureUniqueParams = true;
+    @Getter
+    @Setter
     protected Boolean allowUnicodeIdentifiers = false;
     protected String gitHost, gitUserId, gitRepoId, releaseNote;
     protected String httpUserAgent;
     protected Boolean hideGenerationTimestamp = true;
     // How to encode special characters like $
-    // They are translated to words like "Dollar" and prefixed with '
+    // They are translated to words like "Dollar"
     // Then translated back during JSON encoding and decoding
-    protected Map<String, String> specialCharReplacements = new HashMap<String, String>();
+    protected Map<String, String> specialCharReplacements = new LinkedHashMap<>();
     // When a model is an alias for a simple type
-    protected Map<String, String> typeAliases = null;
+    protected Map<String, String> typeAliases = Collections.emptyMap();
+    @Getter
+    @Setter
     protected Boolean prependFormOrBodyParameters = false;
     // The extension of the generated documentation files (defaults to markdown .md)
     protected String docExtension;
@@ -234,9 +327,9 @@ public class DefaultCodegen implements CodegenConfig {
     private TemplatingEngineAdapter templatingEngine = new MustacheEngineAdapter();
     // flag to indicate whether to use the utils.OneOfImplementorAdditionalData related logic
     protected boolean useOneOfInterfaces = false;
-    // whether or not the oneOf imports machinery should add oneOf interfaces as imports in implementing classes
+    // whether the oneOf imports machinery should add oneOf interfaces as imports in implementing classes
     protected boolean addOneOfInterfaceImports = false;
-    protected List<CodegenModel> addOneOfInterfaces = new ArrayList<CodegenModel>();
+    protected List<CodegenModel> addOneOfInterfaces = new ArrayList<>();
 
     // flag to indicate whether to only update files whose contents have changed
     protected boolean enableMinimalUpdate = false;
@@ -244,14 +337,22 @@ public class DefaultCodegen implements CodegenConfig {
     // acts strictly upon a spec, potentially modifying it to have consistent behavior across generators.
     protected boolean strictSpecBehavior = true;
     // flag to indicate whether enum value prefixes are removed
-    protected boolean removeEnumValuePrefix = true;
+    protected boolean removeEnumValuePrefix = false;
 
     // Support legacy logic for evaluating discriminators
+    @Setter
     protected boolean legacyDiscriminatorBehavior = true;
 
     // Specify what to do if the 'additionalProperties' keyword is not present in a schema.
     // See CodegenConstants.java for more details.
+    @Setter
     protected boolean disallowAdditionalPropertiesIfNotPresent = true;
+
+    // If the server adds new enum cases, that are unknown by an old spec/client, the client will fail to parse the network response.
+    // With this option enabled, each enum will have a new case, 'unknown_default_open_api', so that when the server sends an enum case that is not known by the client/spec, they can safely fallback to this case.
+    @Setter
+    protected boolean enumUnknownDefaultCase = false;
+    protected String enumUnknownDefaultCaseName = "unknown_default_open_api";
 
     // make openapi available to all methods
     protected OpenAPI openAPI;
@@ -260,121 +361,101 @@ public class DefaultCodegen implements CodegenConfig {
     private Map<String, Schema> modelNameToSchemaCache;
 
     // A cache to efficiently lookup schema `toModelName()` based on the schema Key
-    private Map<String, String> schemaKeyToModelNameCache = new HashMap<>();
+    private final Map<String, String> schemaKeyToModelNameCache = new HashMap<>();
+
+    protected boolean loadDeepObjectIntoItems = true;
+
+    // if true then baseTypes will be imported
+    protected boolean importBaseType = true;
+
+    // if true then container types will be imported
+    protected boolean importContainerType = true;
+
+    protected boolean addSuffixToDuplicateOperationNicknames = true;
+
+    // Whether to automatically hardcode params that are considered Constants by OpenAPI Spec
+    @Setter
+    protected boolean autosetConstants = false;
+
+    @Setter
+    @Getter
+    boolean arrayDefaultToEmpty, arrayNullableDefaultToEmpty, arrayOptionalNullableDefaultToEmpty, arrayOptionalDefaultToEmpty;
+    @Setter
+    @Getter
+    boolean mapDefaultToEmpty, mapNullableDefaultToEmpty, mapOptionalNullableDefaultToEmpty, mapOptionalDefaultToEmpty;
+    @Setter
+    @Getter
+    protected boolean defaultToEmptyContainer;
+
+    final List EMPTY_LIST = new ArrayList();
+
+    @Override
+    public boolean getAddSuffixToDuplicateOperationNicknames() {
+        return addSuffixToDuplicateOperationNicknames;
+    }
 
     @Override
     public List<CliOption> cliOptions() {
         return cliOptions;
     }
 
+    /**
+     * add this instance to additionalProperties.
+     * This instance is used as parent context in Mustache.
+     * It means that Mustache uses the values found in this order:
+     * first from additionalProperties
+     * then from the getter in this instance
+     * then from the fields in this instance
+     */
+    protected void useCodegenAsMustacheParentContext() {
+        additionalProperties.put(CodegenConstants.MUSTACHE_PARENT_CONTEXT, this);
+    }
+
     @Override
     public void processOpts() {
-        if (additionalProperties.containsKey(CodegenConstants.TEMPLATE_DIR)) {
-            this.setTemplateDir((String) additionalProperties.get(CodegenConstants.TEMPLATE_DIR));
-        }
 
-        if (additionalProperties.containsKey(CodegenConstants.MODEL_PACKAGE)) {
-            this.setModelPackage((String) additionalProperties.get(CodegenConstants.MODEL_PACKAGE));
+        if (!additionalProperties.containsKey(CodegenConstants.MUSTACHE_PARENT_CONTEXT)) {
+            // by default empty parent context
+            additionalProperties.put(CodegenConstants.MUSTACHE_PARENT_CONTEXT, new Object());
         }
+        convertPropertyToStringAndWriteBack(CodegenConstants.TEMPLATE_DIR, this::setTemplateDir);
+        convertPropertyToStringAndWriteBack(CodegenConstants.MODEL_PACKAGE, this::setModelPackage);
+        convertPropertyToStringAndWriteBack(CodegenConstants.API_PACKAGE, this::setApiPackage);
 
-        if (additionalProperties.containsKey(CodegenConstants.API_PACKAGE)) {
-            this.setApiPackage((String) additionalProperties.get(CodegenConstants.API_PACKAGE));
-        }
+        convertPropertyToBooleanAndWriteBack(CodegenConstants.HIDE_GENERATION_TIMESTAMP, this::setHideGenerationTimestamp);
+        // put the value back in additionalProperties for backward compatibility with generators not using yet convertPropertyToBooleanAndWriteBack
+        writePropertyBack(CodegenConstants.HIDE_GENERATION_TIMESTAMP, isHideGenerationTimestamp());
 
-        if (additionalProperties.containsKey(CodegenConstants.HIDE_GENERATION_TIMESTAMP)) {
-            setHideGenerationTimestamp(convertPropertyToBooleanAndWriteBack(CodegenConstants.HIDE_GENERATION_TIMESTAMP));
-        } else {
-            additionalProperties.put(CodegenConstants.HIDE_GENERATION_TIMESTAMP, hideGenerationTimestamp);
-        }
+        convertPropertyToBooleanAndWriteBack(CodegenConstants.SORT_PARAMS_BY_REQUIRED_FLAG, this::setSortParamsByRequiredFlag);
+        convertPropertyToBooleanAndWriteBack(CodegenConstants.SORT_MODEL_PROPERTIES_BY_REQUIRED_FLAG, this::setSortModelPropertiesByRequiredFlag);
+        convertPropertyToBooleanAndWriteBack(CodegenConstants.PREPEND_FORM_OR_BODY_PARAMETERS, this::setPrependFormOrBodyParameters);
+        convertPropertyToBooleanAndWriteBack(CodegenConstants.ENSURE_UNIQUE_PARAMS, this::setEnsureUniqueParams);
+        convertPropertyToBooleanAndWriteBack(CodegenConstants.ALLOW_UNICODE_IDENTIFIERS, this::setAllowUnicodeIdentifiers);
+        // splitOperationsByContentType is a global option rather than a generator one: the behaviour is
+        // language-neutral and applies to every generator alike, so it is read from the global properties
+        // (--global-property) and is deliberately absent from cliOptions.
+        setSplitOperationsByContentType(Boolean.parseBoolean(
+                GlobalSettings.getProperty(CodegenConstants.SPLIT_OPERATIONS_BY_CONTENT_TYPE, "false")));
+        convertPropertyToStringAndWriteBack(CodegenConstants.API_NAME_PREFIX, this::setApiNamePrefix);
+        convertPropertyToStringAndWriteBack(CodegenConstants.API_NAME_SUFFIX, this::setApiNameSuffix);
+        convertPropertyToStringAndWriteBack(CodegenConstants.MODEL_NAME_PREFIX, this::setModelNamePrefix);
+        convertPropertyToStringAndWriteBack(CodegenConstants.MODEL_NAME_SUFFIX, this::setModelNameSuffix);
+        convertPropertyToBooleanAndWriteBack(CodegenConstants.REMOVE_OPERATION_ID_PREFIX, this::setRemoveOperationIdPrefix);
+        convertPropertyToStringAndWriteBack(CodegenConstants.REMOVE_OPERATION_ID_PREFIX_DELIMITER, this::setRemoveOperationIdPrefixDelimiter);
+        convertPropertyToTypeAndWriteBack(CodegenConstants.REMOVE_OPERATION_ID_PREFIX_COUNT, Integer::parseInt, this::setRemoveOperationIdPrefixCount);
+        convertPropertyToBooleanAndWriteBack(CodegenConstants.SKIP_OPERATION_EXAMPLE, this::setSkipOperationExample);
+        convertPropertyToStringAndWriteBack(CodegenConstants.DOCEXTENSION, this::setDocExtension);
+        convertPropertyToBooleanAndWriteBack(CodegenConstants.ENABLE_POST_PROCESS_FILE, this::setEnablePostProcessFile);
+        convertPropertyToBooleanAndWriteBack(CodegenConstants.GENERATE_ALIAS_AS_MODEL, ModelUtils::setGenerateAliasAsModel);
+        convertPropertyToBooleanAndWriteBack(CodegenConstants.REMOVE_ENUM_VALUE_PREFIX, this::setRemoveEnumValuePrefix);
+        convertPropertyToBooleanAndWriteBack(CodegenConstants.LEGACY_DISCRIMINATOR_BEHAVIOR, this::setLegacyDiscriminatorBehavior);
+        convertPropertyToBooleanAndWriteBack(CodegenConstants.DISALLOW_ADDITIONAL_PROPERTIES_IF_NOT_PRESENT, this::setDisallowAdditionalPropertiesIfNotPresent);
+        convertPropertyToBooleanAndWriteBack(CodegenConstants.ENUM_UNKNOWN_DEFAULT_CASE, this::setEnumUnknownDefaultCase);
+        convertPropertyToBooleanAndWriteBack(CodegenConstants.AUTOSET_CONSTANTS, this::setAutosetConstants);
 
-        if (additionalProperties.containsKey(CodegenConstants.SORT_PARAMS_BY_REQUIRED_FLAG)) {
-            this.setSortParamsByRequiredFlag(Boolean.valueOf(additionalProperties
-                    .get(CodegenConstants.SORT_PARAMS_BY_REQUIRED_FLAG).toString()));
-        }
-
-        if (additionalProperties.containsKey(CodegenConstants.SORT_MODEL_PROPERTIES_BY_REQUIRED_FLAG)) {
-            this.setSortModelPropertiesByRequiredFlag(Boolean.valueOf(additionalProperties
-                    .get(CodegenConstants.SORT_MODEL_PROPERTIES_BY_REQUIRED_FLAG).toString()));
-        }
-
-        if (additionalProperties.containsKey(CodegenConstants.PREPEND_FORM_OR_BODY_PARAMETERS)) {
-            this.setPrependFormOrBodyParameters(Boolean.valueOf(additionalProperties
-                    .get(CodegenConstants.PREPEND_FORM_OR_BODY_PARAMETERS).toString()));
-        }
-
-        if (additionalProperties.containsKey(CodegenConstants.ENSURE_UNIQUE_PARAMS)) {
-            this.setEnsureUniqueParams(Boolean.valueOf(additionalProperties
-                    .get(CodegenConstants.ENSURE_UNIQUE_PARAMS).toString()));
-        }
-
-        if (additionalProperties.containsKey(CodegenConstants.ALLOW_UNICODE_IDENTIFIERS)) {
-            this.setAllowUnicodeIdentifiers(Boolean.valueOf(additionalProperties
-                    .get(CodegenConstants.ALLOW_UNICODE_IDENTIFIERS).toString()));
-        }
-
-        if (additionalProperties.containsKey(CodegenConstants.API_NAME_PREFIX)) {
-            this.setApiNamePrefix((String) additionalProperties.get(CodegenConstants.API_NAME_PREFIX));
-        }
-
-        if (additionalProperties.containsKey(CodegenConstants.API_NAME_SUFFIX)) {
-            this.setApiNameSuffix((String) additionalProperties.get(CodegenConstants.API_NAME_SUFFIX));
-        }
-
-        if (additionalProperties.containsKey(CodegenConstants.MODEL_NAME_PREFIX)) {
-            this.setModelNamePrefix((String) additionalProperties.get(CodegenConstants.MODEL_NAME_PREFIX));
-        }
-
-        if (additionalProperties.containsKey(CodegenConstants.MODEL_NAME_SUFFIX)) {
-            this.setModelNameSuffix((String) additionalProperties.get(CodegenConstants.MODEL_NAME_SUFFIX));
-        }
-
-        if (additionalProperties.containsKey(CodegenConstants.REMOVE_OPERATION_ID_PREFIX)) {
-            this.setRemoveOperationIdPrefix(Boolean.parseBoolean(additionalProperties
-                    .get(CodegenConstants.REMOVE_OPERATION_ID_PREFIX).toString()));
-        }
-
-        if (additionalProperties.containsKey(CodegenConstants.REMOVE_OPERATION_ID_PREFIX_DELIMITER)) {
-            this.setRemoveOperationIdPrefixDelimiter(additionalProperties
-                    .get(CodegenConstants.REMOVE_OPERATION_ID_PREFIX_DELIMITER).toString());
-        }
-
-        if (additionalProperties.containsKey(CodegenConstants.REMOVE_OPERATION_ID_PREFIX_COUNT)) {
-            this.setRemoveOperationIdPrefixCount(Integer.parseInt(additionalProperties
-                    .get(CodegenConstants.REMOVE_OPERATION_ID_PREFIX_COUNT).toString()));
-        }
-
-        if (additionalProperties.containsKey(CodegenConstants.SKIP_OPERATION_EXAMPLE)) {
-            this.setSkipOperationExample(Boolean.parseBoolean(additionalProperties
-                    .get(CodegenConstants.SKIP_OPERATION_EXAMPLE).toString()));
-        }
-
-        if (additionalProperties.containsKey(CodegenConstants.DOCEXTENSION)) {
-            this.setDocExtension(String.valueOf(additionalProperties
-                    .get(CodegenConstants.DOCEXTENSION).toString()));
-        }
-
-        if (additionalProperties.containsKey(CodegenConstants.ENABLE_POST_PROCESS_FILE)) {
-            this.setEnablePostProcessFile(Boolean.parseBoolean(additionalProperties
-                    .get(CodegenConstants.ENABLE_POST_PROCESS_FILE).toString()));
-        }
-
-        if (additionalProperties.containsKey(CodegenConstants.GENERATE_ALIAS_AS_MODEL)) {
-            ModelUtils.setGenerateAliasAsModel(Boolean.parseBoolean(additionalProperties
-                    .get(CodegenConstants.GENERATE_ALIAS_AS_MODEL).toString()));
-        }
-
-        if (additionalProperties.containsKey(CodegenConstants.REMOVE_ENUM_VALUE_PREFIX)) {
-            this.setRemoveEnumValuePrefix(Boolean.parseBoolean(additionalProperties
-                    .get(CodegenConstants.REMOVE_ENUM_VALUE_PREFIX).toString()));
-        }
-
-        if (additionalProperties.containsKey(CodegenConstants.LEGACY_DISCRIMINATOR_BEHAVIOR)) {
-            this.setLegacyDiscriminatorBehavior(Boolean.parseBoolean(additionalProperties
-                    .get(CodegenConstants.LEGACY_DISCRIMINATOR_BEHAVIOR).toString()));
-        }
-        if (additionalProperties.containsKey(CodegenConstants.DISALLOW_ADDITIONAL_PROPERTIES_IF_NOT_PRESENT)) {
-            this.setDisallowAdditionalPropertiesIfNotPresent(Boolean.parseBoolean(additionalProperties
-                    .get(CodegenConstants.DISALLOW_ADDITIONAL_PROPERTIES_IF_NOT_PRESENT).toString()));
+        if (additionalProperties.containsKey(DEFAULT_TO_EMPTY_CONTAINER) && additionalProperties.get(DEFAULT_TO_EMPTY_CONTAINER) instanceof String) {
+            parseDefaultToEmptyContainer((String) additionalProperties.get(DEFAULT_TO_EMPTY_CONTAINER));
+            defaultToEmptyContainer = true;
         }
     }
 
@@ -387,6 +468,8 @@ public class DefaultCodegen implements CodegenConfig {
      * If common lambdas are not desired, override addMustacheLambdas() method
      * and return empty builder.
      *
+     * Corresponding user documentation: docs/templating.md, section "Mustache Lambdas"
+     *
      * @return preinitialized map with common lambdas
      */
     protected ImmutableMap.Builder<String, Lambda> addMustacheLambdas() {
@@ -396,18 +479,28 @@ public class DefaultCodegen implements CodegenConfig {
                 .put("uppercase", new UppercaseLambda())
                 .put("snakecase", new SnakecaseLambda())
                 .put("titlecase", new TitlecaseLambda())
-                .put("camelcase", new CamelCaseLambda(true).generator(this))
-                .put("pascalcase", new CamelCaseLambda(false).generator(this))
+                .put("kebabcase", new KebabCaseLambda())
+                .put("camelcase", new CamelCaseAndSanitizeLambda(true).generator(this))
+                .put("pascalcase", new CamelCaseAndSanitizeLambda(false).generator(this))
+                .put("uncamelize", new UncamelizeLambda())
+                .put("forwardslash", new ForwardSlashLambda())
+                .put("backslash", new BackSlashLambda())
+                .put("doublequote", new DoubleQuoteLambda())
                 .put("indented", new IndentedLambda())
-                .put("indented_8", new IndentedLambda(8, " "))
-                .put("indented_12", new IndentedLambda(12, " "))
-                .put("indented_16", new IndentedLambda(16, " "));
+                .put("indented_8", new IndentedLambda(8, " ", false, false))
+                .put("indented_12", new IndentedLambda(12, " ", false, false))
+                .put("indented_16", new IndentedLambda(16, " ", false, false))
+                .put("trim", new TrimLambda())
+                .put("trimLineBreaks", new TrimLineBreaksLambda())
+                .put("trimWhitespace", new TrimWhitespaceLambda())
+                .put("trimTrailingWithNewLine", new TrimTrailingWhiteSpaceLambda(true))
+                .put("trimTrailing", new TrimTrailingWhiteSpaceLambda(false));
     }
 
     private void registerMustacheLambdas() {
         ImmutableMap<String, Lambda> lambdas = addMustacheLambdas().build();
 
-        if (lambdas.size() == 0) {
+        if (lambdas.isEmpty()) {
             return;
         }
 
@@ -420,19 +513,98 @@ public class DefaultCodegen implements CodegenConfig {
 
     // override with any special post-processing for all models
     @Override
-    @SuppressWarnings({"static-method", "unchecked"})
-    public Map<String, Object> postProcessAllModels(Map<String, Object> objs) {
+    @SuppressWarnings("static-method")
+    public Map<String, ModelsMap> postProcessAllModels(Map<String, ModelsMap> objs) {
+        for (Map.Entry<String, ModelsMap> entry : objs.entrySet()) {
+            CodegenModel model = ModelUtils.getModelByName(entry.getKey(), objs);
+
+            if (model == null) {
+                LOGGER.warn("Null model found in postProcessAllModels: {}", entry.getKey());
+                continue;
+            }
+
+            // add the model to the discriminator's mapping so templates have access to more than just the string to string mapping
+            if (model.discriminator != null && model.discriminator.getMappedModels() != null) {
+                for (CodegenDiscriminator.MappedModel mappedModel : model.discriminator.getMappedModels()) {
+                    String lookupName = mappedModel.getSchemaName() != null ? mappedModel.getSchemaName() : mappedModel.getModelName();
+                    CodegenModel mappedCodegenModel = ModelUtils.getModelByName(lookupName, objs);
+                    mappedModel.setModel(mappedCodegenModel);
+                }
+            }
+
+            for (CodegenProperty property : model.allVars) {
+                property.isNew = codegenPropertyIsNew(model, property);
+            }
+            for (CodegenProperty property : model.vars) {
+                property.isNew = codegenPropertyIsNew(model, property);
+            }
+            for (CodegenProperty property : model.readWriteVars) {
+                property.isNew = codegenPropertyIsNew(model, property);
+            }
+            for (CodegenProperty property : model.optionalVars) {
+                property.isNew = codegenPropertyIsNew(model, property);
+            }
+            for (CodegenProperty property : model.parentVars) {
+                property.isNew = codegenPropertyIsNew(model, property);
+            }
+            for (CodegenProperty property : model.requiredVars) {
+                property.isNew = codegenPropertyIsNew(model, property);
+            }
+            for (CodegenProperty property : model.readOnlyVars) {
+                property.isNew = codegenPropertyIsNew(model, property);
+            }
+            for (CodegenProperty property : model.nonNullableVars) {
+                property.isNew = codegenPropertyIsNew(model, property);
+            }
+        }
+
+        // Inject vendor extensions from --inject-property-extensions into matching schema properties
+        if (!injectModelVendorExtensions.isEmpty()) {
+            for (Map.Entry<String, ModelsMap> entry : objs.entrySet()) {
+                CodegenModel model = ModelUtils.getModelByName(entry.getKey(), objs);
+                if (model == null) continue;
+
+                for (Map.Entry<String, String> extEntry : injectModelVendorExtensions.entrySet()) {
+                    String[] parts = extEntry.getKey().split("\\.", 3);
+                    if (parts.length < 2) continue;
+                    String modelName = parts[0];
+                    String extensionValue = extEntry.getValue();
+
+                    if (!modelName.equals(entry.getKey())) continue;
+
+                    if (parts.length == 2) {
+                        // class-level extension: ModelName.x-extension-name
+                        model.vendorExtensions.put(parts[1], extensionValue);
+                    } else {
+                        // property-level extension: ModelName.propertyBaseName.x-extension-name
+                        String propertyBaseName = parts[1];
+                        String extensionName = parts[2];
+                        List<List<CodegenProperty>> allPropertyLists = Arrays.asList(
+                                model.vars, model.allVars, model.readWriteVars, model.requiredVars,
+                                model.optionalVars, model.parentVars, model.readOnlyVars, model.nonNullableVars);
+                        for (List<CodegenProperty> properties : allPropertyLists) {
+                            for (CodegenProperty property : properties) {
+                                if (propertyBaseName.equals(property.baseName)) {
+                                    property.vendorExtensions.put(extensionName, extensionValue);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         if (this.useOneOfInterfaces) {
             // First, add newly created oneOf interfaces
             for (CodegenModel cm : addOneOfInterfaces) {
-                Map<String, Object> modelValue = new HashMap<>(additionalProperties());
-                modelValue.put("model", cm);
+                ModelMap modelMapValue = new ModelMap(additionalProperties());
+                modelMapValue.setModel(cm);
 
                 List<Map<String, String>> importsValue = new ArrayList<>();
-                Map<String, Object> objsValue = new HashMap<>();
-                objsValue.put("models", Collections.singletonList(modelValue));
+                ModelsMap objsValue = new ModelsMap();
+                objsValue.setModels(Collections.singletonList(modelMapValue));
                 objsValue.put("package", modelPackage());
-                objsValue.put("imports", importsValue);
+                objsValue.setImports(importsValue);
                 objsValue.put("classname", cm.classname);
                 objsValue.putAll(additionalProperties);
                 objs.put(cm.name, objsValue);
@@ -440,16 +612,13 @@ public class DefaultCodegen implements CodegenConfig {
 
             // Gather data from all the models that contain oneOf into OneOfImplementorAdditionalData classes
             // (see docstring of that class to find out what information is gathered and why)
-            Map<String, OneOfImplementorAdditionalData> additionalDataMap = new HashMap<String, OneOfImplementorAdditionalData>();
-            for (Map.Entry<String, Object> modelsEntry : objs.entrySet()) {
-                Map<String, Object> modelsAttrs = (Map<String, Object>) modelsEntry.getValue();
-                List<Object> models = (List<Object>) modelsAttrs.get("models");
-                List<Map<String, String>> modelsImports = (List<Map<String, String>>) modelsAttrs.getOrDefault("imports", new ArrayList<Map<String, String>>());
-                for (Object _mo : models) {
-                    Map<String, Object> mo = (Map<String, Object>) _mo;
-                    CodegenModel cm = (CodegenModel) mo.get("model");
-                    if (cm.oneOf.size() > 0) {
-                        cm.vendorExtensions.put("x-is-one-of-interface", true);
+            Map<String, OneOfImplementorAdditionalData> additionalDataMap = new HashMap<>();
+            for (ModelsMap modelsAttrs : objs.values()) {
+                List<Map<String, String>> modelsImports = modelsAttrs.getImportsOrEmpty();
+                for (ModelMap mo : modelsAttrs.getModels()) {
+                    CodegenModel cm = mo.getModel();
+                    if (!cm.oneOf.isEmpty()) {
+                        cm.vendorExtensions.put(X_IS_ONE_OF_INTERFACE, true);
                         for (String one : cm.oneOf) {
                             if (!additionalDataMap.containsKey(one)) {
                                 additionalDataMap.put(one, new OneOfImplementorAdditionalData(one));
@@ -458,18 +627,24 @@ public class DefaultCodegen implements CodegenConfig {
                         }
                         // if this is oneOf interface, make sure we include the necessary imports for it
                         addImportsToOneOfInterface(modelsImports);
+
+                        // ensure that no JsonTypeName is created when the parent interface has a discriminator mapping
+                        if (cm.discriminator != null && cm.discriminator.getMappedModels() != null && !cm.discriminator.getMappedModels().isEmpty()) {
+                            cm.discriminator.getMappedModels().stream()
+                                    .map(MappedModel::getModel)
+                                    .filter(Objects::nonNull)
+                                    .forEach(model -> model.setHasDiscriminatorWithNonEmptyMapping(true));
+                        }
                     }
                 }
             }
 
             // Add all the data from OneOfImplementorAdditionalData classes to the implementing models
-            for (Map.Entry<String, Object> modelsEntry : objs.entrySet()) {
-                Map<String, Object> modelsAttrs = (Map<String, Object>) modelsEntry.getValue();
-                List<Object> models = (List<Object>) modelsAttrs.get("models");
-                List<Map<String, String>> imports = (List<Map<String, String>>) modelsAttrs.get("imports");
-                for (Object _implmo : models) {
-                    Map<String, Object> implmo = (Map<String, Object>) _implmo;
-                    CodegenModel implcm = (CodegenModel) implmo.get("model");
+            for (Map.Entry<String, ModelsMap> modelsEntry : objs.entrySet()) {
+                ModelsMap modelsAttrs = modelsEntry.getValue();
+                List<Map<String, String>> imports = modelsAttrs.getImports();
+                for (ModelMap implmo : modelsAttrs.getModels()) {
+                    CodegenModel implcm = implmo.getModel();
                     String modelName = toModelName(implcm.name);
                     if (additionalDataMap.containsKey(modelName)) {
                         additionalDataMap.get(modelName).addToImplementor(this, implcm, imports, addOneOfInterfaceImports);
@@ -482,13 +657,28 @@ public class DefaultCodegen implements CodegenConfig {
     }
 
     /**
+     * A property is new if it is in a derived class and the derived property is different.
+     * This usually occurs when the data type is different.
+     * We can also consider discriminators as new because the derived class discriminator will have to be defined again
+     * to contain a new value. Doing so prevents having to include the discriminator in the constructor.
+     *
+     * @param model
+     * @param property
+     * @return
+     */
+    private boolean codegenPropertyIsNew(CodegenModel model, CodegenProperty property) {
+        return model.parentModel != null && model.parentModel.allVars.stream().anyMatch(p ->
+                p.name.equals(property.name) &&
+                        (!p.dataType.equals(property.dataType) || !p.datatypeWithEnum.equals(property.datatypeWithEnum)));
+    }
+
+    /**
      * Return a map from model name to Schema for efficient lookup.
      *
      * @return map from model name to Schema.
      */
     protected Map<String, Schema> getModelNameToSchemaCache() {
         if (modelNameToSchemaCache == null) {
-            // Create a cache to efficiently lookup schema based on model name.
             Map<String, Schema> m = new HashMap<>();
             ModelUtils.getSchemas(openAPI).forEach((key, schema) -> m.put(toModelName(key), schema));
             modelNameToSchemaCache = Collections.unmodifiableMap(m);
@@ -502,14 +692,13 @@ public class DefaultCodegen implements CodegenConfig {
      * @param objs Map of models
      * @return map of all models indexed by names
      */
-    public Map<String, CodegenModel> getAllModels(Map<String, Object> objs) {
-        Map<String, CodegenModel> allModels = new HashMap<String, CodegenModel>();
-        for (Entry<String, Object> entry : objs.entrySet()) {
+    public Map<String, CodegenModel> getAllModels(Map<String, ModelsMap> objs) {
+        Map<String, CodegenModel> allModels = new LinkedHashMap<>();
+        for (Entry<String, ModelsMap> entry : objs.entrySet()) {
             String modelName = toModelName(entry.getKey());
-            Map<String, Object> inner = (Map<String, Object>) entry.getValue();
-            List<Map<String, Object>> models = (List<Map<String, Object>>) inner.get("models");
-            for (Map<String, Object> mo : models) {
-                CodegenModel cm = (CodegenModel) mo.get("model");
+            List<ModelMap> models = entry.getValue().getModels();
+            for (ModelMap mo : models) {
+                CodegenModel cm = mo.getModel();
                 allModels.put(modelName, cm);
             }
         }
@@ -518,12 +707,13 @@ public class DefaultCodegen implements CodegenConfig {
 
     /**
      * Loop through all models to update different flags (e.g. isSelfReference), children models, etc
+     * and update mapped models for import.
      *
      * @param objs Map of models
      * @return maps of models with various updates
      */
     @Override
-    public Map<String, Object> updateAllModels(Map<String, Object> objs) {
+    public Map<String, ModelsMap> updateAllModels(Map<String, ModelsMap> objs) {
         Map<String, CodegenModel> allModels = getAllModels(objs);
 
         // Fix up all parent and interface CodegenModel references.
@@ -544,39 +734,49 @@ public class DefaultCodegen implements CodegenConfig {
 
         // Let parent know about all its children
         for (Map.Entry<String, CodegenModel> allModelsEntry : allModels.entrySet()) {
-            String name = allModelsEntry.getKey();
             CodegenModel cm = allModelsEntry.getValue();
             CodegenModel parent = allModels.get(cm.getParent());
+            if (parent != null) {
+                if (!parent.permits.contains(cm.classname) && parent.permits.stream()
+                        .noneMatch(name -> name.equals(cm.getName()))) {
+                    parent.permits.add(cm.classname);
+                }
+            }
             // if a discriminator exists on the parent, don't add this child to the inheritance hierarchy
             // TODO Determine what to do if the parent discriminator name == the grandparent discriminator name
             while (parent != null) {
                 if (parent.getChildren() == null) {
                     parent.setChildren(new ArrayList<>());
                 }
-                parent.getChildren().add(cm);
+                if (parent.getChildren().stream().map(CodegenModel::getName)
+                        .noneMatch(name -> name.equals(cm.getName()))) {
+                    parent.getChildren().add(cm);
+                }
+
                 parent.hasChildren = true;
-                Schema parentSchema = this.openAPI.getComponents().getSchemas().get(parent.name);
-                if (parentSchema.getDiscriminator() == null) {
-                    parent = allModels.get(parent.getParent());
-                } else {
+                Schema parentSchema = this.openAPI.getComponents().getSchemas().get(parent.schemaName);
+                if (parentSchema == null) {
+                    LOGGER.warn("Failed to look up parent schema: {}", parent.schemaName);
                     parent = null;
+                } else {
+                    if (parentSchema.getDiscriminator() == null) {
+                        parent = allModels.get(parent.getParent());
+                    } else {
+                        parent = null;
+                    }
                 }
             }
         }
 
         // loop through properties of each model to detect self-reference
-        for (Map.Entry<String, Object> entry : objs.entrySet()) {
-            Map<String, Object> inner = (Map<String, Object>) entry.getValue();
-            List<Map<String, Object>> models = (List<Map<String, Object>>) inner.get("models");
-            for (Map<String, Object> mo : models) {
-                CodegenModel cm = (CodegenModel) mo.get("model");
-                for (CodegenProperty cp : cm.allVars) {
-                    // detect self import
-                    if (cp.dataType.equalsIgnoreCase(cm.classname) ||
-                            (cp.isContainer && cp.items != null && cp.items.dataType.equalsIgnoreCase(cm.classname))) {
-                        cm.imports.remove(cm.classname); // remove self import
-                        cp.isSelfReference = true;
-                    }
+        // and update mapped models for import
+        for (ModelsMap entry : objs.values()) {
+            for (ModelMap mo : entry.getModels()) {
+                CodegenModel cm = mo.getModel();
+                removeSelfReferenceImports(cm);
+
+                if (!this.getLegacyDiscriminatorBehavior()) {
+                    cm.addDiscriminatorMappedModelsImports(true);
                 }
             }
         }
@@ -585,15 +785,64 @@ public class DefaultCodegen implements CodegenConfig {
         return objs;
     }
 
-    public void setCircularReferences(Map<String, CodegenModel> models) {
-        final Map<String, List<CodegenProperty>> dependencyMap = models.entrySet().stream()
-                .collect(Collectors.toMap(Entry::getKey, entry -> getModelDependencies(entry.getValue())));
-
-        models.keySet().forEach(name -> setCircularReferencesOnProperties(name, dependencyMap));
+    /**
+     * Removes importToRemove from the imports of objs, if present.
+     * This is useful to remove imports that are already present in operations-related template files, to avoid importing the same thing twice.
+     *
+     * @param objs           imports will be removed from this objs' imports collection
+     * @param importToRemove the import statement to be removed
+     */
+    protected void removeImport(OperationsMap objs, String importToRemove) {
+        List<Map<String, String>> imports = objs.getImports();
+        for (Iterator<Map<String, String>> itr = imports.iterator(); itr.hasNext(); ) {
+            String itrImport = itr.next().get("import");
+            if (itrImport.equals(importToRemove)) {
+                itr.remove();
+            }
+        }
     }
 
-    private List<CodegenProperty> getModelDependencies(CodegenModel model) {
-        return model.getAllVars().stream()
+    /**
+     * Removes imports from the model that points to itself
+     * Marks a self referencing property, if detected
+     *
+     * @param model Self imports will be removed from this model.imports collection
+     */
+    protected void removeSelfReferenceImports(CodegenModel model) {
+        for (CodegenProperty cp : model.allVars) {
+            // detect self import
+            if (cp.dataType.equalsIgnoreCase(model.classname) ||
+                    (cp.isContainer && cp.items != null && cp.items.dataType.equalsIgnoreCase(model.classname))) {
+                model.imports.remove(model.classname); // remove self import
+                cp.isSelfReference = true;
+            }
+        }
+    }
+
+    public void setCircularReferences(Map<String, CodegenModel> models) {
+        // for allVars
+        final Map<String, List<CodegenProperty>> allVarsDependencyMap = models.entrySet().stream()
+                .collect(Collectors.toMap(Entry::getKey, entry -> getModelDependencies(entry.getValue().getAllVars())));
+
+        models.keySet().forEach(name -> setCircularReferencesOnProperties(name, allVarsDependencyMap));
+
+        // for vars
+        final Map<String, List<CodegenProperty>> varsDependencyMap = models.entrySet().stream()
+                .collect(Collectors.toMap(Entry::getKey, entry -> getModelDependencies(entry.getValue().getVars())));
+
+        models.keySet().forEach(name -> setCircularReferencesOnProperties(name, varsDependencyMap));
+
+        // for oneOf
+        final Map<String, List<CodegenProperty>> oneOfDependencyMap = models.entrySet().stream()
+                .collect(Collectors.toMap(Entry::getKey, entry -> getModelDependencies(
+                        (entry.getValue().getComposedSchemas() != null && entry.getValue().getComposedSchemas().getOneOf() != null)
+                                ? entry.getValue().getComposedSchemas().getOneOf() : new ArrayList<CodegenProperty>())));
+
+        models.keySet().forEach(name -> setCircularReferencesOnProperties(name, oneOfDependencyMap));
+    }
+
+    private List<CodegenProperty> getModelDependencies(List<CodegenProperty> vars) {
+        return vars.stream()
                 .map(prop -> {
                     if (prop.isContainer) {
                         return prop.items.dataType == null ? null : prop;
@@ -638,7 +887,7 @@ public class DefaultCodegen implements CodegenConfig {
     // override with any special post-processing
     @Override
     @SuppressWarnings("static-method")
-    public Map<String, Object> postProcessModels(Map<String, Object> objs) {
+    public ModelsMap postProcessModels(ModelsMap objs) {
         return objs;
     }
 
@@ -648,20 +897,18 @@ public class DefaultCodegen implements CodegenConfig {
      * @param objs Map of models
      * @return maps of models with better enum support
      */
-    public Map<String, Object> postProcessModelsEnum(Map<String, Object> objs) {
-        List<Object> models = (List<Object>) objs.get("models");
-        for (Object _mo : models) {
-            Map<String, Object> mo = (Map<String, Object>) _mo;
-            CodegenModel cm = (CodegenModel) mo.get("model");
+    public ModelsMap postProcessModelsEnum(ModelsMap objs) {
+        for (ModelMap mo : objs.getModels()) {
+            CodegenModel cm = mo.getModel();
 
             // for enum model
-            if (Boolean.TRUE.equals(cm.isEnum) && cm.allowableValues != null) {
-                Map<String, Object> allowableValues = cm.allowableValues;
-                List<Object> values = (List<Object>) allowableValues.get("values");
-                List<Map<String, Object>> enumVars = buildEnumVars(values, cm.dataType);
+            if (cm.isEnum && cm.allowableValues != null) {
+                List<Object> values = getEnumValues(cm.allowableValues);
+                List<EnumVarMap> enumVars = buildEnumVars(values, cm.dataType);
+                postProcessEnumVars(enumVars);
                 // if "x-enum-varnames" or "x-enum-descriptions" defined, update varnames
                 updateEnumVarsWithExtensions(enumVars, cm.getVendorExtensions(), cm.dataType);
-                cm.allowableValues.put("enumVars", enumVars);
+                cm.allowableValues.put(ENUM_VARS, enumVars);
             }
 
             // update codegen property enum with proper naming convention
@@ -671,6 +918,10 @@ public class DefaultCodegen implements CodegenConfig {
             }
 
             for (CodegenProperty var : cm.allVars) {
+                updateCodegenPropertyEnum(var);
+            }
+
+            for (CodegenProperty var : cm.nonNullableVars) {
                 updateCodegenPropertyEnum(var);
             }
 
@@ -733,6 +984,18 @@ public class DefaultCodegen implements CodegenConfig {
     }
 
     /**
+     * Return the enum default value in the language specified format
+     *
+     * @param property The codegen property to create the default for.
+     * @param value    Enum variable name
+     * @return the default value for the enum
+     */
+    public String toEnumDefaultValue(CodegenProperty property, String value) {
+        // Use the datatype with the value.
+        return toEnumDefaultValue(value, property.datatypeWithEnum);
+    }
+
+    /**
      * Return the enum value in the language specified format
      * e.g. status becomes "status"
      *
@@ -762,10 +1025,32 @@ public class DefaultCodegen implements CodegenConfig {
 
         String var = value.replaceAll("\\W+", "_").toUpperCase(Locale.ROOT);
         if (var.matches("\\d.*")) {
-            return "_" + var;
-        } else {
-            return var;
+            var = "_" + var;
         }
+
+        if (reservedWords.contains(var)) {
+            return escapeReservedWord(var);
+        }
+
+        return var;
+    }
+
+    public boolean specVersionGreaterThanOrEqualTo310(OpenAPI openAPI) {
+        String originalSpecVersion;
+        String xOriginalSwaggerVersion = "x-original-swagger-version";
+
+        if (openAPI == null) {
+            return false;
+        }
+
+        if (openAPI.getExtensions() != null && !openAPI.getExtensions().isEmpty() && openAPI.getExtensions().containsValue(xOriginalSwaggerVersion)) {
+            originalSpecVersion = (String) openAPI.getExtensions().get(xOriginalSwaggerVersion);
+        } else {
+            originalSpecVersion = openAPI.getOpenapi();
+        }
+        Integer specMajorVersion = Integer.parseInt(originalSpecVersion.substring(0, 1));
+        Integer specMinorVersion = Integer.parseInt(originalSpecVersion.substring(2, 3));
+        return specMajorVersion == 3 && specMinorVersion >= 1;
     }
 
     /**
@@ -774,27 +1059,47 @@ public class DefaultCodegen implements CodegenConfig {
      */
     @Override
     public void setOpenAPI(OpenAPI openAPI) {
+        if (specVersionGreaterThanOrEqualTo310(openAPI)) {
+            once(LOGGER).warn(UNSUPPORTED_V310_SPEC_MSG);
+        }
         this.openAPI = openAPI;
+        this.modelNameToSchemaCache = null;
         // Set global settings such that helper functions in ModelUtils can lookup the value
         // of the CLI option.
         ModelUtils.setDisallowAdditionalPropertiesIfNotPresent(getDisallowAdditionalPropertiesIfNotPresent());
+
+        // Multiple operations rely on proper type aliases, so we should always update them
+        typeAliases = getAllAliases(ModelUtils.getSchemas(openAPI));
     }
 
     // override with any message to be shown right before the process finishes
     @Override
     @SuppressWarnings("static-method")
     public void postProcess() {
-        System.out.println("################################################################################");
-        System.out.println("# Thanks for using OpenAPI Generator.                                          #");
-        System.out.println("# Please consider donation to help us maintain this project \uD83D\uDE4F                 #");
-        System.out.println("# https://opencollective.com/openapi_generator/donate                          #");
-        System.out.println("################################################################################");
+        if (!isQuietMode()) {
+            System.out.println("############################################################################################");
+            System.out.println("# Thanks for using OpenAPI Generator.                                                      #");
+            System.out.println("# We appreciate your support! Please consider donating to help us maintain this project.   #");
+            System.out.println("# https://opencollective.com/openapi_generator/donate                                      #");
+            System.out.println("############################################################################################");
+        }
+    }
+
+    protected boolean isQuietMode() {
+        return Boolean.parseBoolean(GlobalSettings.getProperty("quiet", "false"));
     }
 
     // override with any special post-processing
     @Override
     @SuppressWarnings("static-method")
-    public Map<String, Object> postProcessOperationsWithModels(Map<String, Object> objs, List<Object> allModels) {
+    public OperationsMap postProcessOperationsWithModels(OperationsMap objs, List<ModelMap> allModels) {
+        return objs;
+    }
+
+    // override with any special post-processing
+    @Override
+    @SuppressWarnings("static-method")
+    public WebhooksMap postProcessWebhooksWithModels(WebhooksMap objs, List<ModelMap> allModels) {
         return objs;
     }
 
@@ -811,21 +1116,299 @@ public class DefaultCodegen implements CodegenConfig {
     public void postProcessModelProperty(CodegenModel model, CodegenProperty property) {
     }
 
+    // override to post-process any response
+    @Override
+    @SuppressWarnings("unused")
+    public void postProcessResponseWithProperty(CodegenResponse response, CodegenProperty property) {
+    }
+
     // override to post-process any parameters
     @Override
     @SuppressWarnings("unused")
     public void postProcessParameter(CodegenParameter parameter) {
     }
 
+    protected boolean splitOperationsByContentType = false;
+
+    public void setSplitOperationsByContentType(boolean splitOperationsByContentType) {
+        this.splitOperationsByContentType = splitOperationsByContentType;
+    }
+
+    /**
+     * When {@link CodegenConstants#SPLIT_OPERATIONS_BY_CONTENT_TYPE} is enabled, divides an operation whose
+     * request body and/or success response expose several content-types with <em>different</em> schemas
+     * into one operation per content-type (the cartesian product of the request and response axes,
+     * deduplicated by schema). Each variant is narrowed to a single content-type on each axis with a typed,
+     * collision-free operationId; {@code DefaultGenerator} processes each so it re-enters
+     * {@code fromOperation} and is typed natively by the target generator. This keeps the feature
+     * language-neutral: no per-language type re-derivation here. Returns the operation as a singleton when
+     * the option is off or no division applies.
+     * <p>
+     * Every variant carries the {@code x-content-type-variant-*} extensions describing its place in the
+     * matrix, so a generator able to express the whole matrix in a single construct — TypeScript overloads,
+     * for instance — can merge the variants back together while keeping each one's natively resolved types.
+     */
+    @Override
+    public List<Operation> divideOperationsByContentType(OpenAPI openAPI, String path, String httpMethod, Operation operation) {
+        if (!splitOperationsByContentType || operation == null) {
+            return Collections.singletonList(operation);
+        }
+        RequestBody requestBody = ModelUtils.getReferencedRequestBody(openAPI, operation.getRequestBody());
+        List<Axis> requestAxis = axisOf(requestBody == null ? null : requestBody.getContent());
+
+        // Only the response the generator derives the return type from (the method response) is split, so the
+        // variants' return types and Accept headers stay consistent (see findMethodResponse).
+        String methodResponseCode = operation.getResponses() == null ? null : findMethodResponseCode(operation.getResponses());
+        ApiResponse methodResponse = methodResponseCode == null ? null
+                : ModelUtils.getReferencedApiResponse(openAPI, operation.getResponses().get(methodResponseCode));
+        List<Axis> responseAxis = axisOf(methodResponse == null ? null : methodResponse.getContent());
+
+        if (requestAxis.size() == 1 && responseAxis.size() == 1) {
+            return Collections.singletonList(operation); // single content-type on both axes: nothing to divide
+        }
+
+        // Both axes are in declaration order, so rank 0 is the default content-type, consistently with the
+        // rest of the generator: addConsumesInfo keeps that order and templates read consumes.0.
+        String baseId = getOrGenerateOperationId(operation, path, httpMethod);
+        List<Operation> variants = new ArrayList<>(requestAxis.size() * responseAxis.size());
+        for (Axis request : requestAxis) {
+            for (Axis response : responseAxis) {
+                Operation variant = buildOperationVariant(openAPI, operation, baseId, request, response,
+                        methodResponseCode, methodResponse);
+                tagContentTypeVariant(variant, baseId, request, response);
+                variants.add(variant);
+            }
+        }
+        return variants;
+    }
+
+    /**
+     * One position on a content-type axis. {@link Axis#NOT_SPLIT} is the single position of an axis that
+     * stays as it is; the others carry the media-type the variant is narrowed to, the token its operationId
+     * is built from, and the rank the spec declares that media-type at.
+     */
+    private static final class Axis {
+        private static final Axis NOT_SPLIT = new Axis(null, null, 0);
+
+        private final String mediaType;
+        private final String token;
+        private final int rank;
+
+        private Axis(String mediaType, String token, int rank) {
+            this.mediaType = mediaType;
+            this.token = token;
+            this.rank = rank;
+        }
+    }
+
+    /**
+     * The media-types of {@code content} deduplicated by resolved schema (two media-types sharing a schema
+     * collapse into the first one declared), kept in declaration order: that is the order the rest of the
+     * generator already treats as authoritative, so rank 0 is the content-type a caller gets by default.
+     * Returns a singleton {@link Axis#NOT_SPLIT} when fewer than two distinct schemas remain.
+     */
+    private List<Axis> axisOf(Content content) {
+        if (content == null || content.size() < 2) {
+            return Collections.singletonList(Axis.NOT_SPLIT);
+        }
+        List<String> mediaTypes = new ArrayList<>();
+        Set<String> seenSchemas = new HashSet<>();
+        for (Map.Entry<String, MediaType> entry : content.entrySet()) {
+            if (seenSchemas.add(schemaKey(entry.getValue() == null ? null : entry.getValue().getSchema()))) {
+                mediaTypes.add(entry.getKey());
+            }
+        }
+        if (mediaTypes.size() < 2) {
+            return Collections.singletonList(Axis.NOT_SPLIT);
+        }
+        // the subtype alone identifies most media-types, but not all: text/csv and application/csv would
+        // both be Csv and give two variants the same operationId, so those fall back to the whole type
+        Map<String, Long> bySubtype = mediaTypes.stream()
+                .collect(Collectors.groupingBy(DefaultCodegen::subtypeToken, Collectors.counting()));
+        List<Axis> axis = new ArrayList<>(mediaTypes.size());
+        for (int rank = 0; rank < mediaTypes.size(); rank++) {
+            String mediaType = mediaTypes.get(rank);
+            String subtype = subtypeToken(mediaType);
+            axis.add(new Axis(mediaType, bySubtype.get(subtype) > 1 ? sanitizeToken(mediaType) : subtype, rank));
+        }
+        return axis;
+    }
+
+    /**
+     * Records where a variant sits in the content-type matrix so that a generator able to express the whole
+     * matrix in a single construct can merge the variants back together: the group they belong to, the
+     * media-type they were narrowed to on each axis (absent when that axis was not split) and its rank in
+     * that axis. See {@link CodegenConstants#X_CONTENT_TYPE_VARIANT_REQUEST_INDEX}.
+     */
+    private static void tagContentTypeVariant(Operation variant, String group, Axis request, Axis response) {
+        Map<String, Object> extensions = variant.getExtensions();
+        extensions.put(CodegenConstants.X_CONTENT_TYPE_VARIANT_GROUP, group);
+        if (request.mediaType != null) {
+            extensions.put(CodegenConstants.X_CONTENT_TYPE_VARIANT_REQUEST, request.mediaType);
+        }
+        if (response.mediaType != null) {
+            extensions.put(CodegenConstants.X_CONTENT_TYPE_VARIANT_RESPONSE, response.mediaType);
+        }
+        // the rank travels with the variant: the operations are reordered before they reach a generator,
+        // so their position in the list is no longer the order declared in the spec
+        extensions.put(CodegenConstants.X_CONTENT_TYPE_VARIANT_REQUEST_INDEX, request.rank);
+        extensions.put(CodegenConstants.X_CONTENT_TYPE_VARIANT_RESPONSE_INDEX, response.rank);
+    }
+
+    /**
+     * The media-type a content-type variant was narrowed to on one axis — {@code axisExtension} being
+     * {@link CodegenConstants#X_CONTENT_TYPE_VARIANT_REQUEST} or
+     * {@link CodegenConstants#X_CONTENT_TYPE_VARIANT_RESPONSE} — or {@code null} when the operation is not
+     * one of the variants {@link #divideOperationsByContentType} split an operation into (every variant
+     * carries the group extension) or that axis was not split.
+     */
+    protected static String contentTypeVariantMediaType(Operation operation, String axisExtension) {
+        Map<String, Object> extensions = operation.getExtensions();
+        Object mediaType = extensions != null && extensions.containsKey(CodegenConstants.X_CONTENT_TYPE_VARIANT_GROUP)
+                ? extensions.get(axisExtension) : null;
+        return mediaType instanceof String ? (String) mediaType : null;
+    }
+
+    /**
+     * Builds one operation variant narrowed to a single request and/or response media-type (a {@code null}
+     * media-type leaves that axis untouched), with a typed, collision-free operationId.
+     */
+    private Operation buildOperationVariant(OpenAPI openAPI, Operation original, String baseId,
+                                            Axis request, Axis response,
+                                            String targetResponseCode, ApiResponse targetResponse) {
+        Operation variant = shallowCopyOperation(original);
+
+        // typed, collision-free operationId: request -> "With<Subtype>", response -> "As<Subtype>"
+        StringBuilder operationId = new StringBuilder(baseId);
+        if (request.mediaType != null) {
+            operationId.append("With").append(camelize(request.token));
+        }
+        if (response.mediaType != null) {
+            operationId.append("As").append(camelize(response.token));
+        }
+        variant.setOperationId(operationId.toString());
+
+        if (request.mediaType != null) {
+            RequestBody requestBody = ModelUtils.getReferencedRequestBody(openAPI, original.getRequestBody());
+            variant.setRequestBody(narrowRequestBody(requestBody, request.mediaType));
+        }
+        if (response.mediaType != null) {
+            variant.setResponses(narrowResponses(original.getResponses(), targetResponseCode, targetResponse, response.mediaType));
+        }
+        return variant;
+    }
+
+    /**
+     * Copies an {@link Operation} one level deep: the copy gets its own parameter and extension lists,
+     * which the split writes to, and shares everything below — schemas above all, which it only reads.
+     * A deep copy would have to round-trip through the mapper, which drops any schema whose type is not
+     * a standard OpenAPI < 3.1 one.
+     */
+    private Operation shallowCopyOperation(Operation source) {
+        Operation copy = new Operation();
+        copy.setTags(source.getTags());
+        copy.setSummary(source.getSummary());
+        copy.setDescription(source.getDescription());
+        copy.setExternalDocs(source.getExternalDocs());
+        copy.setOperationId(source.getOperationId());
+        copy.setParameters(source.getParameters() == null ? null : new ArrayList<>(source.getParameters()));
+        copy.setRequestBody(source.getRequestBody());
+        copy.setResponses(source.getResponses());
+        copy.setCallbacks(source.getCallbacks());
+        copy.setDeprecated(source.getDeprecated());
+        copy.setSecurity(source.getSecurity() == null ? null : new ArrayList<>(source.getSecurity()));
+        copy.setServers(source.getServers());
+        // a non-null extensions map: the split writes the variant's place in the matrix into it, and
+        // generators (SpringCodegen for one) read it without null-guards
+        copy.setExtensions(source.getExtensions() == null ? new LinkedHashMap<>() : new LinkedHashMap<>(source.getExtensions()));
+        return copy;
+    }
+
+    private RequestBody narrowRequestBody(RequestBody source, String mediaType) {
+        RequestBody copy = new RequestBody();
+        copy.setDescription(source.getDescription());
+        copy.setRequired(source.getRequired());
+        copy.setExtensions(source.getExtensions());
+        copy.setContent(singleContent(source.getContent(), mediaType));
+        return copy;
+    }
+
+    private ApiResponses narrowResponses(ApiResponses responses, String targetCode, ApiResponse targetResponse, String mediaType) {
+        ApiResponses copy = new ApiResponses();
+        copy.setExtensions(responses.getExtensions());
+        for (Map.Entry<String, ApiResponse> entry : responses.entrySet()) {
+            if (entry.getKey().equals(targetCode)) {
+                copy.addApiResponse(entry.getKey(), narrowApiResponse(targetResponse, mediaType));
+            } else {
+                copy.addApiResponse(entry.getKey(), entry.getValue());
+            }
+        }
+        return copy;
+    }
+
+    private ApiResponse narrowApiResponse(ApiResponse source, String mediaType) {
+        ApiResponse copy = new ApiResponse();
+        copy.setDescription(source.getDescription());
+        copy.setHeaders(source.getHeaders());
+        copy.setLinks(source.getLinks());
+        copy.setExtensions(source.getExtensions());
+        copy.setContent(singleContent(source.getContent(), mediaType));
+        return copy;
+    }
+
+    /** A new {@link Content} holding only {@code mediaType} taken from {@code source}. */
+    private static Content singleContent(Content source, String mediaType) {
+        Content content = new Content();
+        content.addMediaType(mediaType, source.get(mediaType));
+        return content;
+    }
+
+    /** Stable identity key for a schema: its {@code $ref} when present, else a structural key. */
+    private static String schemaKey(Schema schema) {
+        if (schema == null) {
+            return "null";
+        }
+        if (schema.get$ref() != null) {
+            return schema.get$ref();
+        }
+        StringBuilder key = new StringBuilder();
+        key.append(ModelUtils.getType(schema)).append('|').append(schema.getFormat());
+        if (schema.getItems() != null) {
+            key.append("|items=").append(schemaKey(schema.getItems()));
+        }
+        // the property names too: without them two different inline object schemas share a key, and the
+        // media-type of the second one is dropped from the generated client with nothing said
+        if (schema.getProperties() != null) {
+            key.append("|props=").append(new TreeSet<>(schema.getProperties().keySet()));
+        }
+        if (schema.getAdditionalProperties() instanceof Schema) {
+            key.append("|addProps=").append(schemaKey((Schema) schema.getAdditionalProperties()));
+        }
+        return key.toString();
+    }
+
+    /** Whole media-type reduced to an identifier, e.g. {@code text_csv} from {@code text/csv}. */
+    private static String sanitizeToken(String mediaType) {
+        return mediaType.replaceAll("\\+.*$", "").replaceAll("[^a-zA-Z0-9]+", "_");
+    }
+
+    /** Token derived from a media-type subtype, e.g. {@code Directlog} from {@code application/directlog}. */
+    private static String subtypeToken(String mediaType) {
+        String subtype = mediaType.substring(mediaType.indexOf('/') + 1);
+        subtype = subtype.replaceAll("\\+.*$", "");      // drop structured suffix (+json, +xml, ...)
+        subtype = subtype.replaceAll("[^a-zA-Z0-9]+", "_");
+        return subtype;
+    }
+
     //override with any special handling of the entire OpenAPI spec document
     @Override
     @SuppressWarnings("unused")
     public void preprocessOpenAPI(OpenAPI openAPI) {
-        if (useOneOfInterfaces) {
+        if (useOneOfInterfaces && openAPI.getComponents() != null) {
             // we process the openapi schema here to find oneOf schemas and create interface models for them
-            Map<String, Schema> schemas = new HashMap<String, Schema>(openAPI.getComponents().getSchemas());
+            Map<String, Schema> schemas = new HashMap<>(openAPI.getComponents().getSchemas());
             if (schemas == null) {
-                schemas = new HashMap<String, Schema>();
+                schemas = new HashMap<>();
             }
             Map<String, PathItem> pathItems = openAPI.getPaths();
 
@@ -847,7 +1430,7 @@ public class DefaultCodegen implements CodegenConfig {
                         if (op.getValue().getResponses() != null) {
                             for (Map.Entry<String, ApiResponse> ar : op.getValue().getResponses().entrySet()) {
                                 ApiResponse a = ModelUtils.getReferencedApiResponse(openAPI, ar.getValue());
-                                Schema responseSchema = ModelUtils.getSchemaFromResponse(a);
+                                Schema responseSchema = unaliasSchema(ModelUtils.getSchemaFromResponse(openAPI, a));
                                 if (responseSchema != null) {
                                     schemas.put(opId + ar.getKey(), responseSchema);
                                 }
@@ -858,12 +1441,12 @@ public class DefaultCodegen implements CodegenConfig {
             }
 
             // also add all properties of all schemas to be checked for oneOf
-            Map<String, Schema> propertySchemas = new HashMap<String, Schema>();
+            Map<String, Schema> propertySchemas = new HashMap<>();
             for (Map.Entry<String, Schema> e : schemas.entrySet()) {
                 Schema s = e.getValue();
                 Map<String, Schema> props = s.getProperties();
                 if (props == null) {
-                    props = new HashMap<String, Schema>();
+                    props = new HashMap<>();
                 }
                 for (Map.Entry<String, Schema> p : props.entrySet()) {
                     propertySchemas.put(e.getKey() + "/" + p.getKey(), p.getValue());
@@ -879,23 +1462,23 @@ public class DefaultCodegen implements CodegenConfig {
                 if (ModelUtils.isComposedSchema(s)) {
                     if (e.getKey().contains("/")) {
                         // if this is property schema, we also need to generate the oneOf interface model
-                        addOneOfNameExtension((ComposedSchema) s, nOneOf);
-                        addOneOfInterfaceModel((ComposedSchema) s, nOneOf, openAPI);
+                        addOneOfNameExtension(s, nOneOf);
+                        addOneOfInterfaceModel(s, nOneOf);
                     } else {
                         // else this is a component schema, so we will just use that as the oneOf interface model
-                        addOneOfNameExtension((ComposedSchema) s, n);
+                        addOneOfNameExtension(s, n);
                     }
                 } else if (ModelUtils.isArraySchema(s)) {
-                    Schema items = ((ArraySchema) s).getItems();
+                    Schema items = ModelUtils.getSchemaItems(s);
                     if (ModelUtils.isComposedSchema(items)) {
-                        addOneOfNameExtension((ComposedSchema) items, nOneOf);
-                        addOneOfInterfaceModel((ComposedSchema) items, nOneOf, openAPI);
+                        addOneOfNameExtension(items, nOneOf);
+                        addOneOfInterfaceModel(items, nOneOf);
                     }
                 } else if (ModelUtils.isMapSchema(s)) {
-                    Schema addProps = getAdditionalProperties(s);
-                    if (addProps != null && ModelUtils.isComposedSchema(addProps)) {
-                        addOneOfNameExtension((ComposedSchema) addProps, nOneOf);
-                        addOneOfInterfaceModel((ComposedSchema) addProps, nOneOf, openAPI);
+                    Schema addProps = ModelUtils.getAdditionalProperties(s);
+                    if (ModelUtils.isComposedSchema(addProps)) {
+                        addOneOfNameExtension(addProps, nOneOf);
+                        addOneOfInterfaceModel(addProps, nOneOf);
                     }
                 }
             }
@@ -927,7 +1510,7 @@ public class DefaultCodegen implements CodegenConfig {
     @SuppressWarnings("static-method")
     public String escapeText(String input) {
         if (input == null) {
-            return input;
+            return null;
         }
 
         // remove \t, \n, \r
@@ -937,11 +1520,25 @@ public class DefaultCodegen implements CodegenConfig {
         // finally escalate characters avoiding code injection
         return escapeUnsafeCharacters(
                 StringEscapeUtils.unescapeJava(
-                        StringEscapeUtils.escapeJava(input)
-                                .replace("\\/", "/"))
+                                StringEscapeUtils.escapeJava(input)
+                                        .replace("\\/", "/"))
                         .replaceAll("[\\t\\n\\r]", " ")
                         .replace("\\", "\\\\")
                         .replace("\"", "\\\""));
+    }
+
+    /**
+     * This method escapes text to be used in a single quoted string
+     *
+     * @param input the input string
+     * @return the escaped string
+     */
+    public String escapeTextInSingleQuotes(String input) {
+        if (input == null) {
+            return null;
+        }
+
+        return escapeText(input).replace("'", "\\'");
     }
 
     /**
@@ -953,7 +1550,7 @@ public class DefaultCodegen implements CodegenConfig {
     @Override
     public String escapeTextWhileAllowingNewLines(String input) {
         if (input == null) {
-            return input;
+            return null;
         }
 
         // remove \t
@@ -963,9 +1560,9 @@ public class DefaultCodegen implements CodegenConfig {
         // finally escalate characters avoiding code injection
         return escapeUnsafeCharacters(
                 StringEscapeUtils.unescapeJava(
-                        StringEscapeUtils.escapeJava(input)
-                                .replace("\\/", "/"))
-                        .replaceAll("[\\t]", " ")
+                                StringEscapeUtils.escapeJava(input)
+                                        .replace("\\/", "/"))
+                        .replaceAll("\\t", " ")
                         .replace("\\", "\\\\")
                         .replace("\"", "\\\""));
     }
@@ -986,7 +1583,7 @@ public class DefaultCodegen implements CodegenConfig {
      */
     @Override
     public String escapeUnsafeCharacters(String input) {
-        LOGGER.warn("escapeUnsafeCharacters should be overridden in the code generator with proper logic to escape " +
+        once(LOGGER).warn("escapeUnsafeCharacters should be overridden in the code generator with proper logic to escape " +
                 "unsafe characters");
         // doing nothing by default and code generator should implement
         // the logic to prevent code injection
@@ -1003,7 +1600,7 @@ public class DefaultCodegen implements CodegenConfig {
      */
     @Override
     public String escapeQuotationMark(String input) {
-        LOGGER.warn("escapeQuotationMark should be overridden in the code generator with proper logic to escape " +
+        once(LOGGER).warn("escapeQuotationMark should be overridden in the code generator with proper logic to escape " +
                 "single/double quote");
         return input.replace("\"", "\\\"");
     }
@@ -1034,8 +1631,63 @@ public class DefaultCodegen implements CodegenConfig {
     }
 
     @Override
+    public Set<String> openapiGeneratorIgnoreList() {
+        return openapiGeneratorIgnoreList;
+    }
+
+    @Override
     public Map<String, String> importMapping() {
         return importMapping;
+    }
+
+    @Override
+    public Map<String, String> schemaMapping() {
+        return schemaMapping;
+    }
+
+    @Override
+    public Map<String, String> inlineSchemaNameMapping() {
+        return inlineSchemaNameMapping;
+    }
+
+    @Override
+    public Map<String, String> inlineSchemaOption() {
+        return inlineSchemaOption;
+    }
+
+    @Override
+    public Map<String, String> nameMapping() {
+        return nameMapping;
+    }
+
+    @Override
+    public Map<String, String> parameterNameMapping() {
+        return parameterNameMapping;
+    }
+
+    @Override
+    public Map<String, String> modelNameMapping() {
+        return modelNameMapping;
+    }
+
+    @Override
+    public Map<String, String> enumNameMapping() {
+        return enumNameMapping;
+    }
+
+    @Override
+    public Map<String, String> operationIdNameMapping() {
+        return operationIdNameMapping;
+    }
+
+    @Override
+    public Map<String, String> injectModelVendorExtensions() {
+        return injectModelVendorExtensions;
+    }
+
+    @Override
+    public Map<String, String> openapiNormalizer() {
+        return openapiNormalizer;
     }
 
     @Override
@@ -1070,6 +1722,11 @@ public class DefaultCodegen implements CodegenConfig {
         } else {
             return templateDir;
         }
+    }
+
+    @Override
+    public List<String> additionalEmbeddedTemplateDirs() {
+        return additionalEmbeddedTemplateDirs;
     }
 
     @Override
@@ -1153,6 +1810,11 @@ public class DefaultCodegen implements CodegenConfig {
     }
 
     @Override
+    public Map<String, String> templateOutputDirs() {
+        return templateOutputDirs;
+    }
+
+    @Override
     public List<SupportingFile> supportingFiles() {
         return supportingFiles;
     }
@@ -1187,117 +1849,21 @@ public class DefaultCodegen implements CodegenConfig {
         return filesMetadataFilename;
     }
 
-    public void setFilesMetadataFilename(String filesMetadataFilename) {
-        this.filesMetadataFilename = filesMetadataFilename;
-    }
-
     @Override
     public String getVersionMetadataFilename() {
         return versionMetadataFilename;
-    }
-
-    public void setVersionMetadataFilename(String versionMetadataFilename) {
-        this.versionMetadataFilename = versionMetadataFilename;
-    }
-
-    public void setTemplateDir(String templateDir) {
-        this.templateDir = templateDir;
-    }
-
-    public void setModelPackage(String modelPackage) {
-        this.modelPackage = modelPackage;
-    }
-
-    public String getModelNamePrefix() {
-        return modelNamePrefix;
-    }
-
-    public void setModelNamePrefix(String modelNamePrefix) {
-        this.modelNamePrefix = modelNamePrefix;
-    }
-
-    public String getModelNameSuffix() {
-        return modelNameSuffix;
-    }
-
-    public void setModelNameSuffix(String modelNameSuffix) {
-        this.modelNameSuffix = modelNameSuffix;
-    }
-
-    public String getApiNameSuffix() {
-        return apiNameSuffix;
-    }
-
-    public void setApiNameSuffix(String apiNameSuffix) {
-        this.apiNameSuffix = apiNameSuffix;
-    }
-
-    public String getApiNamePrefix() {
-        return apiNamePrefix;
-    }
-
-    public void setApiNamePrefix(String apiNamePrefix) {
-        this.apiNamePrefix = apiNamePrefix;
-    }
-
-    public void setApiPackage(String apiPackage) {
-        this.apiPackage = apiPackage;
-    }
-
-    public Boolean getSortParamsByRequiredFlag() {
-        return sortParamsByRequiredFlag;
-    }
-
-    public void setSortParamsByRequiredFlag(Boolean sortParamsByRequiredFlag) {
-        this.sortParamsByRequiredFlag = sortParamsByRequiredFlag;
-    }
-
-    public Boolean getSortModelPropertiesByRequiredFlag() {
-        return sortModelPropertiesByRequiredFlag;
-    }
-
-    public void setSortModelPropertiesByRequiredFlag(Boolean sortModelPropertiesByRequiredFlag) {
-        this.sortModelPropertiesByRequiredFlag = sortModelPropertiesByRequiredFlag;
-    }
-
-    public Boolean getPrependFormOrBodyParameters() {
-        return prependFormOrBodyParameters;
-    }
-
-    public void setPrependFormOrBodyParameters(Boolean prependFormOrBodyParameters) {
-        this.prependFormOrBodyParameters = prependFormOrBodyParameters;
-    }
-
-    public Boolean getEnsureUniqueParams() {
-        return ensureUniqueParams;
-    }
-
-    public void setEnsureUniqueParams(Boolean ensureUniqueParams) {
-        this.ensureUniqueParams = ensureUniqueParams;
     }
 
     public Boolean getLegacyDiscriminatorBehavior() {
         return legacyDiscriminatorBehavior;
     }
 
-    public void setLegacyDiscriminatorBehavior(boolean val) {
-        this.legacyDiscriminatorBehavior = val;
-    }
-
     public Boolean getDisallowAdditionalPropertiesIfNotPresent() {
         return disallowAdditionalPropertiesIfNotPresent;
     }
 
-    public void setDisallowAdditionalPropertiesIfNotPresent(boolean val) {
-        this.disallowAdditionalPropertiesIfNotPresent = val;
-    }
-
-    public Boolean getAllowUnicodeIdentifiers() {
-        return allowUnicodeIdentifiers;
-    }
-
-    public void setAllowUnicodeIdentifiers(Boolean allowUnicodeIdentifiers) {
-        this.allowUnicodeIdentifiers = allowUnicodeIdentifiers;
+    public Boolean getEnumUnknownDefaultCase() {
+        return enumUnknownDefaultCase;
     }
 
     public Boolean getUseOneOfInterfaces() {
@@ -1319,7 +1885,7 @@ public class DefaultCodegen implements CodegenConfig {
     }
 
     /**
-     * Return the file name of the Api Test
+     * Return the file name of the Api
      *
      * @param name the file name of the Api
      * @return the file name of the Api
@@ -1429,9 +1995,14 @@ public class DefaultCodegen implements CodegenConfig {
      * @return the sanitized variable name
      */
     public String toVarName(final String name) {
+        // obtain the name from nameMapping directly if provided
+        if (nameMapping.containsKey(name)) {
+            return nameMapping.get(name);
+        }
+
         if (reservedWords.contains(name)) {
             return escapeReservedWord(name);
-        } else if (name.chars().anyMatch(character -> specialCharReplacements.containsKey("" + ((char) character)))) {
+        } else if (name.chars().anyMatch(character -> specialCharReplacements.containsKey(String.valueOf((char) character)))) {
             return escape(name, specialCharReplacements, null, null);
         }
         return name;
@@ -1446,10 +2017,15 @@ public class DefaultCodegen implements CodegenConfig {
      */
     @Override
     public String toParamName(String name) {
+        // obtain the name from parameterNameMapping directly if provided
+        if (parameterNameMapping.containsKey(name)) {
+            return parameterNameMapping.get(name);
+        }
+
         name = removeNonNameElementToCamelCase(name); // FIXME: a parameter should not be assigned. Also declare the methods parameters as 'final'.
         if (reservedWords.contains(name)) {
             return escapeReservedWord(name);
-        } else if (name.chars().anyMatch(character -> specialCharReplacements.containsKey("" + ((char) character)))) {
+        } else if (name.chars().anyMatch(character -> specialCharReplacements.containsKey(String.valueOf((char) character)))) {
             return escape(name, specialCharReplacements, null, null);
         }
         return name;
@@ -1474,7 +2050,11 @@ public class DefaultCodegen implements CodegenConfig {
      */
     @SuppressWarnings("static-method")
     public String toEnumName(CodegenProperty property) {
-        return StringUtils.capitalize(property.name) + "Enum";
+        return toEnumName(property.name);
+    }
+
+    public String toEnumName(String propertyName) {
+        return StringUtils.capitalize(propertyName) + "Enum";
     }
 
     /**
@@ -1509,12 +2089,13 @@ public class DefaultCodegen implements CodegenConfig {
     /**
      * Returns the same content as [[toModelImport]] with key the fully-qualified Model name and value the initial input.
      * In case of union types this method has a key for each separate model and import.
+     *
      * @param name the name of the "Model"
      * @return Map of fully-qualified models.
      */
     @Override
-    public Map<String,String> toModelImportMap(String name){
-        return Collections.singletonMap(this.toModelImport(name),name);
+    public Map<String, String> toModelImportMap(String name) {
+        return Collections.singletonMap(this.toModelImport(name), name);
     }
 
     /**
@@ -1547,7 +2128,7 @@ public class DefaultCodegen implements CodegenConfig {
                 .generationMessage(String.format(Locale.ROOT, "OpenAPI Generator: %s (%s)", getName(), codegenType.toValue()))
                 .build();
 
-        defaultIncludes = new HashSet<String>(
+        defaultIncludes = new HashSet<>(
                 Arrays.asList("double",
                         "int",
                         "long",
@@ -1564,12 +2145,10 @@ public class DefaultCodegen implements CodegenConfig {
                         "Float")
         );
 
-        typeMapping = new HashMap<String, String>();
+        typeMapping = new HashMap<>();
         typeMapping.put("array", "List");
         typeMapping.put("set", "Set");
         typeMapping.put("map", "Map");
-        typeMapping.put("List", "List");
-        typeMapping.put("Set", "Set");
         typeMapping.put("boolean", "Boolean");
         typeMapping.put("string", "String");
         typeMapping.put("int", "Integer");
@@ -1580,9 +2159,11 @@ public class DefaultCodegen implements CodegenConfig {
         typeMapping.put("DateTime", "Date");
         typeMapping.put("long", "Long");
         typeMapping.put("short", "Short");
+        typeMapping.put("integer", "Integer");
+        typeMapping.put("UnsignedInteger", "Integer");
+        typeMapping.put("UnsignedLong", "Long");
         typeMapping.put("char", "String");
         typeMapping.put("object", "Object");
-        typeMapping.put("integer", "Integer");
         // FIXME: java specific type should be in Java Based Abstract Impl's
         typeMapping.put("ByteArray", "byte[]");
         typeMapping.put("binary", "File");
@@ -1591,9 +2172,9 @@ public class DefaultCodegen implements CodegenConfig {
         typeMapping.put("URI", "URI");
         typeMapping.put("AnyType", "oas_any_type_not_mapped");
 
-        instantiationTypes = new HashMap<String, String>();
+        instantiationTypes = new HashMap<>();
 
-        reservedWords = new HashSet<String>();
+        reservedWords = new HashSet<>();
 
         cliOptions.add(CliOption.newBoolean(CodegenConstants.SORT_PARAMS_BY_REQUIRED_FLAG,
                 CodegenConstants.SORT_PARAMS_BY_REQUIRED_FLAG_DESC).defaultValue(Boolean.TRUE.toString()));
@@ -1607,12 +2188,12 @@ public class DefaultCodegen implements CodegenConfig {
         // option to change the order of form/body parameter
         cliOptions.add(CliOption.newBoolean(CodegenConstants.PREPEND_FORM_OR_BODY_PARAMETERS,
                 CodegenConstants.PREPEND_FORM_OR_BODY_PARAMETERS_DESC).defaultValue(Boolean.FALSE.toString()));
-
         // option to change how we process + set the data in the discriminator mapping
         CliOption legacyDiscriminatorBehaviorOpt = CliOption.newBoolean(CodegenConstants.LEGACY_DISCRIMINATOR_BEHAVIOR, CodegenConstants.LEGACY_DISCRIMINATOR_BEHAVIOR_DESC).defaultValue(Boolean.TRUE.toString());
         Map<String, String> legacyDiscriminatorBehaviorOpts = new HashMap<>();
         legacyDiscriminatorBehaviorOpts.put("true", "The mapping in the discriminator includes descendent schemas that allOf inherit from self and the discriminator mapping schemas in the OAS document.");
-        legacyDiscriminatorBehaviorOpts.put("false", "The mapping in the discriminator includes any descendent schemas that allOf inherit from self, any oneOf schemas, any anyOf schemas, any x-discriminator-values, and the discriminator mapping schemas in the OAS document AND Codegen validates that oneOf and anyOf schemas contain the required discriminator and throws an error if the discriminator is missing.");
+        legacyDiscriminatorBehaviorOpts.put("false",
+                "The mapping in the discriminator includes any descendent schemas that allOf inherit from self, any oneOf schemas, any anyOf schemas, any x-discriminator-values, and the discriminator mapping schemas in the OAS document AND Codegen validates that oneOf and anyOf schemas contain the required discriminator and throws an error if the discriminator is missing.");
         legacyDiscriminatorBehaviorOpt.setEnum(legacyDiscriminatorBehaviorOpts);
         cliOptions.add(legacyDiscriminatorBehaviorOpt);
 
@@ -1629,11 +2210,27 @@ public class DefaultCodegen implements CodegenConfig {
         cliOptions.add(disallowAdditionalPropertiesIfNotPresentOpt);
         this.setDisallowAdditionalPropertiesIfNotPresent(true);
 
+        CliOption enumUnknownDefaultCaseOpt = CliOption.newBoolean(
+                CodegenConstants.ENUM_UNKNOWN_DEFAULT_CASE,
+                CodegenConstants.ENUM_UNKNOWN_DEFAULT_CASE_DESC).defaultValue(Boolean.FALSE.toString());
+        Map<String, String> enumUnknownDefaultCaseOpts = new HashMap<>();
+        enumUnknownDefaultCaseOpts.put("false",
+                "No changes to the enums are made, this is the default option.");
+        enumUnknownDefaultCaseOpts.put("true",
+                "With this option enabled, each enum will have a new case, 'unknown_default_open_api', so that when the enum case sent by the server is not known by the client/spec, can safely be decoded to this case.");
+        enumUnknownDefaultCaseOpt.setEnum(enumUnknownDefaultCaseOpts);
+        cliOptions.add(enumUnknownDefaultCaseOpt);
+        this.setEnumUnknownDefaultCase(false);
+
         // initialize special character mapping
         initializeSpecialCharacterMapping();
 
         // Register common Mustache lambdas.
         registerMustacheLambdas();
+
+        // Initialize mustache braces placeholders for all generators
+        additionalProperties.putIfAbsent("openbrace", "{");
+        additionalProperties.putIfAbsent("closebrace", "}");
     }
 
     /**
@@ -1642,6 +2239,7 @@ public class DefaultCodegen implements CodegenConfig {
     protected void initializeSpecialCharacterMapping() {
         // Initialize special characters
         specialCharReplacements.put("$", "Dollar");
+        specialCharReplacements.put("€", "Euro");
         specialCharReplacements.put("^", "Caret");
         specialCharReplacements.put("|", "Pipe");
         specialCharReplacements.put("=", "Equal");
@@ -1677,7 +2275,9 @@ public class DefaultCodegen implements CodegenConfig {
         specialCharReplacements.put("<=", "Less_Than_Or_Equal_To");
         specialCharReplacements.put(">=", "Greater_Than_Or_Equal_To");
         specialCharReplacements.put("!=", "Not_Equal");
+        specialCharReplacements.put("<>", "Not_Equal");
         specialCharReplacements.put("~=", "Tilde_Equal");
+        specialCharReplacements.put("==", "Double_Equal");
     }
 
     /**
@@ -1748,7 +2348,7 @@ public class DefaultCodegen implements CodegenConfig {
                     if (!param.getRequired()) {
                         paramPart.append("]");
                     }
-                    sb.append(paramPart.toString());
+                    sb.append(paramPart);
                 }
             }
         }
@@ -1764,12 +2364,15 @@ public class DefaultCodegen implements CodegenConfig {
      */
     public String toInstantiationType(Schema schema) {
         if (ModelUtils.isMapSchema(schema)) {
-            Schema additionalProperties = getAdditionalProperties(schema);
+            Schema additionalProperties = ModelUtils.getAdditionalProperties(schema);
             String inner = getSchemaType(additionalProperties);
-            return instantiationTypes.get("map") + "<String, " + inner + ">";
+            String mapInstantiation = instantiationTypes.get("map");
+            if (mapInstantiation != null) {
+                return mapInstantiation + "<String, " + inner + ">";
+            }
+            return inner;
         } else if (ModelUtils.isArraySchema(schema)) {
-            ArraySchema arraySchema = (ArraySchema) schema;
-            String inner = getSchemaType(getSchemaItems(arraySchema));
+            String inner = getSchemaType(ModelUtils.getSchemaItems(schema));
             String parentType;
             if (ModelUtils.isSet(schema)) {
                 parentType = "set";
@@ -1792,37 +2395,37 @@ public class DefaultCodegen implements CodegenConfig {
         // set the example value
         // if not specified in x-example, generate a default value
         // TODO need to revise how to obtain the example value
-        if (codegenParameter.vendorExtensions != null && codegenParameter.vendorExtensions.containsKey("x-example")) {
-            codegenParameter.example = Json.pretty(codegenParameter.vendorExtensions.get("x-example"));
-        } else if (Boolean.TRUE.equals(codegenParameter.isBoolean)) {
+        if (codegenParameter.vendorExtensions != null && codegenParameter.vendorExtensions.containsKey(X_EXAMPLE)) {
+            codegenParameter.example = Json.pretty(codegenParameter.vendorExtensions.get(X_EXAMPLE));
+        } else if (codegenParameter.isBoolean) {
             codegenParameter.example = "true";
-        } else if (Boolean.TRUE.equals(codegenParameter.isLong)) {
+        } else if (codegenParameter.isLong) {
             codegenParameter.example = "789";
-        } else if (Boolean.TRUE.equals(codegenParameter.isInteger)) {
+        } else if (codegenParameter.isInteger) {
             codegenParameter.example = "56";
-        } else if (Boolean.TRUE.equals(codegenParameter.isFloat)) {
+        } else if (codegenParameter.isFloat) {
             codegenParameter.example = "3.4";
-        } else if (Boolean.TRUE.equals(codegenParameter.isDouble)) {
+        } else if (codegenParameter.isDouble) {
             codegenParameter.example = "1.2";
-        } else if (Boolean.TRUE.equals(codegenParameter.isNumber)) {
+        } else if (codegenParameter.isNumber) {
             codegenParameter.example = "8.14";
-        } else if (Boolean.TRUE.equals(codegenParameter.isBinary)) {
+        } else if (codegenParameter.isBinary) {
             codegenParameter.example = "BINARY_DATA_HERE";
-        } else if (Boolean.TRUE.equals(codegenParameter.isByteArray)) {
+        } else if (codegenParameter.isByteArray) {
             codegenParameter.example = "BYTE_ARRAY_DATA_HERE";
-        } else if (Boolean.TRUE.equals(codegenParameter.isFile)) {
+        } else if (codegenParameter.isFile) {
             codegenParameter.example = "/path/to/file.txt";
-        } else if (Boolean.TRUE.equals(codegenParameter.isDate)) {
+        } else if (codegenParameter.isDate) {
             codegenParameter.example = "2013-10-20";
-        } else if (Boolean.TRUE.equals(codegenParameter.isDateTime)) {
+        } else if (codegenParameter.isDateTime) {
             codegenParameter.example = "2013-10-20T19:20:30+01:00";
-        } else if (Boolean.TRUE.equals(codegenParameter.isUuid)) {
+        } else if (codegenParameter.isUuid) {
             codegenParameter.example = "38400000-8cf0-11bd-b23e-10b96e4ef00d";
-        } else if (Boolean.TRUE.equals(codegenParameter.isUri)) {
+        } else if (codegenParameter.isUri) {
             codegenParameter.example = "https://openapi-generator.tech";
-        } else if (Boolean.TRUE.equals(codegenParameter.isString)) {
+        } else if (codegenParameter.isString) {
             codegenParameter.example = codegenParameter.paramName + "_example";
-        } else if (Boolean.TRUE.equals(codegenParameter.isFreeFormObject)) {
+        } else if (codegenParameter.isFreeFormObject) {
             codegenParameter.example = "Object";
         }
 
@@ -1858,6 +2461,18 @@ public class DefaultCodegen implements CodegenConfig {
     }
 
     /**
+     * Return the examples of the parameter.
+     *
+     * @param codegenParameter Codegen parameter
+     * @param parameter        Parameter
+     */
+    public void setParameterExamples(CodegenParameter codegenParameter, Parameter parameter) {
+        if (parameter.getExamples() != null && !parameter.getExamples().isEmpty()) {
+            codegenParameter.examples = parameter.getExamples();
+        }
+    }
+
+    /**
      * Return the example value of the parameter.
      *
      * @param codegenParameter Codegen parameter
@@ -1866,39 +2481,63 @@ public class DefaultCodegen implements CodegenConfig {
     public void setParameterExampleValue(CodegenParameter codegenParameter, RequestBody requestBody) {
         Content content = requestBody.getContent();
 
-        if (content.size() > 1) {
-            // @see ModelUtils.getSchemaFromContent()
-            once(LOGGER).warn("Multiple MediaTypes found, using only the first one");
-        }
+        Optional<Object> contentExample = ExamplesUtils.getContentExample(content);
 
-        MediaType mediaType = content.values().iterator().next();
-        if (mediaType.getExample() != null) {
-            codegenParameter.example = mediaType.getExample().toString();
+        if (contentExample.isPresent()) {
+            codegenParameter.example = contentExample.get().toString();
             return;
-        }
-
-        if (mediaType.getExamples() != null && !mediaType.getExamples().isEmpty()) {
-            Example example = mediaType.getExamples().values().iterator().next();
-            if (example.getValue() != null) {
-                codegenParameter.example = example.getValue().toString();
-                return;
-            }
         }
 
         setParameterExampleValue(codegenParameter);
     }
 
     /**
-     * Sets the content type of the parameter based on the encoding specified in the request body.
+     * Sets the content type, style, and explode of the parameter based on the encoding specified
+     * in the request body.
      *
      * @param codegenParameter Codegen parameter
      * @param mediaType        MediaType from the request body
      */
-    public void setParameterContentType(CodegenParameter codegenParameter, MediaType mediaType) {
+    public void setParameterEncodingValues(CodegenParameter codegenParameter, MediaType mediaType) {
         if (mediaType != null && mediaType.getEncoding() != null) {
             Encoding encoding = mediaType.getEncoding().get(codegenParameter.baseName);
             if (encoding != null) {
-                codegenParameter.contentType = encoding.getContentType();
+                boolean styleGiven = true;
+                Encoding.StyleEnum style = encoding.getStyle();
+                if (style == null || style == Encoding.StyleEnum.FORM) {
+                    // (Unfortunately, swagger-parser-v3 will always provide 'form'
+                    // when style is not specified, so we can't detect that)
+                    style = Encoding.StyleEnum.FORM;
+                    styleGiven = false;
+                }
+                boolean explodeGiven = true;
+                Boolean explode = encoding.getExplode();
+                if (explode == null) {
+                    explode = style == Encoding.StyleEnum.FORM; // Default to True when form, False otherwise
+                    explodeGiven = false;
+                }
+
+                if (!styleGiven && !explodeGiven) {
+                    // Ignore contentType if style or explode are specified.
+                    codegenParameter.contentType = encoding.getContentType();
+                }
+
+                codegenParameter.style = style.toString();
+                codegenParameter.isFormStyle = Encoding.StyleEnum.FORM == style;
+                codegenParameter.isSpaceDelimited = Encoding.StyleEnum.SPACE_DELIMITED == style;
+                codegenParameter.isPipeDelimited = Encoding.StyleEnum.PIPE_DELIMITED == style;
+                codegenParameter.isDeepObject = Encoding.StyleEnum.DEEP_OBJECT == style;
+
+                if (codegenParameter.isContainer) {
+                    codegenParameter.isExplode = explode;
+                    String collectionFormat = getCollectionFormat(codegenParameter);
+                    codegenParameter.collectionFormat = StringUtils.isEmpty(collectionFormat) ? "csv" : collectionFormat;
+                    codegenParameter.isCollectionFormatMulti = "multi".equals(collectionFormat);
+                } else {
+                    codegenParameter.isExplode = false;
+                    codegenParameter.collectionFormat = null;
+                    codegenParameter.isCollectionFormatMulti = false;
+                }
             } else {
                 LOGGER.debug("encoding not specified for {}", codegenParameter.baseName);
             }
@@ -1907,6 +2546,8 @@ public class DefaultCodegen implements CodegenConfig {
 
     /**
      * Return the example value of the property
+     * <p>
+     * This method should be overridden in the generator to meet its requirement.
      *
      * @param schema Property schema
      * @return string presentation of the example value of the property
@@ -1916,12 +2557,13 @@ public class DefaultCodegen implements CodegenConfig {
             return schema.getExample().toString();
         }
 
-        return getPropertyDefaultValue(schema);
+        return "null";
     }
 
     /**
      * Return the default value of the property
-     *
+     * <p>
+     * This method should be overridden in the generator to meet its requirement.
      * Return null if you do NOT want a default value.
      * Any non-null value will cause {{#defaultValue} check to pass.
      *
@@ -1934,12 +2576,12 @@ public class DefaultCodegen implements CodegenConfig {
             return schema.getDefault().toString();
         }
 
-        return getPropertyDefaultValue(schema);
+        return "null";
     }
 
     /**
      * Return the default value of the parameter
-     *
+     * <p>
      * Return null if you do NOT want a default value.
      * Any non-null value will cause {{#defaultValue} check to pass.
      *
@@ -1952,33 +2594,18 @@ public class DefaultCodegen implements CodegenConfig {
     }
 
     /**
-     * Return property value depending on property type.
+     * Return the default value of the parameter
+     * <p>
+     * Return null if you do NOT want a default value.
+     * Any non-null value will cause {{#defaultValue} check to pass.
      *
-     * @param schema property type
-     * @return property value
+     * @param codegenProperty Codegen Property
+     * @param schema          Parameter schema
+     * @return string presentation of the default value of the parameter
      */
-    @SuppressWarnings("squid:S3923")
-    private String getPropertyDefaultValue(Schema schema) {
-        /*
-         * Although all branches return null, this is left intentionally as examples for new contributors
-         */
-        if (ModelUtils.isBooleanSchema(schema)) {
-            return "null";
-        } else if (ModelUtils.isDateSchema(schema)) {
-            return "null";
-        } else if (ModelUtils.isDateTimeSchema(schema)) {
-            return "null";
-        } else if (ModelUtils.isNumberSchema(schema)) {
-            return "null";
-        } else if (ModelUtils.isIntegerSchema(schema)) {
-            return "null";
-        } else if (ModelUtils.isStringSchema(schema)) {
-            return "null";
-        } else if (ModelUtils.isObjectSchema(schema)) {
-            return "null";
-        } else {
-            return "null";
-        }
+    public String toDefaultParameterValue(CodegenProperty codegenProperty, Schema<?> schema) {
+        // by default works as original method to be backward compatible
+        return toDefaultParameterValue(schema);
     }
 
     /**
@@ -1995,6 +2622,21 @@ public class DefaultCodegen implements CodegenConfig {
     }
 
     /**
+     * Return the default value of the property
+     * <p>
+     * Return null if you do NOT want a default value.
+     * Any non-null value will cause {{#defaultValue} check to pass.
+     *
+     * @param schema          Property schema
+     * @param codegenProperty Codegen property
+     * @return string presentation of the default value of the property
+     */
+    public String toDefaultValue(CodegenProperty codegenProperty, Schema schema) {
+        // use toDefaultValue(schema) if generator has not overridden this method
+        return toDefaultValue(schema);
+    }
+
+    /**
      * returns the OpenAPI type for the property. Use getAlias to handle $ref of primitive type
      *
      * @param schema property schema
@@ -2002,10 +2644,9 @@ public class DefaultCodegen implements CodegenConfig {
      **/
     @SuppressWarnings("static-method")
     public String getSchemaType(Schema schema) {
-        if (schema instanceof ComposedSchema) { // composed schema
-            ComposedSchema cs = (ComposedSchema) schema;
+        if (ModelUtils.isComposedSchema(schema)) { // composed schema
             // Get the interfaces, i.e. the set of elements under 'allOf', 'anyOf' or 'oneOf'.
-            List<Schema> schemas = ModelUtils.getInterfaces(cs);
+            List<Schema> schemas = ModelUtils.getInterfaces(schema);
 
             List<String> names = new ArrayList<>();
             // Build a list of the schema types under each interface.
@@ -2015,12 +2656,12 @@ public class DefaultCodegen implements CodegenConfig {
                 names.add(getSingleSchemaType(s));
             }
 
-            if (cs.getAllOf() != null) {
-                return toAllOfName(names, cs);
-            } else if (cs.getAnyOf() != null) { // anyOf
-                return toAnyOfName(names, cs);
-            } else if (cs.getOneOf() != null) { // oneOf
-                return toOneOfName(names, cs);
+            if (schema.getAllOf() != null) {
+                return toAllOfName(names, schema);
+            } else if (schema.getAnyOf() != null) { // anyOf
+                return toAnyOfName(names, schema);
+            } else if (schema.getOneOf() != null) { // oneOf
+                return toOneOfName(names, schema);
             }
         }
 
@@ -2028,18 +2669,8 @@ public class DefaultCodegen implements CodegenConfig {
 
     }
 
-    protected Schema<?> getSchemaItems(ArraySchema schema) {
-        Schema<?> items = schema.getItems();
-        if (items == null) {
-            LOGGER.error("Undefined array inner type for `{}`. Default to String.", schema.getName());
-            items = new StringSchema().description("TODO default missing array inner type to string");
-            schema.setItems(items);
-        }
-        return items;
-    }
-
     protected Schema<?> getSchemaAdditionalProperties(Schema schema) {
-        Schema<?> inner = getAdditionalProperties(schema);
+        Schema<?> inner = ModelUtils.getAdditionalProperties(schema);
         if (inner == null) {
             LOGGER.error("`{}` (map property) does not have a proper inner type defined. Default to type:string", schema.getName());
             inner = new StringSchema().description("TODO default missing map inner type to string");
@@ -2056,7 +2687,7 @@ public class DefaultCodegen implements CodegenConfig {
      * @return name of the allOf schema
      */
     @SuppressWarnings("static-method")
-    public String toAllOfName(List<String> names, ComposedSchema composedSchema) {
+    public String toAllOfName(List<String> names, Schema composedSchema) {
         Map<String, Object> exts = composedSchema.getExtensions();
         if (exts != null && exts.containsKey("x-all-of-name")) {
             return (String) exts.get("x-all-of-name");
@@ -2067,7 +2698,7 @@ public class DefaultCodegen implements CodegenConfig {
         } else if (names.size() == 1) {
             return names.get(0);
         } else {
-            LOGGER.warn("allOf with multiple schemas defined. Using only the first one: {}", names.get(0));
+            LOGGER.debug("allOf with multiple schemas defined. Using only the first one: {}", names.get(0));
             return names.get(0);
         }
     }
@@ -2080,7 +2711,7 @@ public class DefaultCodegen implements CodegenConfig {
      * @return name of the anyOf schema
      */
     @SuppressWarnings("static-method")
-    public String toAnyOfName(List<String> names, ComposedSchema composedSchema) {
+    public String toAnyOfName(List<String> names, Schema composedSchema) {
         return "anyOf<" + String.join(",", names) + ">";
     }
 
@@ -2098,17 +2729,21 @@ public class DefaultCodegen implements CodegenConfig {
      * @return name of the oneOf schema
      */
     @SuppressWarnings("static-method")
-    public String toOneOfName(List<String> names, ComposedSchema composedSchema) {
+    public String toOneOfName(List<String> names, Schema composedSchema) {
         Map<String, Object> exts = composedSchema.getExtensions();
-        if (exts != null && exts.containsKey("x-one-of-name")) {
-            return (String) exts.get("x-one-of-name");
+        if (exts != null && exts.containsKey(X_ONE_OF_NAME)) {
+            return (String) exts.get(X_ONE_OF_NAME);
         }
         return "oneOf<" + String.join(",", names) + ">";
     }
 
     @Override
-    public Schema unaliasSchema(Schema schema, Map<String, String> usedImportMappings) {
-        return ModelUtils.unaliasSchema(this.openAPI, schema, usedImportMappings);
+    public Schema unaliasSchema(Schema schema) {
+        return ModelUtils.unaliasSchema(this.openAPI, schema, schemaMapping);
+    }
+
+    private List<Map<String, Object>> unaliasExamples(Map<String, Example> examples) {
+        return ExamplesUtils.unaliasExamples(this.openAPI, examples);
     }
 
     /**
@@ -2118,13 +2753,21 @@ public class DefaultCodegen implements CodegenConfig {
      * @return the string representation of the schema type.
      */
     protected String getSingleSchemaType(Schema schema) {
-        Schema unaliasSchema = unaliasSchema(schema, importMapping);
+        Schema unaliasSchema = unaliasSchema(schema);
+
+        if (ModelUtils.isRefToSchemaWithProperties(unaliasSchema.get$ref())) {
+            // ref to schema's properties, e.g. #/components/schemas/Pet/properties/category
+            Schema refSchema = ModelUtils.getReferencedSchema(openAPI, unaliasSchema);
+            if (refSchema != null) {
+                return getSingleSchemaType(refSchema);
+            }
+        }
 
         if (StringUtils.isNotBlank(unaliasSchema.get$ref())) { // reference to another definition/schema
             // get the schema/model name from $ref
             String schemaName = ModelUtils.getSimpleRef(unaliasSchema.get$ref());
             if (StringUtils.isNotEmpty(schemaName)) {
-                if (importMapping.containsKey(schemaName)) {
+                if (schemaMapping.containsKey(schemaName)) {
                     return schemaName;
                 }
                 return getAlias(schemaName);
@@ -2150,10 +2793,10 @@ public class DefaultCodegen implements CodegenConfig {
     private String getPrimitiveType(Schema schema) {
         if (schema == null) {
             throw new RuntimeException("schema cannot be null in getPrimitiveType");
-        } else if (typeMapping.containsKey(schema.getType() + "+" + schema.getFormat())) {
+        } else if (typeMapping.containsKey(ModelUtils.getType(schema) + "+" + schema.getFormat())) {
             // allows custom type_format mapping.
             // use {type}+{format}
-            return typeMapping.get(schema.getType() + "+" + schema.getFormat());
+            return typeMapping.get(ModelUtils.getType(schema) + "+" + schema.getFormat());
         } else if (ModelUtils.isNullType(schema)) {
             // The 'null' type is allowed in OAS 3.1 and above. It is not supported by OAS 3.0.x,
             // though this tooling supports it.
@@ -2185,10 +2828,16 @@ public class DefaultCodegen implements CodegenConfig {
                 return "number";
             }
         } else if (ModelUtils.isIntegerSchema(schema)) {
-            if (ModelUtils.isLongSchema(schema)) {
+            if (ModelUtils.isUnsignedLongSchema(schema)) {
+                return "UnsignedLong";
+            } else if (ModelUtils.isUnsignedIntegerSchema(schema)) {
+                return "UnsignedInteger";
+            } else if (ModelUtils.isLongSchema(schema)) {
                 return "long";
+            } else if (ModelUtils.isShortSchema(schema)) {// int32
+                return "integer";
             } else {
-                return schema.getType(); // integer
+                return ModelUtils.getType(schema); // integer
             }
         } else if (ModelUtils.isMapSchema(schema)) {
             return "map";
@@ -2211,19 +2860,19 @@ public class DefaultCodegen implements CodegenConfig {
                 return schema.getFormat();
             }
             return "string";
-        } else if (isFreeFormObject(schema)) {
+        } else if (ModelUtils.isFreeFormObject(schema, openAPI)) {
             // Note: the value of a free-form object cannot be an arbitrary type. Per OAS specification,
             // it must be a map of string to values.
             return "object";
-        } else if (schema.getProperties() != null && !schema.getProperties().isEmpty()) { // having property implies it's a model
+        } else if (ModelUtils.hasProperties(schema)) { // having property implies it's a model
             return "object";
         } else if (ModelUtils.isAnyType(schema)) {
             return "AnyType";
-        } else if (StringUtils.isNotEmpty(schema.getType())) {
-            if (!importMapping.containsKey(schema.getType())) {
-                LOGGER.warn("Unknown type found in the schema: {}", schema.getType());
+        } else if (StringUtils.isNotEmpty(ModelUtils.getType(schema))) {
+            if (!schemaMapping.containsKey(ModelUtils.getType(schema))) {
+                LOGGER.warn("Unknown type found in the schema: {}. To map it, please use the schema mapping option (e.g. --schema-mappings in CLI)", ModelUtils.getType(schema));
             }
-            return schema.getType();
+            return ModelUtils.getType(schema);
         }
         // The 'type' attribute has not been set in the OAS schema, which means the value
         // can be an arbitrary type, e.g. integer, string, object, array, number...
@@ -2350,6 +2999,11 @@ public class DefaultCodegen implements CodegenConfig {
      */
     @Override
     public String toModelName(final String name) {
+        // obtain the name from modelNameMapping directly if provided
+        if (modelNameMapping.containsKey(name)) {
+            return modelNameMapping.get(name);
+        }
+
         if (schemaKeyToModelNameCache.containsKey(name)) {
             return schemaKeyToModelNameCache.get(name);
         }
@@ -2360,40 +3014,50 @@ public class DefaultCodegen implements CodegenConfig {
     }
 
     private static class NamedSchema {
-        private NamedSchema(String name, Schema s) {
+
+        private NamedSchema(String name, Schema s, boolean required, boolean schemaIsFromAdditionalProperties) {
             this.name = name;
             this.schema = s;
+            this.required = required;
+            this.schemaIsFromAdditionalProperties = schemaIsFromAdditionalProperties;
         }
-        private String name;
-        private Schema schema;
+
+        private final String name;
+        private final Schema schema;
+        private final boolean required;
+        private final boolean schemaIsFromAdditionalProperties;
 
         @Override
         public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
+            if (this == o)
+                return true;
+            if (o == null || getClass() != o.getClass())
+                return false;
             NamedSchema that = (NamedSchema) o;
-            return Objects.equals(name, that.name) &&
-                    Objects.equals(schema, that.schema);
+            return Objects.equals(required, that.required) &&
+                    Objects.equals(name, that.name) &&
+                    Objects.equals(schema, that.schema) &&
+                    Objects.equals(schemaIsFromAdditionalProperties, that.schemaIsFromAdditionalProperties);
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(name, schema);
+            return Objects.hash(name, schema, required, schemaIsFromAdditionalProperties);
         }
     }
 
-    Map<NamedSchema, CodegenProperty> schemaCodegenPropertyCache = new HashMap<NamedSchema, CodegenProperty>();
+    Map<NamedSchema, CodegenProperty> schemaCodegenPropertyCache = new HashMap<>();
 
     protected void updateModelForComposedSchema(CodegenModel m, Schema schema, Map<String, Schema> allDefinitions) {
-        final ComposedSchema composed = (ComposedSchema) schema;
-        Map<String, Schema> properties = new LinkedHashMap<String, Schema>();
-        List<String> required = new ArrayList<String>();
-        Map<String, Schema> allProperties = new LinkedHashMap<String, Schema>();
-        List<String> allRequired = new ArrayList<String>();
+        final Schema composed = schema;
+        Map<String, Schema> properties = new LinkedHashMap<>();
+        List<String> required = new ArrayList<>();
+        Map<String, Schema> allProperties = new LinkedHashMap<>();
+        List<String> allRequired = new ArrayList<>();
 
         // if schema has properties outside of allOf/oneOf/anyOf also add them to m
-        if (composed.getProperties() != null && !composed.getProperties().isEmpty()) {
-            if (composed.getOneOf() != null && !composed.getOneOf().isEmpty()) {
+        if (ModelUtils.hasProperties(composed)) {
+            if (ModelUtils.hasOneOf(composed)) {
                 LOGGER.warn("'oneOf' is intended to include only the additional optional OAS extension discriminator object. " +
                         "For more details, see https://json-schema.org/draft/2019-09/json-schema-core.html#rfc.section.9.2.1.3 and the OAS section on 'Composition and Inheritance'.");
             }
@@ -2407,31 +3071,28 @@ public class DefaultCodegen implements CodegenConfig {
 
         // TODO revise the logic below to set discriminator, xml attributes
         if (supportsInheritance || supportsMixins) {
-            m.allVars = new ArrayList<CodegenProperty>();
+            m.allVars = new ArrayList<>();
             if (composed.getAllOf() != null) {
                 int modelImplCnt = 0; // only one inline object allowed in a ComposedModel
                 int modelDiscriminators = 0; // only one discriminator allowed in a ComposedModel
-                for (Schema innerSchema : composed.getAllOf()) { // TODO need to work with anyOf, oneOf as well
-                    if (m.discriminator == null && innerSchema.getDiscriminator() != null) {
+                for (Object innerSchema : composed.getAllOf()) { // TODO need to work with anyOf, oneOf as well
+                    if (m.discriminator == null && ((Schema) innerSchema).getDiscriminator() != null) {
                         LOGGER.debug("discriminator is set to null (not correctly set earlier): {}", m.name);
-                        m.setDiscriminator(createDiscriminator(m.name, innerSchema, this.openAPI));
-                        if (!this.getLegacyDiscriminatorBehavior()) {
-                            m.addDiscriminatorMappedModelsImports();
-                        }
+                        m.setDiscriminator(createDiscriminator(m.name, (Schema) innerSchema));
                         modelDiscriminators++;
                     }
 
-                    if (innerSchema.getXml() != null) {
-                        m.xmlPrefix = innerSchema.getXml().getPrefix();
-                        m.xmlNamespace = innerSchema.getXml().getNamespace();
-                        m.xmlName = innerSchema.getXml().getName();
+                    if (((Schema) innerSchema).getXml() != null) {
+                        m.xmlPrefix = ((Schema) innerSchema).getXml().getPrefix();
+                        m.xmlNamespace = ((Schema) innerSchema).getXml().getNamespace();
+                        m.xmlName = ((Schema) innerSchema).getXml().getName();
                     }
                     if (modelDiscriminators > 1) {
-                        LOGGER.error("Allof composed schema is inheriting >1 discriminator. Only use one discriminator: {}", composed);
+                        LOGGER.debug("Allof composed schema is inheriting >1 discriminator. Only use one discriminator: {}", composed);
                     }
 
                     if (modelImplCnt++ > 1) {
-                        LOGGER.warn("More than one inline schema specified in allOf:. Only the first one is recognized. All others are ignored.");
+                        LOGGER.debug("More than one inline schema specified in allOf:. Only the first one is recognized. All others are ignored.");
                         break; // only one schema with discriminator allowed in allOf
                     }
                 }
@@ -2440,21 +3101,18 @@ public class DefaultCodegen implements CodegenConfig {
 
         // interfaces (schemas defined in allOf, anyOf, oneOf)
         List<Schema> interfaces = ModelUtils.getInterfaces(composed);
-        List<CodegenProperty> anyOfProps = new ArrayList<>();
-        List<CodegenProperty> allOfProps = new ArrayList<>();
-        List<CodegenProperty> oneOfProps = new ArrayList<>();
         if (!interfaces.isEmpty()) {
             // m.interfaces is for backward compatibility
             if (m.interfaces == null)
-                m.interfaces = new ArrayList<String>();
+                m.interfaces = new ArrayList<>();
 
             for (Schema interfaceSchema : interfaces) {
-                interfaceSchema = unaliasSchema(interfaceSchema, importMapping);
+                interfaceSchema = unaliasSchema(interfaceSchema);
 
                 if (StringUtils.isBlank(interfaceSchema.get$ref())) {
                     // primitive type
                     String languageType = getTypeDeclaration(interfaceSchema);
-                    CodegenProperty interfaceProperty = fromProperty(languageType, interfaceSchema);
+                    CodegenProperty interfaceProperty = fromProperty(languageType, interfaceSchema, false);
                     if (ModelUtils.isArraySchema(interfaceSchema) || ModelUtils.isMapSchema(interfaceSchema)) {
                         while (interfaceProperty != null) {
                             addImport(m, interfaceProperty.complexType);
@@ -2464,18 +3122,15 @@ public class DefaultCodegen implements CodegenConfig {
 
                     if (composed.getAnyOf() != null) {
                         if (m.anyOf.contains(languageType)) {
-                            LOGGER.warn("{} (anyOf schema) already has `{}` defined and therefore it's skipped.", m.name, languageType);
+                            LOGGER.debug("{} (anyOf schema) already has `{}` defined and therefore it's skipped.", m.name, languageType);
                         } else {
                             m.anyOf.add(languageType);
-                            anyOfProps.add(interfaceProperty);
-
                         }
                     } else if (composed.getOneOf() != null) {
                         if (m.oneOf.contains(languageType)) {
-                            LOGGER.warn("{} (oneOf schema) already has `{}` defined and therefore it's skipped.", m.name, languageType);
+                            LOGGER.debug("{} (oneOf schema) already has `{}` defined and therefore it's skipped.", m.name, languageType);
                         } else {
                             m.oneOf.add(languageType);
-                            oneOfProps.add(interfaceProperty);
                         }
                     } else if (composed.getAllOf() != null) {
                         // no need to add primitive type to allOf, which should comprise of schemas (models) only
@@ -2492,48 +3147,47 @@ public class DefaultCodegen implements CodegenConfig {
                     refSchema = allDefinitions.get(ref);
                 }
                 final String modelName = toModelName(ref);
-                CodegenProperty interfaceProperty = fromProperty(modelName, interfaceSchema);
+                CodegenProperty interfaceProperty = fromProperty(modelName, interfaceSchema, false);
                 m.interfaces.add(modelName);
-                addImport(m, modelName);
+                addImport(composed, refSchema, m, modelName);
+
                 if (allDefinitions != null && refSchema != null) {
                     if (allParents.contains(ref) && supportsMultipleInheritance) {
                         // multiple inheritance
-                        addProperties(allProperties, allRequired, refSchema);
+                        addProperties(allProperties, allRequired, refSchema, new HashSet<>());
                     } else if (parentName != null && parentName.equals(ref) && supportsInheritance) {
                         // single inheritance
-                        addProperties(allProperties, allRequired, refSchema);
+                        addProperties(allProperties, allRequired, refSchema, new HashSet<>());
                     } else {
                         // composition
-                        addProperties(properties, required, refSchema);
-                        addProperties(allProperties, allRequired, refSchema);
+                        Map<String, Schema> newProperties = new LinkedHashMap<>();
+                        addProperties(newProperties, required, refSchema, new HashSet<>());
+                        mergeProperties(properties, newProperties);
+                        addProperties(allProperties, allRequired, refSchema, new HashSet<>());
                     }
                 }
 
                 if (composed.getAnyOf() != null) {
                     m.anyOf.add(modelName);
-                    anyOfProps.add(interfaceProperty);
                 } else if (composed.getOneOf() != null) {
                     m.oneOf.add(modelName);
-                    oneOfProps.add(interfaceProperty);
+                    if (!m.permits.contains(modelName)) {
+                        m.permits.add(modelName);
+                    }
                 } else if (composed.getAllOf() != null) {
                     m.allOf.add(modelName);
-                    allOfProps.add(interfaceProperty);
                 } else {
                     LOGGER.error("Composed schema has incorrect anyOf, allOf, oneOf defined: {}", composed);
                 }
             }
         }
 
-        m.oneOfProps = oneOfProps;
-        m.allOfProps = allOfProps;
-        m.anyOfProps = anyOfProps;
-
         if (parent != null && composed.getAllOf() != null) { // set parent for allOf only
             m.parentSchema = parentName;
             m.parent = toModelName(parentName);
 
             if (supportsMultipleInheritance) {
-                m.allParents = new ArrayList<String>();
+                m.allParents = new ArrayList<>();
                 for (String pname : allParents) {
                     String pModelName = toModelName(pname);
                     m.allParents.add(pModelName);
@@ -2549,12 +3203,13 @@ public class DefaultCodegen implements CodegenConfig {
             if (component.get$ref() == null) {
                 if (component != null) {
                     // component is the child schema
-                    addProperties(properties, required, component);
+                    addProperties(properties, required, component, new HashSet<>());
 
                     // includes child's properties (all, required) in allProperties, allRequired
-                    addProperties(allProperties, allRequired, component);
+                    addProperties(allProperties, allRequired, component, new HashSet<>());
                 }
-                break; // at most one child only
+                // in 7.0.0 release, we comment out below to allow more than 1 child schemas in allOf
+                //break; // at most one child only
             }
         }
 
@@ -2580,49 +3235,200 @@ public class DefaultCodegen implements CodegenConfig {
             addAdditionPropertiesToCodeGenModel(m, schema);
         }
 
-        if (Boolean.TRUE.equals(schema.getNullable())) {
+        if (ModelUtils.isNullable(schema)) {
             m.isNullable = Boolean.TRUE;
         }
+
         // end of code block for composed schema
     }
 
+    /**
+     * Combines all previously-detected type entries for a schema with newly-discovered ones, to ensure
+     * that schema for items like enum include all possible values.
+     */
+    private void mergeProperties(Map<String, Schema> existingProperties, Map<String, Schema> newProperties) {
+        // https://github.com/OpenAPITools/openapi-generator/issues/12545
+        if (null != existingProperties && null != newProperties) {
+            Schema existingType = existingProperties.get("type");
+            Schema newType = newProperties.get("type");
+            newProperties.forEach((key, value) ->
+                    existingProperties.put(key, ModelUtils.cloneSchema(value, specVersionGreaterThanOrEqualTo310(openAPI)))
+            );
+            if (null != existingType && null != newType && null != newType.getEnum() && !newType.getEnum().isEmpty()) {
+                for (Object e : newType.getEnum()) {
+                    // ensure all interface enum types are added to schema
+                    if (null != existingType.getEnum() && !existingType.getEnum().contains(e)) {
+                        existingType.addEnumItemObject(e);
+                    }
+                }
+                existingProperties.put("type", existingType);
+            }
+        }
+    }
+
     protected void updateModelForObject(CodegenModel m, Schema schema) {
-        if (schema.getProperties() != null || schema.getRequired() != null && !(schema instanceof ComposedSchema)) {
+        if (schema.getProperties() != null || schema.getRequired() != null && !(ModelUtils.isComposedSchema(schema))) {
             // passing null to allProperties and allRequired as there's no parent
             addVars(m, unaliasPropertySchema(schema.getProperties()), schema.getRequired(), null, null);
         }
         if (ModelUtils.isMapSchema(schema)) {
             // an object or anyType composed schema that has additionalProperties set
             addAdditionPropertiesToCodeGenModel(m, schema);
-        } else if (ModelUtils.isFreeFormObject(openAPI, schema)) {
+        } else if (ModelUtils.isFreeFormObject(schema, openAPI)) {
             // non-composed object type with no properties + additionalProperties
             // additionalProperties must be null, ObjectSchema, or empty Schema
             addAdditionPropertiesToCodeGenModel(m, schema);
         }
         // process 'additionalProperties'
         setAddProps(schema, m);
+        addRequiredVarsMap(schema, m);
     }
 
     protected void updateModelForAnyType(CodegenModel m, Schema schema) {
-        // The 'null' value is allowed when the OAS schema is 'any type'.
-        // See https://github.com/OAI/OpenAPI-Specification/issues/1389
-        if (Boolean.FALSE.equals(schema.getNullable())) {
-            LOGGER.error("Schema '{}' is any type, which includes the 'null' value. 'nullable' cannot be set to 'false'", m.name);
-        }
-        // m.isNullable = true;
         if (ModelUtils.isMapSchema(schema)) {
             // an object or anyType composed schema that has additionalProperties set
             addAdditionPropertiesToCodeGenModel(m, schema);
             m.isMap = true;
         }
-        if (schema.getProperties() != null || schema.getRequired() != null && !(schema instanceof ComposedSchema)) {
+        if (schema.getProperties() != null || schema.getRequired() != null && !(ModelUtils.isComposedSchema(schema))) {
             // passing null to allProperties and allRequired as there's no parent
             addVars(m, unaliasPropertySchema(schema.getProperties()), schema.getRequired(), null, null);
         }
         // process 'additionalProperties'
         setAddProps(schema, m);
+        addRequiredVarsMap(schema, m);
     }
 
+    protected String toTestCaseName(String specTestCaseName) {
+        return specTestCaseName;
+    }
+
+    /**
+     * A method that allows generators to pre-process test example payloads
+     * This can be useful if one needs to change how values like null in string are represented
+     *
+     * @param data the test data payload
+     * @return the updated test data payload
+     */
+    protected Object processTestExampleData(Object data) {
+        return data;
+    }
+
+    /**
+     * Processes any test cases if they exist in the components.x-test-examples vendor extensions
+     * If they exist then cast them to java class instances and return them back in a map
+     *
+     * @param refToTestCases the component schema name that the test cases are for
+     */
+    private HashMap<String, SchemaTestCase> extractSchemaTestCases(String refToTestCases) {
+        // schemaName to a map of test case name to test case
+        HashMap<String, Object> vendorExtensions = (HashMap<String, Object>) openAPI.getComponents().getExtensions();
+        if (vendorExtensions == null || !vendorExtensions.containsKey(xSchemaTestExamplesKey)) {
+            return null;
+        }
+        if (!refToTestCases.startsWith(xSchemaTestExamplesRefPrefix)) {
+            return null;
+        }
+        String schemaName = refToTestCases.substring(xSchemaTestExamplesRefPrefix.length());
+        HashMap<String, SchemaTestCase> schemaTestCases = new HashMap<>();
+        LinkedHashMap<String, Object> schemaNameToTestCases = (LinkedHashMap<String, Object>) vendorExtensions.get(xSchemaTestExamplesKey);
+
+        if (!schemaNameToTestCases.containsKey(schemaName)) {
+            return null;
+        }
+        LinkedHashMap<String, LinkedHashMap<String, Object>> testNameToTesCase = (LinkedHashMap<String, LinkedHashMap<String, Object>>) schemaNameToTestCases.get(schemaName);
+        for (Entry<String, LinkedHashMap<String, Object>> entry : testNameToTesCase.entrySet()) {
+            LinkedHashMap<String, Object> testExample = entry.getValue();
+            String nameInSnakeCase = toTestCaseName(entry.getKey());
+            Object data = processTestExampleData(testExample.get("data"));
+            SchemaTestCase testCase = new SchemaTestCase(
+                    (String) testExample.getOrDefault("description", ""),
+                    new ObjectWithTypeBooleans(data),
+                    (boolean) testExample.get("valid")
+            );
+            schemaTestCases.put(nameInSnakeCase, testCase);
+        }
+        return schemaTestCases;
+    }
+
+    /**
+     * Sets the booleans that define the model's type
+     *
+     * @param model  the model to update
+     * @param schema the model's schema
+     */
+    protected void updateModelForString(CodegenModel model, Schema schema) {
+        // NOTE: String schemas as CodegenModel is a rare use case and may be removed at a later date.
+        if (ModelUtils.isDateTimeSchema(schema)) {
+            // NOTE: DateTime schemas as CodegenModel is a rare use case and may be removed at a later date.
+            model.setIsString(false); // for backward compatibility with 2.x
+            model.isDateTime = Boolean.TRUE;
+        } else if (ModelUtils.isDateSchema(schema)) {
+            // NOTE: Date schemas as CodegenModel is a rare use case and may be removed at a later date.
+            model.setIsString(false); // for backward compatibility with 2.x
+            model.isDate = Boolean.TRUE;
+        } else if (ModelUtils.isUUIDSchema(schema)) {
+            // NOTE: UUID schemas as CodegenModel is a rare use case and may be removed at a later date.
+            model.setIsString(false);
+            model.setIsUuid(true);
+        } else if (ModelUtils.isURISchema(schema)) {
+            model.setIsString(false);
+            model.setIsUri(true);
+        }
+    }
+
+    protected void updateModelForNumber(CodegenModel model, Schema schema) {
+        // NOTE: Number schemas as CodegenModel is a rare use case and may be removed at a later date.
+        model.isNumeric = Boolean.TRUE;
+        if (ModelUtils.isFloatSchema(schema)) { // float
+            model.isFloat = Boolean.TRUE;
+        } else if (ModelUtils.isDoubleSchema(schema)) { // double
+            model.isDouble = Boolean.TRUE;
+        }
+    }
+
+    protected void updateModelForInteger(CodegenModel model, Schema schema) {
+        // NOTE: Integral schemas as CodegenModel is a rare use case and may be removed at a later date.
+        model.isNumeric = Boolean.TRUE;
+        if (ModelUtils.isLongSchema(schema)) { // int64/long format
+            model.isLong = Boolean.TRUE;
+        } else {
+            model.isInteger = Boolean.TRUE; // older use case, int32 and unbounded int
+            if (ModelUtils.isShortSchema(schema)) { // int32
+                model.setIsShort(Boolean.TRUE);
+            }
+        }
+    }
+
+    /**
+     * Deduplicate inline enum properties when a child repeats the same enum from its parent model
+     *
+     * @param codegenModel the child CodegenModel, will have enums removed if they collide with the parent's definition
+     * @param parentCodegenModel the parent CodegenModel
+     * @return the mutated child CodegenModel which has had any parent enum collisions removed
+     */
+    protected CodegenModel reconcileInlineEnums(CodegenModel codegenModel, CodegenModel parentCodegenModel) {
+        if (parentCodegenModel == null || !parentCodegenModel.hasEnums) {
+            return codegenModel;
+        }
+
+        for (CodegenProperty parentModelCodegenProperty : parentCodegenModel.vars) {
+            if (parentModelCodegenProperty.isEnum) {
+                reconcileInlineEnum(parentModelCodegenProperty, codegenModel.vars);
+            }
+        }
+        return codegenModel;
+    }
+
+    private void reconcileInlineEnum(CodegenProperty parentModelCodegenProperty, List<CodegenProperty> codegenProperties) {
+        Iterator<CodegenProperty> iterator = codegenProperties.iterator();
+        while (iterator.hasNext()) {
+            CodegenProperty codegenProperty = iterator.next();
+            if (codegenProperty.isEnum && codegenProperty.equals(parentModelCodegenProperty)) {
+                iterator.remove();
+            }
+        }
+    }
 
     /**
      * Convert OAS Model object to Codegen Model object.
@@ -2634,26 +3440,32 @@ public class DefaultCodegen implements CodegenConfig {
     @Override
     public CodegenModel fromModel(String name, Schema schema) {
         Map<String, Schema> allDefinitions = ModelUtils.getSchemas(this.openAPI);
-        if (typeAliases == null) {
-            // Only do this once during first call
-            typeAliases = getAllAliases(allDefinitions);
-        }
 
+        CodegenModel m = CodegenModelFactory.newInstance(CodegenModelType.MODEL);
+        if (schema.equals(trueSchema)) {
+            m.setIsBooleanSchemaTrue(true);
+        } else if (schema.equals(falseSchema)) {
+            m.setIsBooleanSchemaFalse(true);
+        }
         // unalias schema
-        schema = unaliasSchema(schema, importMapping);
+        schema = unaliasSchema(schema);
         if (schema == null) {
             LOGGER.warn("Schema {} not found", name);
             return null;
         }
 
-        CodegenModel m = CodegenModelFactory.newInstance(CodegenModelType.MODEL);
         ModelUtils.syncValidationProperties(schema, m);
+        if (openAPI != null) {
+            HashMap<String, SchemaTestCase> schemaTestCases = extractSchemaTestCases(xSchemaTestExamplesRefPrefix + name);
+            m.testCases = schemaTestCases;
+        }
 
         if (reservedWords.contains(name)) {
             m.name = escapeReservedWord(name);
         } else {
             m.name = name;
         }
+        m.schemaName = name; // original schema name
         m.title = escapeText(schema.getTitle());
         m.description = escapeText(schema.getDescription());
         m.unescapedDescription = schema.getDescription();
@@ -2667,10 +3479,7 @@ public class DefaultCodegen implements CodegenConfig {
         }
         m.isAlias = (typeAliases.containsKey(name)
                 || isAliasOfSimpleTypes(schema)); // check if the unaliased schema is an alias of simple OAS types
-        m.setDiscriminator(createDiscriminator(name, schema, this.openAPI));
-        if (!this.getLegacyDiscriminatorBehavior()) {
-            m.addDiscriminatorMappedModelsImports();
-        }
+        m.setDiscriminator(createDiscriminator(name, schema));
 
         if (schema.getDeprecated() != null) {
             m.isDeprecated = schema.getDeprecated();
@@ -2681,12 +3490,12 @@ public class DefaultCodegen implements CodegenConfig {
             m.xmlNamespace = schema.getXml().getNamespace();
             m.xmlName = schema.getXml().getName();
         }
-        if (!ModelUtils.isAnyType(schema) && !ModelUtils.isTypeObjectSchema(schema) && !ModelUtils.isArraySchema(schema) &&  schema.get$ref() == null && schema.getEnum() != null && !schema.getEnum().isEmpty()) {
+        if (!ModelUtils.isAnyType(schema) && !ModelUtils.isTypeObjectSchema(schema) && !ModelUtils.isArraySchema(schema) && schema.get$ref() == null && isEnumSchema(schema)) {
             // TODO remove the anyType check here in the future ANyType models can have enums defined
             m.isEnum = true;
             // comment out below as allowableValues is not set in post processing model enum
-            m.allowableValues = new HashMap<String, Object>();
-            m.allowableValues.put("values", schema.getEnum());
+            m.allowableValues = new HashMap<>();
+            m.allowableValues.put(ENUM_VALUES, schema.getEnum());
         }
         if (!ModelUtils.isArraySchema(schema)) {
             m.dataType = getSchemaType(schema);
@@ -2695,55 +3504,34 @@ public class DefaultCodegen implements CodegenConfig {
             m.isNullable = Boolean.TRUE;
         }
 
-        m.setTypeProperties(schema);
+        m.setTypeProperties(schema, openAPI);
+        m.setFormat(schema.getFormat());
+        m.setComposedSchemas(getComposedSchemas(schema));
         if (ModelUtils.isArraySchema(schema)) {
-            CodegenProperty arrayProperty = fromProperty(name, schema);
+            CodegenProperty arrayProperty = fromProperty(name, schema, false);
             m.setItems(arrayProperty.items);
             m.arrayModelType = arrayProperty.complexType;
             addParentContainer(m, name, schema);
         } else if (ModelUtils.isIntegerSchema(schema)) { // integer type
-            // NOTE: Integral schemas as CodegenModel is a rare use case and may be removed at a later date.
-
-            m.isNumeric = Boolean.TRUE;
-            if (ModelUtils.isLongSchema(schema)) { // int64/long format
-                m.isLong = Boolean.TRUE;
-            } else {
-                m.isInteger = Boolean.TRUE; // older use case, int32 and unbounded int
-                if (ModelUtils.isShortSchema(schema)) { // int32
-                    m.setIsShort(Boolean.TRUE);
-                }
-            }
+            updateModelForInteger(m, schema);
         } else if (ModelUtils.isStringSchema(schema)) {
-            // NOTE: String schemas as CodegenModel is a rare use case and may be removed at a later date.
-            if (ModelUtils.isDateTimeSchema(schema)) {
-                // NOTE: DateTime schemas as CodegenModel is a rare use case and may be removed at a later date.
-                m.setIsString(false); // for backward compatibility with 2.x
-                m.isDateTime = Boolean.TRUE;
-            } else if (ModelUtils.isDateSchema(schema)) {
-                // NOTE: Date schemas as CodegenModel is a rare use case and may be removed at a later date.
-                m.setIsString(false); // for backward compatibility with 2.x
-                m.isDate = Boolean.TRUE;
-            }
+            updateModelForString(m, schema);
         } else if (ModelUtils.isNumberSchema(schema)) {
-            // NOTE: Number schemas as CodegenModel is a rare use case and may be removed at a later date.
-            m.isNumeric = Boolean.TRUE;
-            if (ModelUtils.isFloatSchema(schema)) { // float
-                m.isFloat = Boolean.TRUE;
-            } else if (ModelUtils.isDoubleSchema(schema)) { // double
-                m.isDouble = Boolean.TRUE;
-            }
+            updateModelForNumber(m, schema);
         } else if (ModelUtils.isAnyType(schema)) {
             updateModelForAnyType(m, schema);
         } else if (ModelUtils.isTypeObjectSchema(schema)) {
             updateModelForObject(m, schema);
         } else if (!ModelUtils.isNullType(schema)) {
             // referenced models here, component that refs another component which is a model
-            // if a component references a schema which is not a generated model, the the refed schema will be loaded into
+            // if a component references a schema which is not a generated model, the refed schema will be loaded into
             // schema by unaliasSchema and one of the above code paths will be taken
-            ;
+        }
+        if (schema.get$ref() != null) {
+            m.setRef(schema.get$ref());
         }
 
-        if (schema instanceof ComposedSchema) {
+        if (ModelUtils.isComposedSchema(schema)) {
             updateModelForComposedSchema(m, schema, allDefinitions);
         }
 
@@ -2753,10 +3541,11 @@ public class DefaultCodegen implements CodegenConfig {
         // set isDiscriminator on the discriminator property
         if (m.discriminator != null) {
             String discPropName = m.discriminator.getPropertyBaseName();
-            List<List<CodegenProperty>> listOLists = new ArrayList<List<CodegenProperty>>();
+            List<List<CodegenProperty>> listOLists = new ArrayList<>();
             listOLists.add(m.requiredVars);
             listOLists.add(m.vars);
             listOLists.add(m.allVars);
+            listOLists.add(m.readWriteVars);
             for (List<CodegenProperty> theseVars : listOLists) {
                 for (CodegenProperty requiredVar : theseVars) {
                     if (discPropName.equals(requiredVar.baseName)) {
@@ -2766,21 +3555,12 @@ public class DefaultCodegen implements CodegenConfig {
             }
         }
 
-        if (m.requiredVars != null && m.requiredVars.size() > 0){
+        if (m.requiredVars != null && m.requiredVars.size() > 0) {
             m.setHasRequired(true);
         }
 
         if (sortModelPropertiesByRequiredFlag) {
-            Comparator<CodegenProperty> comparator = new Comparator<CodegenProperty>() {
-                @Override
-                public int compare(CodegenProperty one, CodegenProperty another) {
-                    if (one.required == another.required) return 0;
-                    else if (one.required) return -1;
-                    else return 1;
-                }
-            };
-            Collections.sort(m.vars, comparator);
-            Collections.sort(m.allVars, comparator);
+            SortModelPropertiesByRequiredFlag(m);
         }
 
         // post process model properties
@@ -2795,14 +3575,87 @@ public class DefaultCodegen implements CodegenConfig {
                 postProcessModelProperty(m, prop);
             }
         }
+
         return m;
     }
 
-    protected void setAddProps(Schema schema, IJsonSchemaValidationProperties property){
+    /**
+     * Sets the default value for an enum discriminator property in the provided {@link CodegenModel}.
+     * <p>
+     * If the model's discriminator is defined, this method identifies the discriminator properties among the model's
+     * variables and assigns the default value to reflect the corresponding enum value for the model type.
+     * </p>
+     * <p>
+     * Example: If the discriminator is for type `Animal`, and the model is `Cat`, the default value
+     * will be set to `Animal.Cat` for the properties that have the same name as the discriminator.
+     * </p>
+     *
+     * @param model the {@link CodegenModel} whose discriminator property default value is to be set
+     */
+    protected static void setEnumDiscriminatorDefaultValue(CodegenModel model) {
+        if (model.discriminator == null) {
+            return;
+        }
+        String discPropName = model.discriminator.getPropertyBaseName();
+        Stream.of(model.requiredVars, model.vars, model.allVars, model.readWriteVars)
+                .flatMap(List::stream)
+                .filter(v -> discPropName.equals(v.baseName))
+                .forEach(v -> v.defaultValue = getEnumValueForProperty(model.schemaName, model.discriminator, v));
+    }
+
+    /**
+     * Retrieves the appropriate default value for an enum discriminator property based on the model name.
+     * <p>
+     * If the discriminator has a mapping defined, it attempts to find a mapping for the model name.
+     * Otherwise, it defaults to one of the allowable enum value associated with the property.
+     * If no suitable value is found, the original default value of the property is returned.
+     * </p>
+     *
+     * @param modelName     the name of the model to determine the default value for
+     * @param discriminator the {@link CodegenDiscriminator} containing the mapping and enum details
+     * @param var           the {@link CodegenProperty} representing the discriminator property
+     * @return the default value for the enum discriminator property, or its original default value if none is found
+     */
+    protected static String getEnumValueForProperty(
+            String modelName, CodegenDiscriminator discriminator, CodegenProperty var) {
+        if (var == null) {
+            return null;
+        }
+        if (discriminator == null || (!discriminator.getIsEnum() && !var.isEnum)) {
+            return var.defaultValue;
+        }
+        Map<String, String> mapping = Optional.ofNullable(discriminator.getMapping()).orElseGet(Collections::emptyMap);
+        for (Map.Entry<String, String> e : mapping.entrySet()) {
+            String schemaName = e.getValue().indexOf('/') < 0 ? e.getValue() : ModelUtils.getSimpleRef(e.getValue());
+            if (modelName.equals(schemaName)) {
+                return e.getKey();
+            }
+        }
+        if (var.allowableValues == null) {
+            return var.defaultValue;
+        }
+        Object values = var.allowableValues.get(ENUM_VALUES);
+        if (!(values instanceof List<?>)) {
+            return var.defaultValue;
+        }
+        List<?> valueList = (List<?>) values;
+        return valueList.stream().filter(o -> o.equals(modelName)).map(o -> (String) o).findAny().orElse(var.defaultValue);
+    }
+
+    protected void SortModelPropertiesByRequiredFlag(CodegenModel model) {
+        Comparator<CodegenProperty> comparator = Comparator.comparing(prop -> !prop.required);
+        Collections.sort(model.vars, comparator);
+        Collections.sort(model.allVars, comparator);
+    }
+
+    protected void setAddProps(Schema schema, IJsonSchemaValidationProperties property) {
         if (schema.equals(new Schema())) {
             // if we are trying to set additionalProperties on an empty schema stop recursing
             return;
         }
+        // Note: This flag is set to true if additional properties
+        // is set (any type, free form object, boolean true, string, etc).
+        // The variable name may be renamed later to avoid confusion.
         boolean additionalPropertiesIsAnyType = false;
         CodegenModel m = null;
         if (property instanceof CodegenModel) {
@@ -2813,25 +3666,24 @@ public class DefaultCodegen implements CodegenConfig {
         if (schema.getAdditionalProperties() == null) {
             if (!disallowAdditionalPropertiesIfNotPresent) {
                 isAdditionalPropertiesTrue = true;
-                addPropProp = fromProperty("",  new Schema());
+                addPropProp = fromProperty(getAdditionalPropertiesName(), new Schema(), false);
                 additionalPropertiesIsAnyType = true;
             }
         } else if (schema.getAdditionalProperties() instanceof Boolean) {
             if (Boolean.TRUE.equals(schema.getAdditionalProperties())) {
                 isAdditionalPropertiesTrue = true;
-                addPropProp = fromProperty("", new Schema());
+                addPropProp = fromProperty(getAdditionalPropertiesName(), new Schema(), false);
                 additionalPropertiesIsAnyType = true;
             }
         } else {
-            addPropProp = fromProperty("", (Schema) schema.getAdditionalProperties());
-            if (ModelUtils.isAnyType((Schema) schema.getAdditionalProperties())) {
-                additionalPropertiesIsAnyType = true;
-            }
+            // if additional properties is set (e.g. free form object, any type, string, etc)
+            addPropProp = fromProperty(getAdditionalPropertiesName(), (Schema) schema.getAdditionalProperties(), false);
+            additionalPropertiesIsAnyType = true;
         }
         if (additionalPropertiesIsAnyType) {
             property.setAdditionalPropertiesIsAnyType(true);
         }
-        if (m != null && isAdditionalPropertiesTrue) {
+        if (m != null && (isAdditionalPropertiesTrue || additionalPropertiesIsAnyType)) {
             m.isAdditionalPropertiesTrue = true;
         }
         if (ModelUtils.isComposedSchema(schema) && !supportsAdditionalPropertiesWithComposedSchema) {
@@ -2842,366 +3694,91 @@ public class DefaultCodegen implements CodegenConfig {
         }
     }
 
-
-        /**
-         * Recursively look in Schema sc for the discriminator discPropName
-         * and return a CodegenProperty with the dataType and required params set
-         * the returned CodegenProperty may not be required and it may not be of type string
-         *
-         * @param composedSchemaName The name of the sc Schema
-         * @param sc                 The Schema that may contain the discriminator
-         * @param discPropName       The String that is the discriminator propertyName in the schema
-         */
-    private CodegenProperty discriminatorFound(String composedSchemaName, Schema sc, String discPropName, OpenAPI openAPI) {
-        Schema refSchema = ModelUtils.getReferencedSchema(openAPI, sc);
-        if (refSchema.getProperties() != null && refSchema.getProperties().get(discPropName) != null) {
-            Schema discSchema = (Schema) refSchema.getProperties().get(discPropName);
-            CodegenProperty cp = new CodegenProperty();
-            if (ModelUtils.isStringSchema(discSchema)) {
-                cp.isString = true;
-            }
-            cp.setRequired(false);
-            if (refSchema.getRequired() != null && refSchema.getRequired().contains(discPropName)) {
-                cp.setRequired(true);
-            }
-            return cp;
-        }
-        if (ModelUtils.isComposedSchema(refSchema)) {
-            ComposedSchema composedSchema = (ComposedSchema) refSchema;
-            if (composedSchema.getAllOf() != null) {
-                // If our discriminator is in one of the allOf schemas break when we find it
-                for (Schema allOf : composedSchema.getAllOf()) {
-                    CodegenProperty cp = discriminatorFound(composedSchemaName, allOf, discPropName, openAPI);
-                    if (cp != null) {
-                        return cp;
-                    }
-                }
-            }
-            if (composedSchema.getOneOf() != null && composedSchema.getOneOf().size() != 0) {
-                // All oneOf definitions must contain the discriminator
-                CodegenProperty cp = new CodegenProperty();
-                for (Schema oneOf : composedSchema.getOneOf()) {
-                    String modelName = ModelUtils.getSimpleRef(oneOf.get$ref());
-                    CodegenProperty thisCp = discriminatorFound(composedSchemaName, oneOf, discPropName, openAPI);
-                    if (thisCp == null) {
-                        LOGGER.warn(
-                                "'{}' defines discriminator '{}', but the referenced OneOf schema '{}' is missing {}",
-                                composedSchemaName, discPropName, modelName, discPropName);
-                    }
-                    if (cp != null && cp.dataType == null) {
-                        cp = thisCp;
-                        continue;
-                    }
-                    if (cp != thisCp) {
-                        LOGGER.warn(
-                                "'{}' defines discriminator '{}', but the OneOf schema '{}' has a different {} definition than the prior OneOf schema's. Make sure the {} type and required values are the same",
-                                composedSchemaName, discPropName, modelName, discPropName, discPropName);
-                    }
-                }
-                return cp;
-            }
-            if (composedSchema.getAnyOf() != null && composedSchema.getAnyOf().size() != 0) {
-                // All anyOf definitions must contain the discriminator because a min of one must be selected
-                CodegenProperty cp = new CodegenProperty();
-                for (Schema anyOf : composedSchema.getAnyOf()) {
-                    String modelName = ModelUtils.getSimpleRef(anyOf.get$ref());
-                    CodegenProperty thisCp = discriminatorFound(composedSchemaName, anyOf, discPropName, openAPI);
-                    if (thisCp == null) {
-                        LOGGER.warn(
-                                "'{}' defines discriminator '{}', but the referenced AnyOf schema '{}' is missing {}",
-                                composedSchemaName, discPropName, modelName, discPropName);
-                    }
-                    if (cp != null && cp.dataType == null) {
-                        cp = thisCp;
-                        continue;
-                    }
-                    if (cp != thisCp) {
-                        LOGGER.warn(
-                                "'{}' defines discriminator '{}', but the AnyOf schema '{}' has a different {} definition than the prior AnyOf schema's. Make sure the {} type and required values are the same",
-                                composedSchemaName, discPropName, modelName, discPropName, discPropName);
-                    }
-                }
-                return cp;
-
-            }
-        }
-        return null;
-    }
-
     /**
      * Recursively look in Schema sc for the discriminator and return it
-     * Schema sc location
-     * OpenAPI openAPI the spec where we are searching for the discriminator
      *
-     * @param sc The Schema that may contain the discriminator
+     * @param sc             The Schema that may contain the discriminator
+     * @param visitedSchemas An array list of visited schemas
      */
-    private Discriminator recursiveGetDiscriminator(Schema sc, OpenAPI openAPI) {
-        Schema refSchema = ModelUtils.getReferencedSchema(openAPI, sc);
-        Discriminator foundDisc = refSchema.getDiscriminator();
-        if (foundDisc != null) {
-            return foundDisc;
-        }
-
-        if (this.getLegacyDiscriminatorBehavior()) {
-            return null;
-        }
-        Discriminator disc = new Discriminator();
-        if (ModelUtils.isComposedSchema(refSchema)) {
-            ComposedSchema composedSchema = (ComposedSchema) refSchema;
-            if (composedSchema.getAllOf() != null) {
-                // If our discriminator is in one of the allOf schemas break when we find it
-                for (Schema allOf : composedSchema.getAllOf()) {
-                    foundDisc = recursiveGetDiscriminator(allOf, openAPI);
-                    if (foundDisc != null) {
-                        disc.setPropertyName(foundDisc.getPropertyName());
-                        disc.setMapping(foundDisc.getMapping());
-                        return disc;
-                    }
-                }
-            }
-            if (composedSchema.getOneOf() != null && composedSchema.getOneOf().size() != 0) {
-                // All oneOf definitions must contain the discriminator
-                Integer hasDiscriminatorCnt = 0;
-                Integer hasNullTypeCnt = 0;
-                Set<String> discriminatorsPropNames = new HashSet<>();
-                for (Schema oneOf : composedSchema.getOneOf()) {
-                    if (ModelUtils.isNullType(oneOf)) {
-                        // The null type does not have a discriminator. Skip.
-                        hasNullTypeCnt++;
-                        continue;
-                    }
-                    foundDisc = recursiveGetDiscriminator(oneOf, openAPI);
-                    if (foundDisc != null) {
-                        discriminatorsPropNames.add(foundDisc.getPropertyName());
-                        hasDiscriminatorCnt++;
-                    }
-                }
-                if (discriminatorsPropNames.size() > 1) {
-                    LOGGER.warn("The oneOf schemas have conflicting discriminator property names. " +
-                            "oneOf schemas must have the same property name, but found " + String.join(", ", discriminatorsPropNames));
-                }
-                if (foundDisc != null && (hasDiscriminatorCnt + hasNullTypeCnt) == composedSchema.getOneOf().size() && discriminatorsPropNames.size() == 1) {
-                    disc.setPropertyName(foundDisc.getPropertyName());
-                    disc.setMapping(foundDisc.getMapping());
-                    return disc;
-                }
-                // If the scenario when oneOf has two children and one of them is the 'null' type,
-                // there is no need for a discriminator.
-            }
-            if (composedSchema.getAnyOf() != null && composedSchema.getAnyOf().size() != 0) {
-                // All anyOf definitions must contain the discriminator because a min of one must be selected
-                Integer hasDiscriminatorCnt = 0;
-                Integer hasNullTypeCnt = 0;
-                Set<String> discriminatorsPropNames = new HashSet<>();
-                for  (Schema anyOf : composedSchema.getAnyOf()) {
-                    if (ModelUtils.isNullType(anyOf)) {
-                        // The null type does not have a discriminator. Skip.
-                        hasNullTypeCnt++;
-                        continue;
-                    }
-                    foundDisc = recursiveGetDiscriminator(anyOf, openAPI);
-                    if (foundDisc != null) {
-                        discriminatorsPropNames.add(foundDisc.getPropertyName());
-                        hasDiscriminatorCnt++;
-                    }
-                }
-                if (discriminatorsPropNames.size() > 1) {
-                    LOGGER.warn("The anyOf schemas have conflicting discriminator property names. " +
-                        "anyOf schemas must have the same property name, but found " + String.join(", ", discriminatorsPropNames));
-                }
-                if (foundDisc != null && (hasDiscriminatorCnt + hasNullTypeCnt) == composedSchema.getAnyOf().size() && discriminatorsPropNames.size() == 1) {
-                    disc.setPropertyName(foundDisc.getPropertyName());
-                    disc.setMapping(foundDisc.getMapping());
-                    return disc;
-                }
-                // If the scenario when anyOf has two children and one of them is the 'null' type,
-                // there is no need for a discriminator.
-            }
-        }
-        return null;
+    private DiscriminatorData recursiveGetDiscriminator(Schema sc, ArrayList<Schema> visitedSchemas) {
+        return DiscriminatorUtils.recursiveGetDiscriminator(openAPI, this.getLegacyDiscriminatorBehavior(), sc, visitedSchemas);
     }
 
-    /**
-     * This function is only used for composed schemas which have a discriminator
-     * Process oneOf and anyOf models in a composed schema and adds them into
-     * a list if the oneOf and anyOf models contain
-     * the required discriminator. If they don't contain the required
-     * discriminator or the discriminator is the wrong type then an error is
-     * thrown
-     *
-     * @param composedSchemaName The String model name of the composed schema where we are setting the discriminator map
-     * @param discPropName       The String that is the discriminator propertyName in the schema
-     * @param c                  The ComposedSchema that contains the discriminator and oneOf/anyOf schemas
-     * @param openAPI            The OpenAPI spec that we are using
-     * @return the list of oneOf and anyOf MappedModel that need to be added to the discriminator map
-     */
-    protected List<MappedModel> getOneOfAnyOfDescendants(String composedSchemaName, String discPropName, ComposedSchema c, OpenAPI openAPI) {
-        ArrayList<List<Schema>> listOLists = new ArrayList<>();
-        listOLists.add(c.getOneOf());
-        listOLists.add(c.getAnyOf());
-        List<MappedModel> descendentSchemas = new ArrayList<>();
-        for (List<Schema> schemaList : listOLists) {
-            if (schemaList == null) {
-                continue;
-            }
-            for (Schema sc : schemaList) {
-                if (ModelUtils.isNullType(sc)) {
-                    continue;
-                }
-                String ref = sc.get$ref();
-                if (ref == null) {
-                    // for schemas with no ref, it is not possible to build the discriminator map
-                    // because ref is how we get the model name
-                    // we only hit this use case for a schema with inline composed schemas, and one of those
-                    // schemas also has inline composed schemas
-                    // Note: if it is only inline one level, then the inline model resolver will move it into its own
-                    // schema and make it a $ref schema in the oneOf/anyOf location
-                    LOGGER.warn(
-                            "Invalid inline schema defined in oneOf/anyOf in '{}'. Per the OpenApi spec, for this case when a composed schema defines a discriminator, the oneOf/anyOf schemas must use $ref. Change this inline definition to a $ref definition",
-                            composedSchemaName);
-                }
-                CodegenProperty df = discriminatorFound(composedSchemaName, sc, discPropName, openAPI);
-                String modelName = ModelUtils.getSimpleRef(ref);
-                if (df == null || !df.isString || df.required != true) {
-                    String msgSuffix = "";
-                    if (df == null) {
-                        msgSuffix += discPropName + " is missing from the schema, define it as required and type string";
-                    } else {
-                        if (!df.isString) {
-                            msgSuffix += "invalid type for " + discPropName + ", set it to string";
-                        }
-                        if (df.required != true) {
-                            String spacer = "";
-                            if (msgSuffix.length() != 0) {
-                                spacer = ". ";
-                            }
-                            msgSuffix += spacer + "invalid optional definition of " + discPropName + ", include it in required";
-                        }
-                    }
-                    LOGGER.warn("'{}' defines discriminator '{}', but the referenced schema '{}' is incorrect. {}",
-                            composedSchemaName, discPropName, modelName, msgSuffix);
-                }
-                MappedModel mm = new MappedModel(modelName, toModelName(modelName));
-                descendentSchemas.add(mm);
-                Schema cs = ModelUtils.getSchema(openAPI, modelName);
-                if (cs == null) { // cannot lookup the model based on the name
-                    LOGGER.error("Failed to lookup the schema '{}' when processing oneOf/anyOf. Please check to ensure it's defined properly.", modelName);
-                } else {
-                    Map<String, Object> vendorExtensions = cs.getExtensions();
-                    if (vendorExtensions != null && !vendorExtensions.isEmpty() && vendorExtensions.containsKey("x-discriminator-value")) {
-                        String xDiscriminatorValue = (String) vendorExtensions.get("x-discriminator-value");
-                        mm = new MappedModel(xDiscriminatorValue, toModelName(modelName));
-                        descendentSchemas.add(mm);
-                    }
-                }
-            }
-        }
-        return descendentSchemas;
-    }
-
-    protected List<MappedModel> getAllOfDescendants(String thisSchemaName, OpenAPI openAPI) {
-        ArrayList<String> queue = new ArrayList();
-        List<MappedModel> descendentSchemas = new ArrayList();
-        Map<String, Schema> schemas = ModelUtils.getSchemas(openAPI);
-        String currentSchemaName = thisSchemaName;
-        Set<String> keys = schemas.keySet();
-
-        int count = 0;
-        // hack: avoid infinite loop on potential self-references in event our checks fail.
-        while (100000 > count++) {
-            for (String childName : keys) {
-                if (childName.equals(thisSchemaName)) {
-                    continue;
-                }
-                Schema child = schemas.get(childName);
-                if (ModelUtils.isComposedSchema(child)) {
-                    ComposedSchema composedChild = (ComposedSchema) child;
-                    List<Schema> parents = composedChild.getAllOf();
-                    if (parents != null) {
-                        for (Schema parent : parents) {
-                            String ref = parent.get$ref();
-                            if (ref == null) {
-                                // for schemas with no ref, it is not possible to build the discriminator map
-                                // because ref is how we get the model name
-                                // we hit this use case when an allOf composed schema contains an inline schema
-                                continue;
-                            }
-                            String parentName = ModelUtils.getSimpleRef(ref);
-                            if (parentName != null && parentName.equals(currentSchemaName)) {
-                                if (queue.contains(childName) || descendentSchemas.stream().anyMatch(i -> childName.equals(i.getMappingName()))) {
-                                    throw new RuntimeException("Stack overflow hit when looking for " + thisSchemaName + " an infinite loop starting and ending at " + childName + " was seen");
-                                }
-                                queue.add(childName);
-                                break;
-                            }
-                        }
-                    }
-                }
-            }
-            if (queue.size() == 0) {
-                break;
-            }
-            currentSchemaName = queue.remove(0);
-            MappedModel mm = new MappedModel(currentSchemaName, toModelName(currentSchemaName));
-            descendentSchemas.add(mm);
-            Schema cs = schemas.get(currentSchemaName);
-            Map<String, Object> vendorExtensions = cs.getExtensions();
-            if (vendorExtensions != null && !vendorExtensions.isEmpty() && vendorExtensions.containsKey("x-discriminator-value")) {
-                String xDiscriminatorValue = (String) vendorExtensions.get("x-discriminator-value");
-                mm = new MappedModel(xDiscriminatorValue, toModelName(currentSchemaName));
-                descendentSchemas.add(mm);
-            }
-        }
-        return descendentSchemas;
-    }
-
-    protected CodegenDiscriminator createDiscriminator(String schemaName, Schema schema, OpenAPI openAPI) {
-        Discriminator sourceDiscriminator = recursiveGetDiscriminator(schema, openAPI);
+    protected CodegenDiscriminator createDiscriminator(String schemaName, Schema schema) {
+        DiscriminatorData sourceDiscriminator = recursiveGetDiscriminator(schema, new ArrayList<Schema>());
         if (sourceDiscriminator == null) {
             return null;
         }
         CodegenDiscriminator discriminator = new CodegenDiscriminator();
-        String discPropName = sourceDiscriminator.getPropertyName();
-        discriminator.setPropertyName(toVarName(discPropName));
+        String discriminatorPropertyName = sourceDiscriminator.getPropertyName();
+        discriminator.setPropertyName(toVarName(discriminatorPropertyName));
         discriminator.setPropertyBaseName(sourceDiscriminator.getPropertyName());
         discriminator.setPropertyGetter(toGetter(discriminator.getPropertyName()));
-        // FIXME: for now, we assume that the discriminator property is String
-        discriminator.setPropertyType(typeMapping.get("string"));
-        discriminator.setMapping(sourceDiscriminator.getMapping());
-        List<MappedModel> uniqueDescendants = new ArrayList();
-        if (sourceDiscriminator.getMapping() != null && !sourceDiscriminator.getMapping().isEmpty()) {
-            for (Entry<String, String> e : sourceDiscriminator.getMapping().entrySet()) {
-                String nameOrRef = e.getValue();
-                String name = nameOrRef.indexOf('/') >= 0 ? ModelUtils.getSimpleRef(nameOrRef) : nameOrRef;
-                String modelName = toModelName(name);
-                uniqueDescendants.add(new MappedModel(e.getKey(), modelName));
-            }
+
+        if (sourceDiscriminator.getExtensions() != null) {
+            discriminator.setVendorExtensions(sourceDiscriminator.getExtensions());
         }
+
+        // FIXME: there are other ways to define the type of the discriminator property (inline
+        //  for example). Handling those scenarios is too complicated for me, I'm leaving it for
+        //  the future..
+        String discriminatorType;
+        Schema discSchema = sourceDiscriminator.getDiscriminatorSchema();
+        if (discSchema != null) {
+            if (ModelUtils.hasRef(discSchema)) {
+                discriminatorType = toModelName(ModelUtils.getSimpleRef(discSchema.get$ref()));
+            } else {
+                // Inline schema (inline enum, uri, ...): resolve via the same pipeline the
+                // concrete model classes use so the oneOf interface getter type matches.
+                // Keep String for typeless const to avoid resolving to Object.
+                if (ModelUtils.getType(discSchema) == null || discSchema.getEnum() == null) {
+                    discriminatorType = getTypeDeclaration(discSchema);
+                } else {
+                    discriminatorType = toEnumName(discriminatorPropertyName);
+                }
+            }
+        } else {
+            discriminatorType = getDiscriminatorPropertyType(schema, discriminatorPropertyName);
+        }
+        discriminator.setPropertyType(discriminatorType);
+
+        // check to see if the discriminator property is an enum string
+        boolean isEnum = Optional
+                .ofNullable(discriminatorFound(openAPI, schemaName, schema, discriminatorPropertyName, new TreeSet<>()))
+                .map(CodegenProperty::getIsEnum)
+                .orElse(false);
+        discriminator.setIsEnum(isEnum);
+
+        discriminator.setMapping(sourceDiscriminator.getMapping());
+        List<MappedModel> uniqueDescendants = adjustModelNames(getUniqueDescendants(openAPI, sourceDiscriminator.getDiscriminator()));
 
         boolean legacyUseCase = (this.getLegacyDiscriminatorBehavior() && uniqueDescendants.isEmpty());
         if (!this.getLegacyDiscriminatorBehavior() || legacyUseCase) {
             // for schemas that allOf inherit from this schema, add those descendants to this discriminator map
-            List<MappedModel> otherDescendants = getAllOfDescendants(schemaName, openAPI);
+            List<MappedModel> otherDescendants = adjustModelNames(getAllOfDescendants(openAPI, schemaName));
             for (MappedModel otherDescendant : otherDescendants) {
-                // add only if the mapping names are not the same
+                // add only if the mapping names are not the same and the model names are not the same
                 boolean matched = false;
-                for (MappedModel uniqueDescendant: uniqueDescendants) {
-                    if (uniqueDescendant.getMappingName().equals(otherDescendant.getMappingName())) {
+                for (MappedModel uniqueDescendant : uniqueDescendants) {
+                    if (uniqueDescendant.getMappingName().equals(otherDescendant.getMappingName())
+                            || (uniqueDescendant.getModelName().equals(otherDescendant.getModelName()))) {
                         matched = true;
                         break;
                     }
                 }
 
-                if (matched == false) {
+                if (!matched) {
                     uniqueDescendants.add(otherDescendant);
                 }
             }
         }
         // if there are composed oneOf/anyOf schemas, add them to this discriminator
         if (ModelUtils.isComposedSchema(schema) && !this.getLegacyDiscriminatorBehavior()) {
-            List<MappedModel> otherDescendants = getOneOfAnyOfDescendants(schemaName, discPropName, (ComposedSchema) schema, openAPI);
+            List<MappedModel> otherDescendants =
+                    adjustModelNames(getOneOfAnyOfDescendants(openAPI, schemaName, discriminatorPropertyName, schema));
             for (MappedModel otherDescendant : otherDescendants) {
-                if (!uniqueDescendants.contains(otherDescendant)) {
+                // add only if the model names are not the same
+                if (uniqueDescendants.stream().map(MappedModel::getModelName).noneMatch(it -> it.equals(otherDescendant.getModelName()))) {
                     uniqueDescendants.add(otherDescendant);
                 }
             }
@@ -3212,6 +3789,92 @@ public class DefaultCodegen implements CodegenConfig {
         discriminator.getMappedModels().addAll(uniqueDescendants);
 
         return discriminator;
+    }
+
+    /**
+     * Get the property type for the discriminator
+     *
+     * @param schema                    The input OAS schema.
+     * @param discriminatorPropertyName The name of the discriminator property.
+     */
+    protected String getDiscriminatorPropertyType(Schema schema, String discriminatorPropertyName) {
+        String type = DiscriminatorUtils.getDiscriminatorPropertyType(schema, discriminatorPropertyName)
+                .map(this::toModelName)
+                .orElse(null);
+        if (type != null) {
+            return type;
+        }
+        List<Schema> schemas = DiscriminatorUtils.getDistinctTypes(openAPI, schema, discriminatorPropertyName);
+        return getCommonSchemaType(schemas);
+    }
+
+    /**
+     * Get the most commons denominator schemaType for several schemas.
+     * <p>
+     * @param schemas  the list of schemas to compare.
+     *
+     * @return the common type
+     */
+    protected String getCommonSchemaType(List<Schema> schemas) {
+        switch (schemas.size()) {
+            case 0:
+                //. keep string for backward compatibility
+                return typeMapping.get("string");
+            case 1:
+
+                Schema first = schemas.get(0);
+                try {
+                    if (StringUtils.isNotEmpty(first.get$ref())) {
+                        return toModelName(ModelUtils.getSimpleRef(first.get$ref()));
+                    }
+                    if (ModelUtils.isEnumSchema(first)) {
+                        // inline enum, use the least common denominator
+                        String simpleType = typeMapping.get("enum");
+
+                        return simpleType != null? simpleType:  typeMapping.get("object");
+                    }
+                    return typeMapping.get(getPrimitiveType(first));
+                } catch (Exception e) {
+                    // fallback for some unit test misconfigurations...
+                    LOGGER.warn("Unable to model name for " + first, e);
+                    return typeMapping.get("string");
+                }
+            default:
+                break;
+        }
+
+        schemas = schemas.stream().map(s -> ModelUtils.getReferencedSchema(openAPI, s)).collect(Collectors.toList());
+        return getCommonTypeMapping(schemas);
+    }
+
+    /**
+     * Find the common type between different schemas.
+     *
+     * @param schemas list of more than one schema.
+     * @return the common matching mapped type
+     */
+    protected String getCommonTypeMapping(List<Schema> schemas) {
+        String simpleType = "object";
+
+        boolean allEnums = schemas.stream().allMatch(ModelUtils::isEnumSchema);
+        if (allEnums) {
+            // non matching enums.  Use enum if if the langage can map it.
+            if (typeMapping.containsKey("enum")) {
+                simpleType = "enum";
+            }
+            return typeMapping.get(simpleType);
+        }
+        if (schemas.stream().noneMatch(ModelUtils::isEnumSchema)) {
+            Set<String> types = schemas.stream().map(this::getPrimitiveType).collect(Collectors.toSet());
+            if (types.size() == 1) {
+                String foundPrimitiveType = types.iterator().next();
+                if (typeMapping.containsKey(foundPrimitiveType)) {
+                    // matching simple type
+                    simpleType = foundPrimitiveType;
+                }
+            }
+        }
+        return typeMapping.get(simpleType);
     }
 
     /**
@@ -3227,17 +3890,28 @@ public class DefaultCodegen implements CodegenConfig {
     /**
      * Add schema's properties to "properties" and "required" list
      *
-     * @param properties all properties
-     * @param required   required property only
-     * @param schema     schema in which the properties will be added to the lists
+     * @param properties     all properties
+     * @param required       required property only
+     * @param schema         schema in which the properties will be added to the lists
+     * @param visitedSchemas circuit-breaker - the schemas with which the method was called before for recursive structures
      */
-    protected void addProperties(Map<String, Schema> properties, List<String> required, Schema schema) {
-        if (schema instanceof ComposedSchema) {
-            ComposedSchema composedSchema = (ComposedSchema) schema;
+    protected void addProperties(Map<String, Schema> properties, List<String> required, Schema schema, Set<Schema> visitedSchemas) {
+        if (schema == null) {
+            return;
+        }
 
-            if (composedSchema.getAllOf() != null) {
-                for (Schema component : composedSchema.getAllOf()) {
-                    addProperties(properties, required, component);
+        if (!visitedSchemas.add(schema)) {
+            return;
+        }
+        if (ModelUtils.isComposedSchema(schema)) {
+            // fix issue #16797 and #15796, constructor fail by missing parent required params
+            if (ModelUtils.hasProperties(schema)) {
+                properties.putAll(schema.getProperties());
+            }
+
+            if (schema.getAllOf() != null) {
+                for (Object component : schema.getAllOf()) {
+                    addProperties(properties, required, (Schema) component, visitedSchemas);
                 }
             }
 
@@ -3245,15 +3919,15 @@ public class DefaultCodegen implements CodegenConfig {
                 required.addAll(schema.getRequired());
             }
 
-            if (composedSchema.getOneOf() != null) {
-                for (Schema component : composedSchema.getOneOf()) {
-                    addProperties(properties, required, component);
+            if (schema.getOneOf() != null) {
+                for (Object component : schema.getOneOf()) {
+                    addProperties(properties, required, (Schema) component, visitedSchemas);
                 }
             }
 
-            if (composedSchema.getAnyOf() != null) {
-                for (Schema component : composedSchema.getAnyOf()) {
-                    addProperties(properties, required, component);
+            if (schema.getAnyOf() != null) {
+                for (Object component : schema.getAnyOf()) {
+                    addProperties(properties, required, (Schema) component, visitedSchemas);
                 }
             }
 
@@ -3262,7 +3936,7 @@ public class DefaultCodegen implements CodegenConfig {
 
         if (StringUtils.isNotBlank(schema.get$ref())) {
             Schema interfaceSchema = ModelUtils.getReferencedSchema(this.openAPI, schema);
-            addProperties(properties, required, interfaceSchema);
+            addProperties(properties, required, interfaceSchema, visitedSchemas);
             return;
         }
         if (schema.getProperties() != null) {
@@ -3287,25 +3961,30 @@ public class DefaultCodegen implements CodegenConfig {
     }
 
     protected void updatePropertyForMap(CodegenProperty property, Schema p) {
+        // throw exception if additionalProperties is false
+        if (p.getAdditionalProperties() instanceof Boolean && Boolean.FALSE.equals(p.getAdditionalProperties())) {
+            throw new RuntimeException("additionalProperties cannot be false in updatePropertyForMap.");
+        }
         property.isContainer = true;
         property.containerType = "map";
+        property.containerTypeMapped = typeMapping.get(property.containerType);
         // TODO remove this hack in the future, code should use minProperties and maxProperties for object schemas
         property.minItems = p.getMinProperties();
         property.maxItems = p.getMaxProperties();
 
         // handle inner property
-        Schema innerSchema = unaliasSchema(getAdditionalProperties(p), importMapping);
+        Schema innerSchema = unaliasSchema(ModelUtils.getAdditionalProperties(p));
         if (innerSchema == null) {
             LOGGER.error("Undefined map inner type for `{}`. Default to String.", p.getName());
             innerSchema = new StringSchema().description("//TODO automatically added by openapi-generator due to undefined type");
             p.setAdditionalProperties(innerSchema);
         }
-        CodegenProperty cp = fromProperty("inner", innerSchema);
+        CodegenProperty cp = fromProperty("inner", innerSchema, false);
         updatePropertyForMap(property, cp);
     }
 
     protected void updatePropertyForObject(CodegenProperty property, Schema p) {
-        if (isFreeFormObject(p)) {
+        if (ModelUtils.isFreeFormObject(p, openAPI)) {
             // non-composed object type with no properties + additionalProperties
             // additionalProperties must be null, ObjectSchema, or empty Schema
             property.isFreeFormObject = true;
@@ -3327,12 +4006,10 @@ public class DefaultCodegen implements CodegenConfig {
     }
 
     protected void updatePropertyForAnyType(CodegenProperty property, Schema p) {
-        // The 'null' value is allowed when the OAS schema is 'any type'.
-        // See https://github.com/OAI/OpenAPI-Specification/issues/1389
-        if (Boolean.FALSE.equals(p.getNullable())) {
-            LOGGER.warn("Schema '{}' is any type, which includes the 'null' value. 'nullable' cannot be set to 'false'", p.getName());
-        }
-        property.isNullable = true;
+        property.isNullable = property.isNullable ||
+                !(ModelUtils.isComposedSchema(p)) ||
+                p.getAllOf() == null ||
+                p.getAllOf().size() == 0;
         if (languageSpecificPrimitives.contains(property.dataType)) {
             property.isPrimitiveType = true;
         }
@@ -3347,6 +4024,7 @@ public class DefaultCodegen implements CodegenConfig {
 
     protected void updatePropertyForString(CodegenProperty property, Schema p) {
         if (ModelUtils.isByteArraySchema(p)) {
+            property.setIsString(false);
             property.isByteArray = true;
         } else if (ModelUtils.isBinarySchema(p)) {
             property.isBinary = true;
@@ -3357,6 +4035,8 @@ public class DefaultCodegen implements CodegenConfig {
             property.isUri = true;
         } else if (ModelUtils.isEmailSchema(p)) {
             property.isEmail = true;
+        } else if (ModelUtils.isPasswordSchema(p)) {
+            property.isPassword = true;
         } else if (ModelUtils.isDateSchema(p)) { // date format
             property.setIsString(false); // for backward compatibility with 2.x
             property.isDate = true;
@@ -3370,46 +4050,130 @@ public class DefaultCodegen implements CodegenConfig {
         property.pattern = toRegularExpression(p.getPattern());
     }
 
+    protected void updatePropertyForNumber(CodegenProperty property, Schema p) {
+        property.isNumeric = Boolean.TRUE;
+        if (ModelUtils.isFloatSchema(p)) { // float
+            property.isFloat = Boolean.TRUE;
+        } else if (ModelUtils.isDoubleSchema(p)) { // double
+            property.isDouble = Boolean.TRUE;
+        }
+    }
+
+    protected void updatePropertyForInteger(CodegenProperty property, Schema p) {
+        property.isNumeric = Boolean.TRUE;
+        if (ModelUtils.isLongSchema(p)) { // int64/long format
+            property.isLong = Boolean.TRUE;
+        } else {
+            property.isInteger = Boolean.TRUE; // older use case, int32 and unbounded int
+            if (ModelUtils.isShortSchema(p)) { // int32
+                property.setIsShort(Boolean.TRUE);
+            }
+        }
+    }
+
     /**
-     * Convert OAS Property object to Codegen Property object.
+     * TODO remove this in 7.0.0 as a breaking change
+     * This method was kept when required was added to the fromProperty signature
+     * to ensure that the change was non-breaking
      *
-     * The return value is cached. An internal cache is looked up to determine
-     * if the CodegenProperty return value has already been instantiated for
-     * the (String name, Schema p) arguments.
-     * Any subsequent processing of the CodegenModel return value must be idempotent
-     * for a given (String name, Schema schema).
+     * @param name     name of the property
+     * @param p        OAS property schema
+     * @param required true if the property is required in the next higher object schema, false otherwise
+     * @return Codegen Property object
+     */
+    public CodegenProperty fromProperty(String name, Schema p, boolean required) {
+        return fromProperty(name, p, required, false);
+    }
+
+    /**
+     * TODO remove this in 7.0.0 as a breaking change
+     * This method was kept when required was added to the fromProperty signature
+     * to ensure that the change was non-breaking
      *
      * @param name name of the property
      * @param p    OAS property schema
      * @return Codegen Property object
      */
     public CodegenProperty fromProperty(String name, Schema p) {
+        return fromProperty(name, p, false, false);
+    }
+
+    /**
+     * Convert OAS Property object to Codegen Property object.
+     * <p>
+     * The return value is cached. An internal cache is looked up to determine
+     * if the CodegenProperty return value has already been instantiated for
+     * the (String name, Schema p) arguments.
+     * Any subsequent processing of the CodegenModel return value must be idempotent
+     * for a given (String name, Schema schema).
+     *
+     * @param name                             name of the property
+     * @param p                                OAS property schema
+     * @param required                         true if the property is required in the next higher object schema, false otherwise
+     * @param schemaIsFromAdditionalProperties true if the property is a required property defined by additional properties schema
+     *                                         If this is the actual additionalProperties schema not defining a required property, then
+     *                                         the value should be false
+     * @return Codegen Property object
+     */
+    public CodegenProperty fromProperty(String name, Schema p, boolean required, boolean schemaIsFromAdditionalProperties) {
         if (p == null) {
             LOGGER.error("Undefined property/schema for `{}`. Default to type:string.", name);
             return null;
         }
-        LOGGER.debug("debugging fromProperty for {} : {}", name, p);
-        NamedSchema ns = new NamedSchema(name, p);
+        LOGGER.debug("debugging fromProperty for {}: {}", name, p);
+        NamedSchema ns = new NamedSchema(name, p, required, schemaIsFromAdditionalProperties);
         CodegenProperty cpc = schemaCodegenPropertyCache.get(ns);
         if (cpc != null) {
-            LOGGER.debug("Cached fromProperty for {} : {}", name, p.getName());
+            LOGGER.debug("Cached fromProperty for {} : {} required={}", name, p.getName(), required);
             return cpc;
         }
-        // unalias schema
-        p = unaliasSchema(p, importMapping);
+
+        // if it's ref to schema's properties, get the actual schema defined in the properties
+        Schema refToPropertiesSchema = ModelUtils.getSchemaFromRefToSchemaWithProperties(openAPI, p.get$ref());
+        if (refToPropertiesSchema != null) {
+            p = refToPropertiesSchema;
+            return fromProperty(name, refToPropertiesSchema, required, schemaIsFromAdditionalProperties);
+        }
+
+        Schema original = null;
+        // check if it's allOf (only 1 sub schema) with or without default/nullable/etc set in the top level
+        if (ModelUtils.isAllOf(p) && p.getAllOf().size() == 1) {
+            if (p.getAllOf().get(0) instanceof Schema) {
+                original = p;
+                p = (Schema) p.getAllOf().get(0);
+            } else {
+                LOGGER.error("Unknown type in allOf schema. Please report the issue via openapi-generator's Github issue tracker.");
+            }
+        } else if (p.get$ref() != null) { // it's a ref
+            original = p;
+        }
 
         CodegenProperty property = CodegenModelFactory.newInstance(CodegenModelType.PROPERTY);
+        if (p.equals(trueSchema)) {
+            property.setIsBooleanSchemaTrue(true);
+        } else if (p.equals(falseSchema)) {
+            property.setIsBooleanSchemaFalse(true);
+        }
+
+        // unalias schema
+        p = unaliasSchema(p);
+
+        property.setSchemaIsFromAdditionalProperties(schemaIsFromAdditionalProperties);
+        property.required = required;
         ModelUtils.syncValidationProperties(p, property);
+        property.setFormat(p.getFormat());
 
         property.name = toVarName(name);
         property.baseName = name;
-        if (p.getType() == null) {
+        property.setHasSanitizedName(!property.baseName.equals(property.name));
+        if (ModelUtils.getType(p) == null) {
             property.openApiType = getSchemaType(p);
         } else {
-            property.openApiType = p.getType();
+            property.openApiType = ModelUtils.getType(p);
         }
-        property.nameInCamelCase = camelize(property.name, false);
-        property.nameInSnakeCase = CaseFormat.UPPER_CAMEL.to(CaseFormat.UPPER_UNDERSCORE, property.nameInCamelCase);
+        property.nameInPascalCase = camelize(property.name);
+        property.nameInCamelCase = camelize(property.name, LOWERCASE_FIRST_LETTER);
+        property.nameInSnakeCase = CaseFormat.UPPER_CAMEL.to(CaseFormat.UPPER_UNDERSCORE, property.nameInPascalCase);
         property.description = escapeText(p.getDescription());
         property.unescapedDescription = p.getDescription();
         property.title = p.getTitle();
@@ -3423,9 +4187,8 @@ public class DefaultCodegen implements CodegenConfig {
             LOGGER.debug("Exception from toExampleValue: {}", e.getMessage());
             property.example = "ERROR_TO_EXAMPLE_VALUE";
         }
-        property.defaultValue = toDefaultValue(p);
-        property.defaultValueWithParam = toDefaultValueWithParam(name, p);
-        property.jsonSchema = Json.pretty(p);
+
+        property.jsonSchema = Json.pretty(Json.mapper().convertValue(p, TreeMap.class));
 
         if (p.getDeprecated() != null) {
             property.deprecated = p.getDeprecated();
@@ -3447,18 +4210,10 @@ public class DefaultCodegen implements CodegenConfig {
         if (p.getWriteOnly() != null) {
             property.isWriteOnly = p.getWriteOnly();
         }
-        if (p.getNullable() != null) {
-            property.isNullable = p.getNullable();
+        if (ModelUtils.isNullable(p)) {
+            property.isNullable = true;
         }
 
-        if (p.getXml() != null) {
-            if (p.getXml().getAttribute() != null) {
-                property.isXmlAttribute = p.getXml().getAttribute();
-            }
-            property.xmlPrefix = p.getXml().getPrefix();
-            property.xmlName = p.getXml().getName();
-            property.xmlNamespace = p.getXml().getNamespace();
-        }
         if (p.getExtensions() != null && !p.getExtensions().isEmpty()) {
             property.getVendorExtensions().putAll(p.getExtensions());
         } else if (p.get$ref() != null) {
@@ -3469,17 +4224,24 @@ public class DefaultCodegen implements CodegenConfig {
         }
 
         //Inline enum case:
-        if (p.getEnum() != null && !p.getEnum().isEmpty()) {
+        if (isEnumSchema(p)) {
             List<Object> _enum = p.getEnum();
-            property._enum = new ArrayList<String>();
+            property._enum = new ArrayList<>();
             for (Object i : _enum) {
+                // raw null values in enums are unions for nullable
+                // attributes, not actual enum values, so we remove them here
+                if (i == null) {
+                    property.isNullable = true;
+                    continue;
+                }
                 property._enum.add(String.valueOf(i));
             }
             property.isEnum = true;
+            property.isInnerEnum = true;
 
-            Map<String, Object> allowableValues = new HashMap<String, Object>();
-            allowableValues.put("values", _enum);
-            if (allowableValues.size() > 0) {
+            Map<String, Object> allowableValues = new HashMap<>();
+            allowableValues.put(ENUM_VALUES, _enum);
+            if (!allowableValues.isEmpty()) {
                 property.allowableValues = allowableValues;
             }
         }
@@ -3487,18 +4249,46 @@ public class DefaultCodegen implements CodegenConfig {
         Schema referencedSchema = ModelUtils.getReferencedSchema(this.openAPI, p);
 
         //Referenced enum case:
-        if (referencedSchema.getEnum() != null && !referencedSchema.getEnum().isEmpty()) {
+        if (referencedSchema != p && isEnumSchema(referencedSchema)) {
             List<Object> _enum = referencedSchema.getEnum();
 
-            Map<String, Object> allowableValues = new HashMap<String, Object>();
-            allowableValues.put("values", _enum);
+            property.isEnumRef = true;
+
+            Map<String, Object> allowableValues = new HashMap<>();
+            allowableValues.put(ENUM_VALUES, _enum);
             if (allowableValues.size() > 0) {
                 property.allowableValues = allowableValues;
             }
         }
 
-        if (referencedSchema.getNullable() != null) {
-            property.isNullable = referencedSchema.getNullable();
+        if (ModelUtils.isNullable(referencedSchema)) {
+            property.isNullable = true;
+        }
+
+        final XML referencedSchemaXml = referencedSchema.getXml();
+
+        if (referencedSchemaXml != null) {
+            property.xmlName = referencedSchemaXml.getName();
+            property.xmlNamespace = referencedSchemaXml.getNamespace();
+            property.xmlPrefix = referencedSchemaXml.getPrefix();
+            if (referencedSchemaXml.getAttribute() != null) {
+                property.isXmlAttribute = referencedSchemaXml.getAttribute();
+            }
+            if (referencedSchemaXml.getWrapped() != null) {
+                property.isXmlWrapped = referencedSchemaXml.getWrapped();
+            }
+        }
+
+        if (p.getXml() != null) {
+            if (p.getXml().getAttribute() != null) {
+                property.isXmlAttribute = p.getXml().getAttribute();
+            }
+            if (p.getXml().getWrapped() != null) {
+                property.isXmlWrapped = p.getXml().getWrapped();
+            }
+            property.xmlPrefix = p.getXml().getPrefix();
+            property.xmlName = p.getXml().getName();
+            property.xmlNamespace = p.getXml().getNamespace();
         }
 
         property.dataType = getTypeDeclaration(p);
@@ -3513,17 +4303,10 @@ public class DefaultCodegen implements CodegenConfig {
             property.datatypeWithEnum = property.dataType;
         }
 
-        property.setTypeProperties(p);
+        property.setTypeProperties(p, openAPI);
+        property.setComposedSchemas(getComposedSchemas(p));
         if (ModelUtils.isIntegerSchema(p)) { // integer type
-            property.isNumeric = Boolean.TRUE;
-            if (ModelUtils.isLongSchema(p)) { // int64/long format
-                property.isLong = Boolean.TRUE;
-            } else {
-                property.isInteger = Boolean.TRUE; // older use case, int32 and unbounded int
-                if (ModelUtils.isShortSchema(p)) { // int32
-                    property.setIsShort(Boolean.TRUE);
-                }
-            }
+            updatePropertyForInteger(property, p);
         } else if (ModelUtils.isBooleanSchema(p)) { // boolean type
             property.getter = toBooleanGetter(name);
         } else if (ModelUtils.isFileSchema(p) && !ModelUtils.isStringSchema(p)) {
@@ -3532,12 +4315,7 @@ public class DefaultCodegen implements CodegenConfig {
         } else if (ModelUtils.isStringSchema(p)) {
             updatePropertyForString(property, p);
         } else if (ModelUtils.isNumberSchema(p)) {
-            property.isNumeric = Boolean.TRUE;
-            if (ModelUtils.isFloatSchema(p)) { // float
-                property.isFloat = Boolean.TRUE;
-            } else if (ModelUtils.isDoubleSchema(p)) { // double
-                property.isDouble = Boolean.TRUE;
-            }
+            updatePropertyForNumber(property, p);
         } else if (ModelUtils.isArraySchema(p)) {
             // default to string if inner item is undefined
             property.isContainer = true;
@@ -3546,25 +4324,13 @@ public class DefaultCodegen implements CodegenConfig {
             } else {
                 property.containerType = "array";
             }
+            property.containerTypeMapped = typeMapping.get(property.containerType);
             property.baseType = getSchemaType(p);
-            if (p.getXml() != null) {
-                property.isXmlWrapped = p.getXml().getWrapped() == null ? false : p.getXml().getWrapped();
-                property.xmlPrefix = p.getXml().getPrefix();
-                property.xmlNamespace = p.getXml().getNamespace();
-                property.xmlName = p.getXml().getName();
-            }
 
             // handle inner property
-            String itemName = null;
-            if (p.getExtensions() != null && p.getExtensions().get("x-item-name") != null) {
-                itemName = p.getExtensions().get("x-item-name").toString();
-            }
-            if (itemName == null) {
-                itemName = property.name;
-            }
-            ArraySchema arraySchema = (ArraySchema) p;
-            Schema innerSchema = unaliasSchema(getSchemaItems(arraySchema), importMapping);
-            CodegenProperty cp = fromProperty(itemName, innerSchema);
+            String itemName = getItemsName(p, name);
+            Schema innerSchema = unaliasSchema(ModelUtils.getSchemaItems(p));
+            CodegenProperty cp = fromProperty(itemName, innerSchema, false);
             updatePropertyForArray(property, cp);
         } else if (ModelUtils.isTypeObjectSchema(p)) {
             updatePropertyForObject(property, p);
@@ -3572,7 +4338,9 @@ public class DefaultCodegen implements CodegenConfig {
             updatePropertyForAnyType(property, p);
         } else if (!ModelUtils.isNullType(p)) {
             // referenced model
-            ;
+        }
+        if (p.get$ref() != null) {
+            property.setRef(p.get$ref());
         }
 
         boolean isAnyTypeWithNothingElseSet = (ModelUtils.isAnyType(p) &&
@@ -3580,18 +4348,175 @@ public class DefaultCodegen implements CodegenConfig {
                 !ModelUtils.isComposedSchema(p) &&
                 p.getAdditionalProperties() == null && p.getNot() == null && p.getEnum() == null);
 
-        if (!ModelUtils.isArraySchema(p) && !ModelUtils.isMapSchema(p) && !isFreeFormObject(p) && !isAnyTypeWithNothingElseSet) {
+        if (!ModelUtils.isArraySchema(p) && !ModelUtils.isMapSchema(p) && !ModelUtils.isFreeFormObject(p, openAPI) && !isAnyTypeWithNothingElseSet) {
             /* schemas that are not Array, not ModelUtils.isMapSchema, not isFreeFormObject, not AnyType with nothing else set
-             *  so primitve schemas int, str, number, referenced schemas, AnyType schemas with properties, enums, or composition
+             * so primitive schemas int, str, number, referenced schemas, AnyType schemas with properties, enums, or composition
              */
             String type = getSchemaType(p);
             setNonArrayMapProperty(property, type);
             property.isModel = (ModelUtils.isComposedSchema(referencedSchema) || ModelUtils.isObjectSchema(referencedSchema)) && ModelUtils.isModel(referencedSchema);
         }
 
+        // restore original schema with default value, nullable, readonly etc
+        if (original != null) {
+            p = original;
+            // evaluate common attributes if defined in the top level
+            if (ModelUtils.isNullable(p)) {
+                property.isNullable = true;
+            }
+
+            if (p.getReadOnly() != null) {
+                property.isReadOnly = p.getReadOnly();
+            }
+
+            if (p.getWriteOnly() != null) {
+                property.isWriteOnly = p.getWriteOnly();
+            }
+            if (original.getExtensions() != null) {
+                property.getVendorExtensions().putAll(original.getExtensions());
+            }
+            if (original.getDeprecated() != null) {
+                property.deprecated = p.getDeprecated();
+            }
+            if (original.getDescription() != null) {
+                property.description = escapeText(p.getDescription());
+                property.unescapedDescription = p.getDescription();
+            }
+            if (original.getMaxLength() != null) {
+                property.setMaxLength(original.getMaxLength());
+            }
+            if (original.getMinLength() != null) {
+                property.setMinLength(original.getMinLength());
+            }
+            if (original.getMaxItems() != null) {
+                property.setMaxItems(original.getMaxItems());
+            }
+            if (original.getMinItems() != null) {
+                property.setMinItems(original.getMinItems());
+            }
+            if (original.getMaximum() != null) {
+                property.setMaximum(ModelUtils.formatNumericBound(original.getMaximum(), referencedSchema, false, property.getExclusiveMaximum()));
+            }
+            if (original.getMinimum() != null) {
+                property.setMinimum(ModelUtils.formatNumericBound(original.getMinimum(), referencedSchema, true, property.getExclusiveMinimum()));
+            }
+            if (original.getTitle() != null) {
+                property.setTitle(original.getTitle());
+            }
+            // the example was computed above against the inner (allOf/$ref) schema, which does
+            // not carry the example declared as a sibling of the allOf/$ref. Restore it here so
+            // that e.g. `allOf: [ $ref ]` with a sibling `example` keeps the declared example
+            // instead of falling back to the literal "null".
+            if (original.getExample() != null) {
+                property.example = toExampleValue(original);
+            }
+        }
+
+        // override defaultValue if it's not set and defaultToEmptyContainer is set
+        if (p.getDefault() == null && defaultToEmptyContainer) {
+            updateDefaultToEmptyContainer(property, p);
+        }
+
+        // set the default value
+        property.defaultValue = toDefaultValue(property, p);
+        property.defaultValueWithParam = toDefaultValueWithParam(name, p);
+
         LOGGER.debug("debugging from property return: {}", property);
         schemaCodegenPropertyCache.put(ns, property);
         return property;
+    }
+
+    /**
+     * update container's default to empty container according rules provided by the user.
+     *
+     * @param cp codegen property
+     * @param p  schema
+     */
+    void updateDefaultToEmptyContainer(CodegenProperty cp, Schema p) {
+        if (cp.isArray) {
+            if (!cp.required) { // optional
+                if (cp.isNullable && arrayOptionalNullableDefaultToEmpty) { // nullable
+                    p.setDefault(EMPTY_LIST);
+                } else if (!cp.isNullable && arrayOptionalDefaultToEmpty) { // non-nullable
+                    p.setDefault(EMPTY_LIST);
+                }
+            } else { // required
+                if (cp.isNullable && arrayNullableDefaultToEmpty) { // nullable
+                    p.setDefault(EMPTY_LIST);
+                } else if (!cp.isNullable && arrayDefaultToEmpty) { // non-nullable
+                    p.setDefault(EMPTY_LIST);
+                }
+            }
+        } else if (cp.isMap) {
+            if (!cp.required) { // optional
+                if (cp.isNullable && mapOptionalNullableDefaultToEmpty) { // nullable
+                    p.setDefault(EMPTY_LIST);
+                } else if (!cp.isNullable && mapOptionalDefaultToEmpty) { // non-nullable
+                    p.setDefault(EMPTY_LIST);
+                }
+            } else { // required
+                if (cp.isNullable && mapNullableDefaultToEmpty) { // nullable
+                    p.setDefault(EMPTY_LIST);
+                } else if (!cp.isNullable && mapDefaultToEmpty) { // non-nullable
+                    p.setDefault(EMPTY_LIST);
+                }
+            }
+        }
+    }
+
+    /**
+     * Parse the rules for defaulting to the empty container.
+     *
+     * @param input a set of rules separated by `|`
+     */
+    void parseDefaultToEmptyContainer(String input) {
+        String[] inputs = input.split("[|]");
+        String containerType;
+        for (String rule : inputs) {
+            if (StringUtils.isEmpty(rule)) {
+                LOGGER.error("updateDefaultToEmptyContainer: Skipped empty input in `{}`.", input);
+                continue;
+            }
+
+            if (rule.startsWith("?") && rule.endsWith("?")) { // nullable optional
+                containerType = rule.substring(1, rule.length() - 1);
+                if ("array".equalsIgnoreCase(containerType)) {
+                    arrayOptionalNullableDefaultToEmpty = true;
+                } else if ("map".equalsIgnoreCase(containerType)) {
+                    mapOptionalNullableDefaultToEmpty = true;
+                } else {
+                    LOGGER.error("Skipped invalid container type `{}` in `{}`.", containerType, input);
+                }
+            } else if (rule.startsWith("?")) { // nullable (required)
+                containerType = rule.substring(1);
+                if ("array".equalsIgnoreCase(containerType)) {
+                    arrayNullableDefaultToEmpty = true;
+                } else if ("map".equalsIgnoreCase(containerType)) {
+                    mapNullableDefaultToEmpty = true;
+                } else {
+                    LOGGER.error("Skipped invalid container type `{}` in `{}`.", containerType, input);
+                }
+            } else if (rule.endsWith("?")) { // optional
+                containerType = rule.substring(0, rule.length() - 1);
+                if ("array".equalsIgnoreCase(containerType)) {
+                    arrayOptionalDefaultToEmpty = true;
+                } else if ("map".equalsIgnoreCase(containerType)) {
+                    mapOptionalDefaultToEmpty = true;
+                } else {
+                    LOGGER.error("Skipped invalid container type `{}` in the rule `{}`.", containerType, input);
+                }
+            } else { // required
+                containerType = rule;
+                if ("array".equalsIgnoreCase(containerType)) {
+                    arrayDefaultToEmpty = true;
+                } else if ("map".equalsIgnoreCase(containerType)) {
+                    mapDefaultToEmpty = true;
+                } else {
+                    LOGGER.error("Skipped invalid container type `{}` in the rule `{}`.", containerType, input);
+                }
+            }
+
+        }
     }
 
     /**
@@ -3602,7 +4527,7 @@ public class DefaultCodegen implements CodegenConfig {
      */
     protected void updatePropertyForArray(CodegenProperty property, CodegenProperty innerProperty) {
         if (innerProperty == null) {
-            if(LOGGER.isWarnEnabled()) {
+            if (LOGGER.isWarnEnabled()) {
                 LOGGER.warn("skipping invalid array property {}", Json.pretty(property));
             }
             return;
@@ -3620,6 +4545,7 @@ public class DefaultCodegen implements CodegenConfig {
             // isEnum is set to true when the type is an enum
             // or the inner type of an array/map is an enum
             property.isEnum = true;
+            property.isInnerEnum = true;
             // update datatypeWithEnum and default value for array
             // e.g. List<string> => List<StatusEnum>
             updateDataTypeWithEnumForArray(property);
@@ -3637,7 +4563,7 @@ public class DefaultCodegen implements CodegenConfig {
      */
     protected void updatePropertyForMap(CodegenProperty property, CodegenProperty innerProperty) {
         if (innerProperty == null) {
-            if(LOGGER.isWarnEnabled()) {
+            if (LOGGER.isWarnEnabled()) {
                 LOGGER.warn("skipping invalid map property {}", Json.pretty(property));
             }
             return;
@@ -3656,6 +4582,7 @@ public class DefaultCodegen implements CodegenConfig {
             // isEnum is set to true when the type is an enum
             // or the inner type of an array/map is an enum
             property.isEnum = true;
+            property.isInnerEnum = true;
             // update datatypeWithEnum and default value for map
             // e.g. Dictionary<string, string> => Dictionary<string, StatusEnum>
             updateDataTypeWithEnumForMap(property);
@@ -3669,7 +4596,7 @@ public class DefaultCodegen implements CodegenConfig {
      * Update property for map container
      *
      * @param property Codegen property
-     * @return True if the inner most type is enum
+     * @return True if the innermost type is enum
      */
     protected Boolean isPropertyInnerMostEnum(CodegenProperty property) {
         CodegenProperty currentProperty = getMostInnerItems(property);
@@ -3677,13 +4604,116 @@ public class DefaultCodegen implements CodegenConfig {
         return currentProperty != null && currentProperty.isEnum;
     }
 
+    /**
+     * Search a property and its items, additional properties, named properties, and composition branches.
+     * This traversal is independent of the generator's supported features and visits each property
+     * instance at most once, so shared or cyclic property graphs are safe to search.
+     *
+     * @param property the root property, or null
+     * @param predicate the condition to match
+     * @return true as soon as a matching property is found
+     */
+    protected boolean anyPropertyMatches(CodegenProperty property, Predicate<CodegenProperty> predicate) {
+        Set<CodegenProperty> visited = Collections.newSetFromMap(new IdentityHashMap<>());
+        return anyPropertyMatches(property, predicate, visited);
+    }
+
+    private boolean anyPropertyMatches(CodegenProperty property, Predicate<CodegenProperty> predicate,
+                                       Set<CodegenProperty> visited) {
+        if (property == null || !visited.add(property)) {
+            return false;
+        }
+        if (predicate.test(property)
+                || anyPropertyMatches(property.items, predicate, visited)
+                || anyPropertyMatches(property.additionalProperties, predicate, visited)
+                || anyPropertyMatches(property.vars, predicate, visited)) {
+            return true;
+        }
+
+        CodegenComposedSchemas composed = property.getComposedSchemas();
+        return composed != null && (anyPropertyMatches(composed.getAllOf(), predicate, visited)
+                || anyPropertyMatches(composed.getOneOf(), predicate, visited)
+                || anyPropertyMatches(composed.getAnyOf(), predicate, visited)
+                || anyPropertyMatches(composed.getNot(), predicate, visited));
+    }
+
+    private boolean anyPropertyMatches(List<CodegenProperty> properties, Predicate<CodegenProperty> predicate,
+                                       Set<CodegenProperty> visited) {
+        return properties != null && properties.stream().anyMatch(property -> anyPropertyMatches(property, predicate, visited));
+    }
+
     protected CodegenProperty getMostInnerItems(CodegenProperty property) {
         CodegenProperty currentProperty = property;
-        while (currentProperty != null && (Boolean.TRUE.equals(currentProperty.isMap)
-                || Boolean.TRUE.equals(currentProperty.isArray)) && currentProperty.items != null) {
+        while (currentProperty != null && (currentProperty.isMap
+                || currentProperty.isArray) && currentProperty.items != null) {
             currentProperty = currentProperty.items;
         }
         return currentProperty;
+    }
+
+    /**
+     * Applies an action to every property recursively reachable from a model.
+     * Properties are de-duplicated by identity to avoid repeated processing and cycles.
+     *
+     * @param model  model whose properties should be visited
+     * @param action action to apply to each property
+     */
+    protected void forEachModelPropertyRecursively(CodegenModel model, Consumer<CodegenProperty> action) {
+        Set<CodegenProperty> visited = Collections.newSetFromMap(new IdentityHashMap<>());
+        visitNestedProperties(model, visited, action);
+    }
+
+    /**
+     * Applies an action to a property and recursively visits its nested properties.
+     */
+    private void visitProperty(CodegenProperty property, Set<CodegenProperty> visited,
+            Consumer<CodegenProperty> action) {
+        if (property == null || !visited.add(property)) {
+            return;
+        }
+
+        action.accept(property);
+        visitNestedProperties(property, visited, action);
+    }
+
+    /**
+     * Visits every canonical location in which a schema can contain another {@link CodegenProperty}.
+     * Other derived views such as {@code mostInnerItems} are intentionally omitted
+     * because their properties are already reachable through {@code items}. Note that
+     * {@code requiredVarsMap} is traversed explicitly below.
+     */
+    private void visitNestedProperties(IJsonSchemaValidationProperties schema,
+            Set<CodegenProperty> visited, Consumer<CodegenProperty> action) {
+        visitProperties(schema.getVars(), visited, action);
+        visitProperty(schema.getItems(), visited, action);
+        visitProperty(schema.getAdditionalProperties(), visited, action);
+        visitProperty(schema.getContains(), visited, action);
+
+        Map<String, CodegenProperty> requiredVarsMap = schema.getRequiredVarsMap();
+        if (requiredVarsMap != null) {
+            visitProperties(requiredVarsMap.values(), visited, action);
+        }
+
+        CodegenComposedSchemas composedSchemas = schema.getComposedSchemas();
+        if (composedSchemas != null) {
+            visitProperties(composedSchemas.getAllOf(), visited, action);
+            visitProperties(composedSchemas.getOneOf(), visited, action);
+            visitProperties(composedSchemas.getAnyOf(), visited, action);
+            visitProperty(composedSchemas.getNot(), visited, action);
+        }
+    }
+
+    /**
+     * Visits each property in a collection and its nested properties.
+     */
+    private void visitProperties(Collection<CodegenProperty> properties, Set<CodegenProperty> visited,
+            Consumer<CodegenProperty> action) {
+        if (properties == null) {
+            return;
+        }
+        for (CodegenProperty property : properties) {
+            visitProperty(property, visited, action);
+        }
     }
 
     protected Map<String, Object> getInnerEnumAllowableValues(CodegenProperty property) {
@@ -3699,8 +4729,8 @@ public class DefaultCodegen implements CodegenConfig {
      */
     protected void updateDataTypeWithEnumForArray(CodegenProperty property) {
         CodegenProperty baseItem = property.items;
-        while (baseItem != null && (Boolean.TRUE.equals(baseItem.isMap)
-                || Boolean.TRUE.equals(baseItem.isArray))) {
+        while (baseItem != null && (baseItem.isMap
+                || baseItem.isArray)) {
             baseItem = baseItem.items;
         }
         if (baseItem != null) {
@@ -3727,14 +4757,14 @@ public class DefaultCodegen implements CodegenConfig {
      */
     protected void updateDataTypeWithEnumForMap(CodegenProperty property) {
         CodegenProperty baseItem = property.items;
-        while (baseItem != null && (Boolean.TRUE.equals(baseItem.isMap)
-                || Boolean.TRUE.equals(baseItem.isArray))) {
+        while (baseItem != null && (baseItem.isMap
+                || baseItem.isArray)) {
             baseItem = baseItem.items;
         }
 
         if (baseItem != null) {
             // set both datatype and datetypeWithEnum as only the inner type is enum
-            property.datatypeWithEnum = property.datatypeWithEnum.replace(", " + baseItem.baseType, ", " + toEnumName(baseItem));
+            property.datatypeWithEnum = property.datatypeWithEnum.replace(baseItem.baseType + ">", toEnumName(baseItem) + ">");
 
             // naming the enum with respect to the language enum naming convention
             // e.g. remove [], {} from array/map of enum
@@ -3766,6 +4796,21 @@ public class DefaultCodegen implements CodegenConfig {
      * @return default method response or <code>null</code> if not found
      */
     protected ApiResponse findMethodResponse(ApiResponses responses) {
+        String code = findMethodResponseCode(responses);
+        if (code == null) {
+            return null;
+        }
+        return ModelUtils.getReferencedApiResponse(openAPI, responses.get(code));
+    }
+
+    /**
+     * Returns the response code the operation's return type is derived from: the lowest 2xx code, or
+     * {@code "default"} when no 2xx is present.
+     *
+     * @param responses the API responses of an operation
+     * @return the selected response code, or {@code null} if there is no success/default response
+     */
+    protected String findMethodResponseCode(ApiResponses responses) {
         String code = null;
         for (String responseCode : responses.keySet()) {
             if (responseCode.startsWith("2") || responseCode.equals("default")) {
@@ -3774,10 +4819,7 @@ public class DefaultCodegen implements CodegenConfig {
                 }
             }
         }
-        if (code == null) {
-            return null;
-        }
-        return responses.get(code);
+        return code;
     }
 
     /**
@@ -3792,7 +4834,7 @@ public class DefaultCodegen implements CodegenConfig {
                                         Map<String, Schema> schemas,
                                         CodegenOperation op,
                                         ApiResponse methodResponse) {
-        handleMethodResponse(operation, schemas, op, methodResponse, Collections.<String, String>emptyMap());
+        handleMethodResponse(operation, schemas, op, methodResponse, Collections.emptyMap());
     }
 
     /**
@@ -3802,24 +4844,24 @@ public class DefaultCodegen implements CodegenConfig {
      * @param schemas        a map of the schemas in the openapi spec
      * @param op             endpoint CodegenOperation
      * @param methodResponse the default ApiResponse for the endpoint
-     * @param importMappings mappings of external types to be omitted by unaliasing
+     * @param schemaMappings mappings of external types to be omitted by unaliasing
      */
     protected void handleMethodResponse(Operation operation,
                                         Map<String, Schema> schemas,
                                         CodegenOperation op,
                                         ApiResponse methodResponse,
-                                        Map<String, String> importMappings) {
-        Schema responseSchema = unaliasSchema(ModelUtils.getSchemaFromResponse(methodResponse), importMapping);
+                                        Map<String, String> schemaMappings) {
+        ApiResponse response = ModelUtils.getReferencedApiResponse(openAPI, methodResponse);
+        Schema responseSchema = unaliasSchema(ModelUtils.getSchemaFromResponse(openAPI, response));
 
         if (responseSchema != null) {
-            CodegenProperty cm = fromProperty("response", responseSchema);
+            CodegenProperty cm = fromProperty("response", responseSchema, false);
 
             if (ModelUtils.isArraySchema(responseSchema)) {
-                ArraySchema as = (ArraySchema) responseSchema;
-                CodegenProperty innerProperty = fromProperty("response", getSchemaItems(as));
+                CodegenProperty innerProperty = fromProperty("response", ModelUtils.getSchemaItems(responseSchema), false);
                 op.returnBaseType = innerProperty.baseType;
             } else if (ModelUtils.isMapSchema(responseSchema)) {
-                CodegenProperty innerProperty = fromProperty("response", getAdditionalProperties(responseSchema));
+                CodegenProperty innerProperty = fromProperty("response", ModelUtils.getAdditionalProperties(responseSchema), false);
                 op.returnBaseType = innerProperty.baseType;
             } else {
                 if (cm.complexType != null) {
@@ -3827,18 +4869,6 @@ public class DefaultCodegen implements CodegenConfig {
                 } else {
                     op.returnBaseType = cm.baseType;
                 }
-            }
-
-            // check skipOperationExample, which can be set to true to avoid out of memory errors for large spec
-            if (!isSkipOperationExample()) {
-                // generate examples
-                String exampleStatusCode = "200";
-                for (String key : operation.getResponses().keySet()) {
-                    if (operation.getResponses().get(key) == methodResponse && !key.equals("default")) {
-                        exampleStatusCode = key;
-                    }
-                }
-                op.examples = new ExampleGenerator(schemas, this.openAPI).generateFromResponseSchema(exampleStatusCode, responseSchema, getProducesInfo(this.openAPI, operation));
             }
 
             op.defaultResponse = toDefaultValue(responseSchema);
@@ -3873,8 +4903,9 @@ public class DefaultCodegen implements CodegenConfig {
             if (languageSpecificPrimitives().contains(op.returnBaseType) || op.returnBaseType == null) {
                 op.returnTypeIsPrimitive = true;
             }
+            op.returnProperty = cm;
         }
-        addHeaders(methodResponse, op.responseHeaders);
+        addHeaders(response, op.responseHeaders);
     }
 
     /**
@@ -3897,7 +4928,7 @@ public class DefaultCodegen implements CodegenConfig {
 
         Map<String, Schema> schemas = ModelUtils.getSchemas(this.openAPI);
         CodegenOperation op = CodegenModelFactory.newInstance(CodegenModelType.OPERATION);
-        Set<String> imports = new HashSet<String>();
+        Set<String> imports = new HashSet<>();
         if (operation.getExtensions() != null && !operation.getExtensions().isEmpty()) {
             op.vendorExtensions.putAll(operation.getExtensions());
 
@@ -3916,21 +4947,7 @@ public class DefaultCodegen implements CodegenConfig {
 
         // store the original operationId for plug-in
         op.operationIdOriginal = operation.getOperationId();
-
-        String operationId = getOrGenerateOperationId(operation, path, httpMethod);
-        // remove prefix in operationId
-        if (removeOperationIdPrefix) {
-            // The prefix is everything before the removeOperationIdPrefixCount occurrence of removeOperationIdPrefixDelimiter
-            String[] components = operationId.split("[" + removeOperationIdPrefixDelimiter + "]");
-            if (components.length > 1) {
-                // If removeOperationIdPrefixCount is -1 or bigger that the number of occurrences, uses the last one
-                int component_number = removeOperationIdPrefixCount == -1 ? components.length - 1 : removeOperationIdPrefixCount;
-                component_number = Math.min(component_number, components.length - 1);
-                // Reconstruct the operationId from its split elements and the delimiter
-                operationId = String.join(removeOperationIdPrefixDelimiter, Arrays.copyOfRange(components, component_number, components.length));
-            }
-        }
-        operationId = removeNonNameElementToCamelCase(operationId);
+        op.operationId = getOrGenerateOperationId(operation, path, httpMethod);
 
         if (isStrictSpecBehavior() && !path.startsWith("/")) {
             // modifies an operation.path to strictly conform to OpenAPI Spec
@@ -3938,8 +4955,9 @@ public class DefaultCodegen implements CodegenConfig {
         } else {
             op.path = path;
         }
+        // remove backslash from path, e.g. /api/v2/GetPetById\\(\\) => /api/v2/GetPetById()
+        op.path = op.path.replace("\\", "");
 
-        op.operationId = toOperationId(operationId);
         op.summary = escapeText(operation.getSummary());
         op.unescapedNotes = operation.getDescription();
         op.notes = escapeText(operation.getDescription());
@@ -3953,29 +4971,71 @@ public class DefaultCodegen implements CodegenConfig {
 
         if (operation.getResponses() != null && !operation.getResponses().isEmpty()) {
             ApiResponse methodResponse = findMethodResponse(operation.getResponses());
+            // a content-type variant produces only what its method response, the one the split narrowed,
+            // declares (see getProducesInfo)
+            boolean producesNarrowed = contentTypeVariantMediaType(operation, CodegenConstants.X_CONTENT_TYPE_VARIANT_RESPONSE) != null;
+            if (producesNarrowed) {
+                addProducesInfo(methodResponse, op);
+            }
             for (Map.Entry<String, ApiResponse> operationGetResponsesEntry : operation.getResponses().entrySet()) {
                 String key = operationGetResponsesEntry.getKey();
-                ApiResponse response = operationGetResponsesEntry.getValue();
-                addProducesInfo(response, op);
+                ApiResponse response = ModelUtils.getReferencedApiResponse(openAPI, operationGetResponsesEntry.getValue());
+                if (!producesNarrowed) {
+                    addProducesInfo(response, op);
+                }
                 CodegenResponse r = fromResponse(key, response);
+                Map<String, Header> headers = response.getHeaders();
+                if (headers != null) {
+                    List<CodegenParameter> responseHeaders = new ArrayList<>();
+                    for (Entry<String, Header> entry : headers.entrySet()) {
+                        String headerName = entry.getKey();
+                        Header header = ModelUtils.getReferencedHeader(this.openAPI, entry.getValue());
+                        CodegenParameter responseHeader = headerToCodegenParameter(header, headerName, imports, String.format(Locale.ROOT, "%sResponseParameter", r.code));
+                        responseHeaders.add(responseHeader);
+                    }
+                    r.setResponseHeaders(responseHeaders);
+                }
+                String mediaTypeSchemaSuffix = String.format(Locale.ROOT, "%sResponseBody", r.code);
+                r.setContent(getContent(response.getContent(), imports, mediaTypeSchemaSuffix));
+
                 if (r.baseType != null &&
                         !defaultIncludes.contains(r.baseType) &&
                         !languageSpecificPrimitives.contains(r.baseType)) {
                     imports.add(r.baseType);
                 }
+
+                addImportMappedType(imports, r.dataType);
+                addImportMappedType(imports, r.baseType);
+
                 if ("set".equals(r.containerType) && typeMapping.containsKey(r.containerType)) {
                     op.uniqueItems = true;
                     imports.add(typeMapping.get(r.containerType));
                 }
 
                 op.responses.add(r);
-                if (Boolean.TRUE.equals(r.isBinary) && Boolean.TRUE.equals(r.is2xx) && Boolean.FALSE.equals(op.isResponseBinary)) {
+                if (r.isBinary && r.is2xx && !op.isResponseBinary) {
                     op.isResponseBinary = Boolean.TRUE;
                 }
-                if (Boolean.TRUE.equals(r.isFile) && Boolean.TRUE.equals(r.is2xx) && Boolean.FALSE.equals(op.isResponseFile)) {
+                if (r.isFile && r.is2xx && !op.isResponseFile) {
                     op.isResponseFile = Boolean.TRUE;
                 }
+                if (r.isDefault) {
+                    op.defaultReturnType = Boolean.TRUE;
+                }
+
+                // check if any 4xx or 5xx response has an error response object defined
+                if ((r.is4xx || r.is5xx) &&
+                        !r.primitiveType && !r.simpleType) {
+                    op.hasErrorResponseObject = Boolean.TRUE;
+                }
             }
+
+            // check if the operation can both return a 2xx response with a body and without
+            if (op.responses.stream().anyMatch(response -> response.is2xx && response.dataType != null) &&
+                    op.responses.stream().anyMatch(response -> response.is2xx && response.dataType == null)) {
+                op.isResponseOptional = Boolean.TRUE;
+            }
+
             op.responses.sort((a, b) -> {
                 int aScore = a.isWildcard() ? 2 : a.isRange() ? 1 : 0;
                 int bScore = b.isWildcard() ? 2 : b.isRange() ? 1 : 0;
@@ -3987,6 +5047,36 @@ public class DefaultCodegen implements CodegenConfig {
             }
         }
 
+        // check skipOperationExample, which can be set to true to avoid out of memory errors for large spec
+        if (!isSkipOperationExample() && operation.getResponses() != null) {
+            // generate examples
+            ExampleGenerator generator = new ExampleGenerator(schemas, this.openAPI);
+            List<Map<String, String>> examples = new ArrayList<>();
+
+            for (String statusCode : operation.getResponses().keySet()) {
+                ApiResponse apiResponse = ModelUtils.getReferencedApiResponse(openAPI, operation.getResponses().get(statusCode));
+                Schema schema = unaliasSchema(ModelUtils.getSchemaFromResponse(openAPI, apiResponse));
+                if (schema == null) {
+                    // void response
+                    continue;
+                }
+
+                if (apiResponse.getContent() != null) {
+                    Set<String> producesInfo = new ConcurrentSkipListSet<>(apiResponse.getContent().keySet());
+
+                    String exampleStatusCode = statusCode;
+                    if (exampleStatusCode.equals("default")) {
+                        exampleStatusCode = "200";
+                    }
+                    List<Map<String, String>> examplesForResponse = generator.generateFromResponseSchema(exampleStatusCode, schema, producesInfo);
+                    if (examplesForResponse != null) {
+                        examples.addAll(examplesForResponse);
+                    }
+                }
+            }
+            op.examples = examples;
+        }
+
         if (operation.getCallbacks() != null && !operation.getCallbacks().isEmpty()) {
             operation.getCallbacks().forEach((name, callback) -> {
                 CodegenCallback c = fromCallback(name, callback, servers);
@@ -3995,31 +5085,33 @@ public class DefaultCodegen implements CodegenConfig {
         }
 
         List<Parameter> parameters = operation.getParameters();
-        List<CodegenParameter> allParams = new ArrayList<CodegenParameter>();
-        List<CodegenParameter> bodyParams = new ArrayList<CodegenParameter>();
-        List<CodegenParameter> pathParams = new ArrayList<CodegenParameter>();
-        List<CodegenParameter> queryParams = new ArrayList<CodegenParameter>();
-        List<CodegenParameter> headerParams = new ArrayList<CodegenParameter>();
-        List<CodegenParameter> cookieParams = new ArrayList<CodegenParameter>();
-        List<CodegenParameter> formParams = new ArrayList<CodegenParameter>();
-        List<CodegenParameter> requiredParams = new ArrayList<CodegenParameter>();
-        List<CodegenParameter> optionalParams = new ArrayList<CodegenParameter>();
+        List<CodegenParameter> allParams = new ArrayList<>();
+        List<CodegenParameter> bodyParams = new ArrayList<>();
+        List<CodegenParameter> pathParams = new ArrayList<>();
+        List<CodegenParameter> queryParams = new ArrayList<>();
+        List<CodegenParameter> headerParams = new ArrayList<>();
+        List<CodegenParameter> cookieParams = new ArrayList<>();
+        List<CodegenParameter> formParams = new ArrayList<>();
+        List<CodegenParameter> requiredParams = new ArrayList<>();
+        List<CodegenParameter> optionalParams = new ArrayList<>();
+        List<CodegenParameter> requiredAndNotNullableParams = new ArrayList<>();
+        List<CodegenParameter> notNullableParams = new ArrayList<>();
 
         CodegenParameter bodyParam = null;
-        RequestBody requestBody = operation.getRequestBody();
+        RequestBody requestBody = ModelUtils.getReferencedRequestBody(this.openAPI, operation.getRequestBody());
         if (requestBody != null) {
             String contentType = getContentType(requestBody);
             if (contentType != null) {
                 contentType = contentType.toLowerCase(Locale.ROOT);
             }
             if (contentType != null &&
-                    (contentType.startsWith("application/x-www-form-urlencoded") ||
+                    ((!(this instanceof RustAxumServerCodegen) && contentType.startsWith("application/x-www-form-urlencoded")) ||
                             contentType.startsWith("multipart"))) {
                 // process form parameters
                 formParams = fromRequestBodyToFormParameters(requestBody, imports);
                 op.isMultipart = contentType.startsWith("multipart");
                 for (CodegenParameter cp : formParams) {
-                    setParameterContentType(cp, requestBody.getContent().get(contentType));
+                    setParameterEncodingValues(cp, requestBody.getContent().get(contentType));
                     postProcessParameter(cp);
                 }
                 // add form parameters to the beginning of all parameter list
@@ -4030,25 +5122,28 @@ public class DefaultCodegen implements CodegenConfig {
                 }
             } else {
                 // process body parameter
-                requestBody = ModelUtils.getReferencedRequestBody(this.openAPI, requestBody);
-
                 String bodyParameterName = "";
                 if (op.vendorExtensions != null && op.vendorExtensions.containsKey("x-codegen-request-body-name")) {
                     bodyParameterName = (String) op.vendorExtensions.get("x-codegen-request-body-name");
                 }
-                bodyParam = fromRequestBody(requestBody, imports, bodyParameterName);
-                bodyParam.description = escapeText(requestBody.getDescription());
-                postProcessParameter(bodyParam);
-
-                bodyParams.add(bodyParam);
-
-                if (prependFormOrBodyParameters) {
-                    allParams.add(bodyParam);
+                if (requestBody.getExtensions() != null && requestBody.getExtensions().containsKey("x-codegen-request-body-name")) {
+                    bodyParameterName = (String) requestBody.getExtensions().get("x-codegen-request-body-name");
                 }
 
-                // add example
-                if (schemas != null) {
-                    op.requestBodyExamples = new ExampleGenerator(schemas, this.openAPI).generate(null, new ArrayList<String>(getConsumesInfo(this.openAPI, operation)), bodyParam.baseType);
+                bodyParam = fromRequestBody(requestBody, imports, bodyParameterName);
+
+                if (bodyParam != null) {
+                    bodyParam.description = escapeText(requestBody.getDescription());
+                    postProcessParameter(bodyParam);
+                    bodyParams.add(bodyParam);
+                    if (prependFormOrBodyParameters) {
+                        allParams.add(bodyParam);
+                    }
+
+                    // add example
+                    if (schemas != null && !isSkipOperationExample()) {
+                        op.requestBodyExamples = new ExampleGenerator(schemas, this.openAPI).generate(null, new ArrayList<>(getConsumesInfo(this.openAPI, operation)), bodyParam.baseType);
+                    }
                 }
             }
         }
@@ -4058,6 +5153,7 @@ public class DefaultCodegen implements CodegenConfig {
                 param = ModelUtils.getReferencedParameter(this.openAPI, param);
 
                 CodegenParameter p = fromParameter(param, imports);
+                p.setContent(getContent(param.getContent(), imports, "RequestParameter" + toModelName(param.getName())));
 
                 // ensure unique params
                 if (ensureUniqueParams) {
@@ -4112,6 +5208,14 @@ public class DefaultCodegen implements CodegenConfig {
                 optionalParams.add(cp.copy());
                 op.hasOptionalParams = true;
             }
+
+            if (cp.requiredAndNotNullable()) {
+                requiredAndNotNullableParams.add(cp.copy());
+            }
+
+            if (!cp.isNullable) {
+                notNullableParams.add(cp.copy());
+            }
         }
 
         // add imports to operation import tag
@@ -4126,17 +5230,7 @@ public class DefaultCodegen implements CodegenConfig {
 
         // move "required" parameters in front of "optional" parameters
         if (sortParamsByRequiredFlag) {
-            Collections.sort(allParams, new Comparator<CodegenParameter>() {
-                @Override
-                public int compare(CodegenParameter one, CodegenParameter another) {
-                    if (one.required == another.required)
-                        return 0;
-                    else if (one.required)
-                        return -1;
-                    else
-                        return 1;
-                }
-            });
+            SortParametersByRequiredFlag(allParams);
         }
 
         op.allParams = allParams;
@@ -4148,24 +5242,39 @@ public class DefaultCodegen implements CodegenConfig {
         op.formParams = formParams;
         op.requiredParams = requiredParams;
         op.optionalParams = optionalParams;
+        op.requiredAndNotNullableParams = requiredAndNotNullableParams;
+        op.notNullableParams = notNullableParams;
         op.externalDocs = operation.getExternalDocs();
         // legacy support
         op.nickname = op.operationId;
 
-        if (op.allParams.size() > 0) {
-            op.hasParams = true;
-        }
-        op.hasRequiredParams = op.requiredParams.size() > 0;
-
-        // set Restful Flag
-        op.isRestfulShow = op.isRestfulShow();
-        op.isRestfulIndex = op.isRestfulIndex();
-        op.isRestfulCreate = op.isRestfulCreate();
-        op.isRestfulUpdate = op.isRestfulUpdate();
-        op.isRestfulDestroy = op.isRestfulDestroy();
-        op.isRestful = op.isRestful();
-
         return op;
+    }
+
+    /**
+     * Helper method to add an import for a data type if it exists in the importMapping.
+     *
+     * @param imports  The set of imports to add to.
+     * @param dataType The data type to check for a mapping.
+     */
+    protected void addImportMappedType(Set<String> imports, String dataType) {
+        if (imports != null && dataType != null && importMapping.containsKey(dataType)) {
+            imports.add(dataType);
+        }
+    }
+
+    public void SortParametersByRequiredFlag(List<CodegenParameter> parameters) {
+        Collections.sort(parameters, new Comparator<CodegenParameter>() {
+            @Override
+            public int compare(CodegenParameter one, CodegenParameter another) {
+                if (one.required == another.required)
+                    return 0;
+                else if (one.required)
+                    return -1;
+                else
+                    return 1;
+            }
+        });
     }
 
     public boolean isParameterNameUnique(CodegenParameter p, List<CodegenParameter> parameters) {
@@ -4198,6 +5307,7 @@ public class DefaultCodegen implements CodegenConfig {
         } else {
             r.code = responseCode;
             switch (r.code.charAt(0)) {
+
                 case '1':
                     r.is1xx = true;
                     break;
@@ -4220,16 +5330,19 @@ public class DefaultCodegen implements CodegenConfig {
 
         Schema responseSchema;
         if (this.openAPI != null && this.openAPI.getComponents() != null) {
-            responseSchema = unaliasSchema(ModelUtils.getSchemaFromResponse(response), importMapping);
+            responseSchema = unaliasSchema(ModelUtils.getSchemaFromResponse(openAPI, response));
         } else { // no model/alias defined
-            responseSchema = ModelUtils.getSchemaFromResponse(response);
+            responseSchema = ModelUtils.getSchemaFromResponse(openAPI, response);
         }
         r.schema = responseSchema;
-
         r.message = escapeText(response.getDescription());
-        // TODO need to revise and test examples in responses
-        // ApiResponse does not support examples at the moment
-        //r.examples = toExamples(response.getExamples());
+
+        // adding examples to API responses
+        Map<String, Example> examples = ExamplesUtils.getExamplesFromResponse(openAPI, response);
+
+        if (examples != null && !examples.isEmpty())
+            r.examples = unaliasExamples(examples);
+
         r.jsonSchema = Json.pretty(response);
         if (response.getExtensions() != null && !response.getExtensions().isEmpty()) {
             r.vendorExtensions.putAll(response.getExtensions());
@@ -4248,8 +5361,9 @@ public class DefaultCodegen implements CodegenConfig {
             r.setPattern(toRegularExpression(responseSchema.getPattern()));
         }
 
-        CodegenProperty cp = fromProperty("response", responseSchema);
+        CodegenProperty cp = fromProperty("response", responseSchema, false);
         r.dataType = getTypeDeclaration(responseSchema);
+        r.returnProperty = cp;
 
         if (!ModelUtils.isArraySchema(responseSchema)) {
             if (cp.complexType != null) {
@@ -4264,12 +5378,14 @@ public class DefaultCodegen implements CodegenConfig {
             }
         }
 
-        r.setTypeProperties(responseSchema);
+        r.setTypeProperties(responseSchema, openAPI);
+        r.setComposedSchemas(getComposedSchemas(responseSchema));
         if (ModelUtils.isArraySchema(responseSchema)) {
             r.simpleType = false;
+            r.isArray = true;
             r.containerType = cp.containerType;
-            ArraySchema as = (ArraySchema) responseSchema;
-            CodegenProperty items = fromProperty("response", getSchemaItems(as));
+            r.containerTypeMapped = typeMapping.get(cp.containerType);
+            CodegenProperty items = fromProperty("response", ModelUtils.getSchemaItems(responseSchema), false);
             r.setItems(items);
             CodegenProperty innerCp = items;
 
@@ -4283,9 +5399,12 @@ public class DefaultCodegen implements CodegenConfig {
         } else if (ModelUtils.isStringSchema(responseSchema)) {
             if (ModelUtils.isEmailSchema(responseSchema)) {
                 r.isEmail = true;
+            } else if (ModelUtils.isPasswordSchema(responseSchema)) {
+                r.isPassword = true;
             } else if (ModelUtils.isUUIDSchema(responseSchema)) {
                 r.isUuid = true;
             } else if (ModelUtils.isByteArraySchema(responseSchema)) {
+                r.setIsString(false);
                 r.isByteArray = true;
             } else if (ModelUtils.isBinarySchema(responseSchema)) {
                 r.isFile = true; // file = binary in OAS3
@@ -4318,23 +5437,32 @@ public class DefaultCodegen implements CodegenConfig {
             } else if (ModelUtils.isDoubleSchema(responseSchema)) { // double
                 r.isDouble = Boolean.TRUE;
             }
-        } else if (ModelUtils.isTypeObjectSchema(responseSchema)) {
-            if (ModelUtils.isFreeFormObject(openAPI, responseSchema)) {
-                r.isFreeFormObject = true;
-            }
+        } else if (ModelUtils.isFreeFormObject(responseSchema, openAPI)) {
+            r.isFreeFormObject = true;
+            r.simpleType = false;
+        } else if (ModelUtils.isMapSchema(responseSchema)) {
+            r.isMap = true;
+            r.simpleType = false;
+            r.isModel = false;
+            r.containerType = cp.containerType;
+            r.containerTypeMapped = cp.containerTypeMapped;
+        } else if (ModelUtils.isArraySchema(responseSchema)) {
+            r.isArray = true;
             r.simpleType = false;
             r.containerType = cp.containerType;
+            r.containerTypeMapped = cp.containerTypeMapped;
+        } else if (ModelUtils.isTypeObjectSchema(responseSchema)) {
+            r.simpleType = false;
+            r.containerType = cp.containerType;
+            r.containerTypeMapped = cp.containerTypeMapped;
             addVarsRequiredVarsAdditionalProps(responseSchema, r);
         } else if (ModelUtils.isAnyType(responseSchema)) {
             addVarsRequiredVarsAdditionalProps(responseSchema, r);
-        } else if (!ModelUtils.isBooleanSchema(responseSchema)){
+        } else if (!ModelUtils.isBooleanSchema(responseSchema)) {
             // referenced schemas
             LOGGER.debug("Property type is not primitive: {}", cp.dataType);
         }
 
-        if (!r.isMap && !r.isArray) {
-            r.simpleType = true;
-        }
         r.primitiveType = (r.baseType == null || languageSpecificPrimitives().contains(r.baseType));
 
         if (r.baseType == null) {
@@ -4344,6 +5472,7 @@ public class DefaultCodegen implements CodegenConfig {
             r.simpleType = true;
         }
 
+        postProcessResponseWithProperty(r, cp);
         return r;
     }
 
@@ -4372,37 +5501,43 @@ public class DefaultCodegen implements CodegenConfig {
             }
 
             Stream.of(
-                    Pair.of("get", pi.getGet()),
-                    Pair.of("head", pi.getHead()),
-                    Pair.of("put", pi.getPut()),
-                    Pair.of("post", pi.getPost()),
-                    Pair.of("delete", pi.getDelete()),
-                    Pair.of("patch", pi.getPatch()),
-                    Pair.of("options", pi.getOptions()))
+                            Pair.of("get", pi.getGet()),
+                            Pair.of("head", pi.getHead()),
+                            Pair.of("put", pi.getPut()),
+                            Pair.of("post", pi.getPost()),
+                            Pair.of("delete", pi.getDelete()),
+                            Pair.of("patch", pi.getPatch()),
+                            Pair.of("options", pi.getOptions()))
                     .filter(p -> p.getValue() != null)
                     .forEach(p -> {
                         String method = p.getKey();
                         Operation op = p.getValue();
 
-                        boolean genId = op.getOperationId() == null;
-                        if (genId) {
-                            op.setOperationId(getOrGenerateOperationId(op, c.name + "_" + expression.replaceAll("\\{\\$.*}", ""), method));
-                        }
+                        if (op.getExtensions() != null && Boolean.TRUE.equals(op.getExtensions().get(X_INTERNAL))) {
+                            // skip operation if x-internal sets to true
+                            LOGGER.info("Operation ({} {} - {}) not generated since x-internal is set to true",
+                                    method, expression, op.getOperationId());
+                        } else {
+                            boolean genId = op.getOperationId() == null;
+                            if (genId) {
+                                op.setOperationId(getOrGenerateOperationId(op, c.name + "_" + expression.replaceAll("\\{\\$.*}", ""), method));
+                            }
 
-                        if (op.getExtensions() == null) {
-                            op.setExtensions(new HashMap<>());
-                        }
-                        // This extension will be removed later by `fromOperation()` as it is only needed here to
-                        // distinguish between normal operations and callback requests
-                        op.getExtensions().put("x-callback-request", true);
+                            if (op.getExtensions() == null) {
+                                op.setExtensions(new HashMap<>());
+                            }
+                            // This extension will be removed later by `fromOperation()` as it is only needed here to
+                            // distinguish between normal operations and callback requests
+                            op.getExtensions().put("x-callback-request", true);
 
-                        CodegenOperation co = fromOperation(expression, method, op, servers);
-                        if (genId) {
-                            co.operationIdOriginal = null;
-                            // legacy (see `fromOperation()`)
-                            co.nickname = co.operationId;
+                            CodegenOperation co = fromOperation(expression, method, op, servers);
+                            if (genId) {
+                                co.operationIdOriginal = null;
+                                // legacy (see `fromOperation()`)
+                                co.nickname = co.operationId;
+                            }
+                            u.requests.add(co);
                         }
-                        u.requests.add(co);
                     });
 
             c.urls.add(u);
@@ -4421,14 +5556,15 @@ public class DefaultCodegen implements CodegenConfig {
         // set the parameter example value
         // should be overridden by lang codegen
         setParameterExampleValue(codegenParameter, parameter);
+        // set the parameter examples (if available)
+        setParameterExamples(codegenParameter, parameter);
 
         postProcessParameter(codegenParameter);
         LOGGER.debug("debugging codegenParameter return: {}", codegenParameter);
     }
 
-
     private void updateParameterForMap(CodegenParameter codegenParameter, Schema parameterSchema, Set<String> imports) {
-        CodegenProperty codegenProperty = fromProperty("inner", getAdditionalProperties(parameterSchema));
+        CodegenProperty codegenProperty = fromProperty("inner", ModelUtils.getAdditionalProperties(parameterSchema), false);
         codegenParameter.items = codegenProperty;
         codegenParameter.mostInnerItems = codegenProperty.mostInnerItems;
         codegenParameter.baseType = codegenProperty.dataType;
@@ -4442,7 +5578,7 @@ public class DefaultCodegen implements CodegenConfig {
         }
     }
 
-    protected void updateParameterForString(CodegenParameter codegenParameter, Schema parameterSchema){
+    protected void updateParameterForString(CodegenParameter codegenParameter, Schema parameterSchema) {
         if (ModelUtils.isEmailSchema(parameterSchema)) {
             codegenParameter.isEmail = true;
         } else if (ModelUtils.isUUIDSchema(parameterSchema)) {
@@ -4468,7 +5604,7 @@ public class DefaultCodegen implements CodegenConfig {
             codegenParameter.isDecimal = true;
             codegenParameter.isPrimitiveType = true;
         }
-        if (Boolean.TRUE.equals(codegenParameter.isString)) {
+        if (codegenParameter.isString) {
             codegenParameter.isPrimitiveType = true;
         }
     }
@@ -4504,8 +5640,25 @@ public class DefaultCodegen implements CodegenConfig {
         }
 
         Schema parameterSchema;
+
+        // the parameter model name is obtained from the schema $ref
+        // e.g. #/components/schemas/list_pageQuery_parameter => toModelName(list_pageQuery_parameter)
+        String parameterModelName = null;
+
         if (parameter.getSchema() != null) {
-            parameterSchema = parameter.getSchema();
+            parameterSchema = unaliasSchema(parameter.getSchema());
+            parameterModelName = getParameterDataType(parameter, parameterSchema);
+            CodegenProperty prop;
+            if (this instanceof RustServerCodegen || this instanceof RustServerCodegenDeprecated) {
+                // for rust server, we need to do something special as it uses
+                // $ref (e.g. #components/schemas/Pet) to determine whether it's a model
+                prop = fromProperty(parameter.getName(), parameterSchema, false);
+            } else if (getUseInlineModelResolver()) {
+                prop = fromProperty(parameter.getName(), getReferencedSchemaWhenNotEnum(parameterSchema), false);
+            } else {
+                prop = fromProperty(parameter.getName(), parameterSchema, false);
+            }
+            codegenParameter.setSchema(prop);
         } else if (parameter.getContent() != null) {
             Content content = parameter.getContent();
             if (content.size() > 1) {
@@ -4514,18 +5667,26 @@ public class DefaultCodegen implements CodegenConfig {
             Map.Entry<String, MediaType> entry = content.entrySet().iterator().next();
             codegenParameter.contentType = entry.getKey();
             parameterSchema = entry.getValue().getSchema();
+            parameterModelName = getParameterDataType(parameter, parameterSchema);
         } else {
             parameterSchema = null;
+        }
+
+        if (parameterSchema != null && parameterSchema.getExtensions() != null && !parameterSchema.getExtensions().isEmpty()) {
+            codegenParameter.vendorExtensions.putAll(parameterSchema.getExtensions());
         }
 
         if (parameter instanceof QueryParameter || "query".equalsIgnoreCase(parameter.getIn())) {
             codegenParameter.isQueryParam = true;
             codegenParameter.isAllowEmptyValue = parameter.getAllowEmptyValue() != null && parameter.getAllowEmptyValue();
+            codegenParameter.queryIsJsonMimeType = isJsonMimeType(codegenParameter.contentType);
         } else if (parameter instanceof PathParameter || "path".equalsIgnoreCase(parameter.getIn())) {
             codegenParameter.required = true;
             codegenParameter.isPathParam = true;
         } else if (parameter instanceof HeaderParameter || "header".equalsIgnoreCase(parameter.getIn())) {
             codegenParameter.isHeaderParam = true;
+            codegenParameter.headerIsJsonMimeType = isJsonMimeType(codegenParameter.contentType)
+                    || isJsonVendorMimeType(codegenParameter.contentType);
         } else if (parameter instanceof CookieParameter || "cookie".equalsIgnoreCase(parameter.getIn())) {
             codegenParameter.isCookieParam = true;
         } else {
@@ -4538,31 +5699,40 @@ public class DefaultCodegen implements CodegenConfig {
             return codegenParameter;
         }
 
-        parameterSchema = unaliasSchema(parameterSchema, Collections.<String, String>emptyMap());
+        // TODO need to review replacing empty map with schemaMapping instead
+        parameterSchema = unaliasSchema(parameterSchema);
         if (parameterSchema == null) {
-            LOGGER.warn("warning!  Schema not found for parameter \" {} \", using String", parameter.getName());
-            parameterSchema = new StringSchema().description("//TODO automatically added by openapi-generator due to missing type definition.");
+            LOGGER.warn("warning!  Schema not found for parameter \" {} \"", parameter.getName());
             finishUpdatingParameter(codegenParameter, parameter);
             return codegenParameter;
         }
-        ModelUtils.syncValidationProperties(parameterSchema, codegenParameter);
-        codegenParameter.setTypeProperties(parameterSchema);
 
-        if (Boolean.TRUE.equals(parameterSchema.getNullable())) { // use nullable defined in the spec
-            codegenParameter.isNullable = true;
+        if (getUseInlineModelResolver() && !(this instanceof RustServerCodegen)) {
+            // for rust server, we cannot run the following as it uses
+            // $ref (e.g. #components/schemas/Pet) to determine whether it's a model
+            parameterSchema = getReferencedSchemaWhenNotEnum(parameterSchema);
         }
 
-        // set default value
-        codegenParameter.defaultValue = toDefaultParameterValue(parameterSchema);
+        ModelUtils.syncValidationProperties(parameterSchema, codegenParameter);
+        codegenParameter.setTypeProperties(parameterSchema, openAPI);
+        codegenParameter.setComposedSchemas(getComposedSchemas(parameterSchema));
+
+        if (ModelUtils.isNullable(parameterSchema)) { // use nullable defined in the spec
+            codegenParameter.isNullable = true;
+        }
 
         if (parameter.getStyle() != null) {
             codegenParameter.style = parameter.getStyle().toString();
             codegenParameter.isDeepObject = Parameter.StyleEnum.DEEPOBJECT == parameter.getStyle();
+            codegenParameter.isFormStyle = Parameter.StyleEnum.FORM == parameter.getStyle();
+            codegenParameter.isSpaceDelimited = Parameter.StyleEnum.SPACEDELIMITED == parameter.getStyle();
+            codegenParameter.isPipeDelimited = Parameter.StyleEnum.PIPEDELIMITED == parameter.getStyle();
+            codegenParameter.isMatrix = Parameter.StyleEnum.MATRIX == parameter.getStyle();
         }
 
         // the default value is false
         // https://github.com/OAI/OpenAPI-Specification/blob/master/versions/3.0.2.md#user-content-parameterexplode
-        codegenParameter.isExplode = parameter.getExplode() == null ? false : parameter.getExplode();
+        codegenParameter.isExplode = parameter.getExplode() != null && parameter.getExplode();
 
         // TODO revise collectionFormat, default collection format in OAS 3 appears to multi at least for query parameters
         // https://swagger.io/docs/specification/serialization/
@@ -4591,19 +5761,17 @@ public class DefaultCodegen implements CodegenConfig {
                 if (ModelUtils.isShortSchema(parameterSchema)) { // int32/short format
                     codegenParameter.isShort = true;
                 } else { // unbounded integer
-                    ;
                 }
             }
         } else if (ModelUtils.isTypeObjectSchema(parameterSchema)) {
             if (ModelUtils.isMapSchema(parameterSchema)) { // for map parameter
                 updateParameterForMap(codegenParameter, parameterSchema, imports);
             }
-            if (ModelUtils.isFreeFormObject(openAPI, parameterSchema)) {
+            if (ModelUtils.isFreeFormObject(parameterSchema, openAPI)) {
                 codegenParameter.isFreeFormObject = true;
             }
             addVarsRequiredVarsAdditionalProps(parameterSchema, codegenParameter);
         } else if (ModelUtils.isNullType(parameterSchema)) {
-            ;
         } else if (ModelUtils.isAnyType(parameterSchema)) {
             // any schema with no type set, composed schemas often do this
             if (ModelUtils.isMapSchema(parameterSchema)) { // for map parameter
@@ -4611,18 +5779,16 @@ public class DefaultCodegen implements CodegenConfig {
             }
             addVarsRequiredVarsAdditionalProps(parameterSchema, codegenParameter);
         } else if (ModelUtils.isArraySchema(parameterSchema)) {
-            final ArraySchema arraySchema = (ArraySchema) parameterSchema;
-            Schema inner = getSchemaItems(arraySchema);
+            Schema inner = ModelUtils.getSchemaItems(parameterSchema);
 
             collectionFormat = getCollectionFormat(parameter);
             // default to csv:
             collectionFormat = StringUtils.isEmpty(collectionFormat) ? "csv" : collectionFormat;
-            CodegenProperty itemsProperty = fromProperty("inner", inner);
+            CodegenProperty itemsProperty = fromProperty("inner", inner, false);
             codegenParameter.items = itemsProperty;
             codegenParameter.mostInnerItems = itemsProperty.mostInnerItems;
             codegenParameter.baseType = itemsProperty.dataType;
             codegenParameter.isContainer = true;
-
             // recursively add import
             while (itemsProperty != null) {
                 imports.add(itemsProperty.baseType);
@@ -4630,44 +5796,49 @@ public class DefaultCodegen implements CodegenConfig {
             }
         } else {
             // referenced schemas
-            ;
         }
 
-        CodegenProperty codegenProperty = fromProperty(parameter.getName(), parameterSchema);
-        if (Boolean.TRUE.equals(codegenProperty.isModel)) {
+        CodegenProperty codegenProperty = fromProperty(parameter.getName(), parameterSchema, false);
+        if (codegenProperty.isModel) {
             codegenParameter.isModel = true;
         }
-        // TODO revise below which seems not working
-        //if (parameterSchema.getRequired() != null && !parameterSchema.getRequired().isEmpty() && parameterSchema.getRequired().contains(codegenProperty.baseName)) {
-        codegenProperty.required = Boolean.TRUE.equals(parameter.getRequired()) ? true : false;
-        //}
-        //codegenProperty.required = true;
 
-        String parameterDataType = this.getParameterDataType(parameter, parameterSchema);
-        if (parameterDataType != null) {
-            codegenParameter.dataType = parameterDataType;
+        if (parameterModelName != null) {
+            codegenParameter.dataType = parameterModelName;
+            if (ModelUtils.isObjectSchema(parameterSchema) || ModelUtils.isComposedSchema(parameterSchema)) {
+                codegenProperty.complexType = codegenParameter.dataType;
+            }
         } else {
             codegenParameter.dataType = codegenProperty.dataType;
         }
-        if (ModelUtils.isObjectSchema(parameterSchema)) {
-            codegenProperty.complexType = codegenParameter.dataType;
-        }
-        if (ModelUtils.isSet(parameterSchema)) {
+
+        if (ModelUtils.isArraySchema(parameterSchema)) {
             imports.add(codegenProperty.baseType);
         }
-        codegenParameter.dataFormat = codegenProperty.dataFormat;
-        codegenParameter.required = codegenProperty.required;
 
-        if (codegenProperty.isEnum) {
-            codegenParameter.datatypeWithEnum = codegenProperty.datatypeWithEnum;
-            codegenParameter.enumName = codegenProperty.enumName;
+        codegenParameter.dataFormat = codegenProperty.dataFormat;
+        if (parameter.getRequired() != null) {
+            codegenParameter.required = parameter.getRequired().booleanValue();
         }
+
+        // set containerType
+        codegenParameter.containerType = codegenProperty.containerType;
+        codegenParameter.containerTypeMapped = codegenProperty.containerTypeMapped;
 
         // enum
         updateCodegenPropertyEnum(codegenProperty);
         codegenParameter.isEnum = codegenProperty.isEnum;
+        codegenParameter.isEnumRef = codegenProperty.isEnumRef;
         codegenParameter._enum = codegenProperty._enum;
         codegenParameter.allowableValues = codegenProperty.allowableValues;
+
+        if (codegenProperty.isEnum) {
+            codegenParameter.datatypeWithEnum = codegenProperty.datatypeWithEnum;
+            codegenParameter.enumName = codegenProperty.enumName;
+            if (codegenProperty.defaultValue != null) {
+                codegenParameter.enumDefaultValue = codegenProperty.defaultValue.replace(codegenProperty.enumName + ".", "");
+            }
+        }
 
         if (codegenProperty.items != null && codegenProperty.items.isEnum) {
             codegenParameter.datatypeWithEnum = codegenProperty.datatypeWithEnum;
@@ -4681,41 +5852,67 @@ public class DefaultCodegen implements CodegenConfig {
             codegenParameter.isCollectionFormatMulti = true;
         }
         codegenParameter.paramName = toParamName(parameter.getName());
+        codegenParameter.nameInCamelCase = camelize(codegenParameter.paramName, LOWERCASE_FIRST_LETTER);
+        codegenParameter.nameInPascalCase = camelize(codegenParameter.paramName);
+        codegenParameter.nameInSnakeCase = CaseFormat.UPPER_CAMEL.to(CaseFormat.UPPER_UNDERSCORE, codegenParameter.nameInPascalCase);
+        codegenParameter.nameInLowerCase = codegenParameter.paramName.toLowerCase(Locale.ROOT);
 
         // import
         if (codegenProperty.complexType != null) {
             imports.add(codegenProperty.complexType);
         }
+        addImportMappedType(imports, codegenParameter.dataType);
+        addImportMappedType(imports, codegenParameter.baseType);
+
         codegenParameter.pattern = toRegularExpression(parameterSchema.getPattern());
 
-        if (codegenParameter.isQueryParam && codegenParameter.isDeepObject) {
-            Schema schema = ModelUtils.getSchema(openAPI, codegenParameter.dataType);
-            codegenParameter.items = fromProperty(codegenParameter.paramName, schema);
-            // TODO Check why schema is actually null for a schema of type object defined inline
-            // https://swagger.io/docs/specification/serialization/
-            if(schema != null) {
-                Map<String, Schema<?>> properties = schema.getProperties();
-                codegenParameter.items.vars =
-                        properties.entrySet().stream()
-                                .map(entry -> {
-                                    CodegenProperty property = fromProperty(entry.getKey(), entry.getValue());
-                                    property.baseName = codegenParameter.baseName + "[" + entry.getKey() + "]";
-                                    return property;
-                                }).collect(Collectors.toList());
+        if (codegenParameter.isQueryParam && codegenParameter.isDeepObject && loadDeepObjectIntoItems) {
+            Schema schema = parameterSchema;
+            if (schema.get$ref() != null) {
+                schema = ModelUtils.getReferencedSchema(openAPI, schema);
             }
-            else {
+            codegenParameter.items = fromProperty(codegenParameter.paramName, schema, false);
+            // https://swagger.io/docs/specification/serialization/
+            if (schema != null) {
+                Map<String, Schema<?>> properties = schema.getProperties();
+                List<String> requiredVarNames = new ArrayList<>();
+                if (schema.getRequired() != null) {
+                    requiredVarNames.addAll(schema.getRequired());
+                }
+                if (properties != null) {
+                    codegenParameter.items.vars =
+                            properties.entrySet().stream()
+                                    .map(entry -> {
+                                        CodegenProperty property = fromProperty(entry.getKey(), entry.getValue(), requiredVarNames.contains(entry.getKey()));
+                                        return property;
+                                    }).collect(Collectors.toList());
+                } else {
+                    //LOGGER.error("properties is null: {}", schema);
+                }
+            } else {
                 LOGGER.warn(
                         "No object schema found for deepObject parameter{} deepObject won't have specific properties",
                         codegenParameter);
             }
         }
 
+        // set default value
+        codegenParameter.defaultValue = toDefaultParameterValue(codegenProperty, parameterSchema);
+
         finishUpdatingParameter(codegenParameter, parameter);
         return codegenParameter;
     }
 
+    private Schema getReferencedSchemaWhenNotEnum(Schema parameterSchema) {
+        Schema referencedSchema = ModelUtils.getReferencedSchema(openAPI, parameterSchema);
+        if (isEnumSchema(referencedSchema)) {
+            referencedSchema = parameterSchema;
+        }
+        return referencedSchema;
+    }
+
     /**
-     * Returns the data type of a parameter.
+     * Returns the data type of parameter.
      * Returns null by default to use the CodegenProperty.datatype value
      *
      * @param parameter Parameter
@@ -4723,9 +5920,9 @@ public class DefaultCodegen implements CodegenConfig {
      * @return data type
      */
     protected String getParameterDataType(Parameter parameter, Schema schema) {
-        if (parameter.get$ref() != null) {
-            String refName = ModelUtils.getSimpleRef(parameter.get$ref());
-            return toModelName(refName);
+        Schema unaliasSchema = unaliasSchema(schema);
+        if (unaliasSchema.get$ref() != null) {
+            return toModelName(ModelUtils.getSimpleRef(unaliasSchema.get$ref()));
         }
         return null;
     }
@@ -4761,12 +5958,12 @@ public class DefaultCodegen implements CodegenConfig {
             return Collections.emptyList();
         }
 
-        List<CodegenSecurity> codegenSecurities = new ArrayList<CodegenSecurity>(securitySchemeMap.size());
+        List<CodegenSecurity> codegenSecurities = new ArrayList<>(securitySchemeMap.size());
         for (String key : securitySchemeMap.keySet()) {
             final SecurityScheme securityScheme = securitySchemeMap.get(key);
             if (SecurityScheme.Type.APIKEY.equals(securityScheme.getType())) {
                 final CodegenSecurity cs = defaultCodegenSecurity(key, securityScheme);
-                cs.isBasic = cs.isOAuth = false;
+                cs.isBasic = cs.isOAuth = cs.isOpenId = false;
                 cs.isApiKey = true;
                 cs.keyParamName = securityScheme.getName();
                 cs.isKeyInHeader = securityScheme.getIn() == SecurityScheme.In.HEADER;
@@ -4775,14 +5972,14 @@ public class DefaultCodegen implements CodegenConfig {
                 codegenSecurities.add(cs);
             } else if (SecurityScheme.Type.HTTP.equals(securityScheme.getType())) {
                 final CodegenSecurity cs = defaultCodegenSecurity(key, securityScheme);
-                cs.isKeyInHeader = cs.isKeyInQuery = cs.isKeyInCookie = cs.isApiKey = cs.isOAuth = false;
+                cs.isKeyInHeader = cs.isKeyInQuery = cs.isKeyInCookie = cs.isApiKey = cs.isOAuth = cs.isOpenId = false;
                 cs.isBasic = true;
-                if ("basic".equals(securityScheme.getScheme())) {
+                if ("basic".equalsIgnoreCase(securityScheme.getScheme())) {
                     cs.isBasicBasic = true;
-                } else if ("bearer".equals(securityScheme.getScheme())) {
+                } else if ("bearer".equalsIgnoreCase(securityScheme.getScheme())) {
                     cs.isBasicBearer = true;
                     cs.bearerFormat = securityScheme.getBearerFormat();
-                } else if ("signature".equals(securityScheme.getScheme())) {
+                } else if ("signature".equalsIgnoreCase(securityScheme.getScheme())) {
                     // HTTP signature as defined in https://datatracker.ietf.org/doc/draft-cavage-http-signatures/
                     // The registry of security schemes is maintained by IANA.
                     // https://www.iana.org/assignments/http-authschemes/http-authschemes.xhtml
@@ -4790,10 +5987,13 @@ public class DefaultCodegen implements CodegenConfig {
                     // This scheme may have to be changed when it is officially registered with IANA.
                     cs.isHttpSignature = true;
                     once(LOGGER).warn("Security scheme 'HTTP signature' is a draft IETF RFC and subject to change.");
+                } else {
+                    once(LOGGER).warn("Unknown scheme `{}` found in the HTTP security definition.", securityScheme.getScheme());
                 }
                 codegenSecurities.add(cs);
             } else if (SecurityScheme.Type.OAUTH2.equals(securityScheme.getType())) {
                 final OAuthFlows flows = securityScheme.getFlows();
+                boolean isFlowEmpty = true;
                 if (securityScheme.getFlows() == null) {
                     throw new RuntimeException("missing oauth flow in " + key);
                 }
@@ -4803,6 +6003,7 @@ public class DefaultCodegen implements CodegenConfig {
                     cs.isPassword = true;
                     cs.flow = "password";
                     codegenSecurities.add(cs);
+                    isFlowEmpty = false;
                 }
                 if (flows.getImplicit() != null) {
                     final CodegenSecurity cs = defaultOauthCodegenSecurity(key, securityScheme);
@@ -4810,6 +6011,7 @@ public class DefaultCodegen implements CodegenConfig {
                     cs.isImplicit = true;
                     cs.flow = "implicit";
                     codegenSecurities.add(cs);
+                    isFlowEmpty = false;
                 }
                 if (flows.getClientCredentials() != null) {
                     final CodegenSecurity cs = defaultOauthCodegenSecurity(key, securityScheme);
@@ -4817,6 +6019,7 @@ public class DefaultCodegen implements CodegenConfig {
                     cs.isApplication = true;
                     cs.flow = "application";
                     codegenSecurities.add(cs);
+                    isFlowEmpty = false;
                 }
                 if (flows.getAuthorizationCode() != null) {
                     final CodegenSecurity cs = defaultOauthCodegenSecurity(key, securityScheme);
@@ -4824,17 +6027,25 @@ public class DefaultCodegen implements CodegenConfig {
                     cs.isCode = true;
                     cs.flow = "accessCode";
                     codegenSecurities.add(cs);
+                    isFlowEmpty = false;
                 }
+
+                if (isFlowEmpty) {
+                    once(LOGGER).error("Invalid flow definition defined in the security scheme: {}", flows);
+                }
+            } else if (SecurityScheme.Type.OPENIDCONNECT.equals(securityScheme.getType())) {
+                final CodegenSecurity cs = defaultCodegenSecurity(key, securityScheme);
+                cs.isKeyInHeader = cs.isKeyInQuery = cs.isKeyInCookie = cs.isApiKey = cs.isBasic = false;
+                cs.isOpenId = true;
+                cs.openIdConnectUrl = securityScheme.getOpenIdConnectUrl();
+                if (securityScheme.getFlows() != null) {
+                    setOpenIdConnectInfo(cs, securityScheme.getFlows().getAuthorizationCode());
+                }
+                codegenSecurities.add(cs);
+            } else {
+                once(LOGGER).error("Unknown type `{}` found in the security definition `{}`.", securityScheme.getType(), securityScheme.getName());
             }
         }
-
-        // sort auth methods to maintain the same order
-        Collections.sort(codegenSecurities, new Comparator<CodegenSecurity>() {
-            @Override
-            public int compare(CodegenSecurity one, CodegenSecurity another) {
-                return ObjectUtils.compare(one.name, another.name);
-            }
-        });
 
         return codegenSecurities;
     }
@@ -4842,8 +6053,9 @@ public class DefaultCodegen implements CodegenConfig {
     private CodegenSecurity defaultCodegenSecurity(String key, SecurityScheme securityScheme) {
         final CodegenSecurity cs = CodegenModelFactory.newInstance(CodegenModelType.SECURITY);
         cs.name = key;
+        cs.description = securityScheme.getDescription();
         cs.type = securityScheme.getType().toString();
-        cs.isCode = cs.isPassword = cs.isApplication = cs.isImplicit = false;
+        cs.isCode = cs.isPassword = cs.isApplication = cs.isImplicit = cs.isOpenId = cs.isOAuth = false;
         cs.isHttpSignature = false;
         cs.isBasicBasic = cs.isBasicBearer = false;
         cs.scheme = securityScheme.getScheme();
@@ -4855,13 +6067,13 @@ public class DefaultCodegen implements CodegenConfig {
 
     private CodegenSecurity defaultOauthCodegenSecurity(String key, SecurityScheme securityScheme) {
         final CodegenSecurity cs = defaultCodegenSecurity(key, securityScheme);
-        cs.isKeyInHeader = cs.isKeyInQuery = cs.isKeyInCookie = cs.isApiKey = cs.isBasic = false;
+        cs.isKeyInHeader = cs.isKeyInQuery = cs.isKeyInCookie = cs.isApiKey = cs.isBasic = cs.isOpenId = false;
         cs.isOAuth = true;
         return cs;
     }
 
     protected void setReservedWordsLowerCase(List<String> words) {
-        reservedWords = new HashSet<String>();
+        reservedWords = new HashSet<>();
         for (String word : words) {
             reservedWords.add(word.toLowerCase(Locale.ROOT));
         }
@@ -4881,6 +6093,7 @@ public class DefaultCodegen implements CodegenConfig {
      */
     protected String getOrGenerateOperationId(Operation operation, String path, String httpMethod) {
         String operationId = operation.getOperationId();
+
         if (StringUtils.isBlank(operationId)) {
             String tmpPath = path;
             tmpPath = tmpPath.replaceAll("\\{", "");
@@ -4904,7 +6117,25 @@ public class DefaultCodegen implements CodegenConfig {
             operationId = sanitizeName(builder.toString());
             LOGGER.warn("Empty operationId found for path: {} {}. Renamed to auto-generated operationId: {}", httpMethod, path, operationId);
         }
-        return operationId;
+
+        if (operationIdNameMapping.containsKey(operationId)) {
+            return operationIdNameMapping.get(operationId);
+        }
+
+        // remove prefix in operationId
+        if (removeOperationIdPrefix) {
+            // The prefix is everything before the removeOperationIdPrefixCount occurrence of removeOperationIdPrefixDelimiter
+            String[] components = operationId.split("[" + removeOperationIdPrefixDelimiter + "]");
+            if (components.length > 1) {
+                // If removeOperationIdPrefixCount is -1 or bigger that the number of occurrences, uses the last one
+                int component_number = removeOperationIdPrefixCount == -1 ? components.length - 1 : removeOperationIdPrefixCount;
+                component_number = Math.min(component_number, components.length - 1);
+                // Reconstruct the operationId from its split elements and the delimiter
+                operationId = String.join(removeOperationIdPrefixDelimiter, Arrays.copyOfRange(components, component_number, components.length));
+            }
+        }
+
+        return toOperationId(removeNonNameElementToCamelCase(operationId));
     }
 
     /**
@@ -4924,9 +6155,9 @@ public class DefaultCodegen implements CodegenConfig {
             return null;
         }
 
-        final List<Map<String, Object>> output = new ArrayList<Map<String, Object>>(examples.size());
+        final List<Map<String, Object>> output = new ArrayList<>(examples.size());
         for (Map.Entry<String, Object> entry : examples.entrySet()) {
-            final Map<String, Object> kv = new HashMap<String, Object>();
+            final Map<String, Object> kv = new HashMap<>();
             kv.put("contentType", entry.getKey());
             kv.put("example", entry.getValue());
             output.add(kv);
@@ -4954,7 +6185,7 @@ public class DefaultCodegen implements CodegenConfig {
                 } else {
                     schema = header.getSchema();
                 }
-                CodegenProperty cp = fromProperty(headerEntry.getKey(), schema);
+                CodegenProperty cp = fromProperty(headerEntry.getKey(), schema, false);
                 cp.setDescription(escapeText(description));
                 cp.setUnescapedDescription(description);
                 if (header.getRequired() != null) {
@@ -4982,7 +6213,7 @@ public class DefaultCodegen implements CodegenConfig {
             co, Map<String, List<CodegenOperation>> operations) {
         List<CodegenOperation> opList = operations.get(tag);
         if (opList == null) {
-            opList = new ArrayList<CodegenOperation>();
+            opList = new ArrayList<>();
             operations.put(tag, opList);
         }
         // check for operationId uniqueness
@@ -5005,35 +6236,37 @@ public class DefaultCodegen implements CodegenConfig {
         co.baseName = tag;
     }
 
+    protected void addParentFromContainer(CodegenModel model, Schema schema) {
+        model.parent = toInstantiationType(schema);
+    }
+
     /**
      * Sets the value of the 'model.parent' property in CodegenModel, based on the value
      * of the 'additionalProperties' keyword. Some language generator use class inheritance
      * to implement additional properties. For example, in Java the generated model class
      * has 'extends HashMap' to represent the additional properties.
-     *
+     * <p>
      * TODO: it's not a good idea to use single class inheritance to implement
      * additionalProperties. That may work for non-composed schemas, but that does not
      * work for composed 'allOf' schemas. For example, in Java, if additionalProperties
      * is set to true (which it should be by default, per OAS spec), then the generated
      * code has extends HashMap. That wouldn't work for composed 'allOf' schemas.
      *
-     * @param model the codegen representation of the OAS schema.
-     * @param name the name of the model.
+     * @param model  the codegen representation of the OAS schema.
+     * @param name   the name of the model.
      * @param schema the input OAS schema.
      */
     protected void addParentContainer(CodegenModel model, String name, Schema schema) {
-        final CodegenProperty property = fromProperty(name, schema);
+        final CodegenProperty property = fromProperty(name, schema, false);
         addImport(model, property.complexType);
-        model.parent = toInstantiationType(schema);
-        final String containerType = property.containerType;
-        final String instantiationType = instantiationTypes.get(containerType);
+        addParentFromContainer(model, schema);
+        final String instantiationType = instantiationTypes.get(property.containerType);
         if (instantiationType != null) {
             addImport(model, instantiationType);
         }
 
-        final String mappedType = typeMapping.get(containerType);
-        if (mappedType != null) {
-            addImport(model, mappedType);
+        if (property.containerTypeMapped != null) {
+            addImport(model, property.containerTypeMapped);
         }
     }
 
@@ -5048,8 +6281,7 @@ public class DefaultCodegen implements CodegenConfig {
      * @return The next name for the base name
      */
     private static String generateNextName(String name) {
-        Pattern pattern = Pattern.compile("\\d+\\z");
-        Matcher matcher = pattern.matcher(name);
+        Matcher matcher = TRAILING_DIGITS.matcher(name);
         if (matcher.find()) {
             String numStr = matcher.group();
             int num = Integer.parseInt(numStr) + 1;
@@ -5059,10 +6291,51 @@ public class DefaultCodegen implements CodegenConfig {
         }
     }
 
+    protected void addImports(CodegenModel m, IJsonSchemaValidationProperties type) {
+        addImports(m.imports, type);
+    }
+
+    protected void addImports(Set<String> importsToBeAddedTo, IJsonSchemaValidationProperties type) {
+        addImports(importsToBeAddedTo, type.getImports(importContainerType, importBaseType, generatorMetadata.getFeatureSet()));
+    }
+
+    protected void addImports(Set<String> importsToBeAddedTo, Set<String> importsToAdd) {
+        importsToAdd.stream().forEach(i -> addImport(importsToBeAddedTo, i));
+    }
+
     protected void addImport(CodegenModel m, String type) {
-        if (type != null && needToImport(type)) {
-            m.imports.add(type);
+        addImport(m.imports, type);
+    }
+
+    protected void addImport(Set<String> importsToBeAddedTo, String type) {
+        if (shouldAddImport(type)) {
+            importsToBeAddedTo.add(type);
         }
+    }
+
+    /**
+     * Add the model name of the child schema in a composed schema to the set of imports
+     *
+     * @param composed    composed schema
+     * @param childSchema composed schema
+     * @param model       codegen model
+     * @param modelName   model name
+     */
+    protected void addImport(Schema composed, Schema childSchema, CodegenModel model, String modelName) {
+        if (composed == null || childSchema == null) {
+            return;
+        }
+
+        // import only if it's not allOf composition schema (without discriminator)
+        if (!(composed.getAllOf() != null && childSchema.getDiscriminator() == null)) {
+            addImport(model, modelName);
+        } else {
+            LOGGER.debug("Skipped import for allOf composition schema {}", modelName);
+        }
+    }
+
+    protected boolean shouldAddImport(String type) {
+        return type != null && needToImport(type);
     }
 
     /**
@@ -5074,24 +6347,22 @@ public class DefaultCodegen implements CodegenConfig {
     protected Map<String, Schema> unaliasPropertySchema(Map<String, Schema> properties) {
         if (properties != null) {
             for (String key : properties.keySet()) {
-                properties.put(key, unaliasSchema(properties.get(key), importMapping()));
-
+                properties.put(key, unaliasSchema(properties.get(key)));
             }
         }
-
         return properties;
     }
 
     protected void addVars(CodegenModel m, Map<String, Schema> properties, List<String> required,
-                         Map<String, Schema> allProperties, List<String> allRequired) {
+                           Map<String, Schema> allProperties, List<String> allRequired) {
 
         m.hasRequired = false;
+        m.hasReadOnly = false;
         if (properties != null && !properties.isEmpty()) {
             m.hasVars = true;
-            m.hasEnums = false; // TODO need to fix as its false in both cases
 
-            Set<String> mandatory = required == null ? Collections.<String>emptySet()
-                    : new TreeSet<String>(required);
+            Set<String> mandatory = required == null ? Collections.emptySet()
+                    : new TreeSet<>(required);
 
             // update "vars" without parent's properties (all, required)
             addVars(m, m.vars, properties, mandatory);
@@ -5099,13 +6370,13 @@ public class DefaultCodegen implements CodegenConfig {
         } else {
             m.emptyVars = true;
             m.hasVars = false;
-            m.hasEnums = false; // TODO need to fix as its false in both cases
+            m.hasEnums = false;
         }
 
         if (allProperties != null) {
-            Set<String> allMandatory = allRequired == null ? Collections.<String>emptySet()
-                    : new TreeSet<String>(allRequired);
-            // update "vars" with parent's properties (all, required)
+            Set<String> allMandatory = allRequired == null ? Collections.emptySet()
+                    : new TreeSet<>(allRequired);
+            // update "allVars" with parent's properties (all, required)
             addVars(m, m.allVars, allProperties, allMandatory);
             m.allMandatory = allMandatory;
         } else { // without parent, allVars and vars are the same
@@ -5114,14 +6385,14 @@ public class DefaultCodegen implements CodegenConfig {
         }
 
         // loop through list to update property name with toVarName
-        Set<String> renamedMandatory = new ConcurrentSkipListSet<String>();
+        Set<String> renamedMandatory = new ConcurrentSkipListSet<>();
         Iterator<String> mandatoryIterator = m.mandatory.iterator();
         while (mandatoryIterator.hasNext()) {
             renamedMandatory.add(toVarName(mandatoryIterator.next()));
         }
         m.mandatory = renamedMandatory;
 
-        Set<String> renamedAllMandatory = new ConcurrentSkipListSet<String>();
+        Set<String> renamedAllMandatory = new ConcurrentSkipListSet<>();
         Iterator<String> allMandatoryIterator = m.allMandatory.iterator();
         while (allMandatoryIterator.hasNext()) {
             renamedAllMandatory.add(toVarName(allMandatoryIterator.next()));
@@ -5137,69 +6408,116 @@ public class DefaultCodegen implements CodegenConfig {
      * @param properties a map of properties (schema)
      * @param mandatory  a set of required properties' name
      */
-    private void addVars(IJsonSchemaValidationProperties m, List<CodegenProperty> vars, Map<String, Schema> properties, Set<String> mandatory) {
+    protected void addVars(IJsonSchemaValidationProperties m, List<CodegenProperty> vars, Map<String, Schema> properties, Set<String> mandatory) {
         if (properties == null) {
             return;
         }
+
+        HashMap<String, CodegenProperty> varsMap = new HashMap<>();
         CodegenModel cm = null;
         if (m instanceof CodegenModel) {
             cm = (CodegenModel) m;
-        }
-        for (Map.Entry<String, Schema> entry : properties.entrySet()) {
 
+            if (cm.allVars == vars) { // processing allVars
+                for (CodegenProperty var : cm.vars) {
+                    // create a map of codegen properties for lookup later
+                    varsMap.put(var.baseName, var);
+                    var.isOverridden = false;
+                }
+            }
+        }
+
+        for (Map.Entry<String, Schema> entry : properties.entrySet()) {
             final String key = entry.getKey();
             final Schema prop = entry.getValue();
             if (prop == null) {
                 LOGGER.warn("Please report the issue. There shouldn't be null property for {}", key);
             } else {
-                final CodegenProperty cp = fromProperty(key, prop);
-                cp.required = mandatory.contains(key);
+                final CodegenProperty cp;
+
+                if (cm != null && cm.allVars == vars && varsMap.containsKey(key)) {
+                    // when updating allVars, reuse the codegen property from the child model if it's already present
+                    // the goal is to avoid issues when the property is defined in both child, parent but the
+                    // definition is not identical, e.g. required vs optional, integer vs string
+                    LOGGER.debug("The property `{}` already defined in the child model. Using the one from child.",
+                            key);
+                    cp = varsMap.get(key);
+                } else {
+                    // properties in the parent model only
+                    cp = fromProperty(key, prop, mandatory.contains(key));
+                }
+
+                if (cm != null && cm.allVars == vars && cp.isOverridden == null) { // processing allVars and it's a parent property
+                    cp.isOverridden = true;
+                }
+
                 vars.add(cp);
+                m.setHasVars(true);
+
+                if (cp.required) {
+                    m.setHasRequired(true);
+                    m.getRequiredVars().add(cp);
+                }
+
                 if (cm == null) {
                     continue;
                 }
-                cm.hasRequired = cm.hasRequired || cp.required;
                 cm.hasOptional = cm.hasOptional || !cp.required;
-                if (cp.isEnum) {
+                if (cp.getIsEnumOrRef()) { // isEnum or isEnumRef set to true
                     // FIXME: if supporting inheritance, when called a second time for allProperties it is possible for
                     // m.hasEnums to be set incorrectly if allProperties has enumerations but properties does not.
                     cm.hasEnums = true;
                 }
 
                 // set model's hasOnlyReadOnly to false if the property is read-only
-                if (!Boolean.TRUE.equals(cp.isReadOnly)) {
+                if (!cp.isReadOnly) {
                     cm.hasOnlyReadOnly = false;
                 }
-
-                // TODO revise the logic to include map
-                if (cp.isContainer) {
-                    addImport(cm, typeMapping.get("array"));
-                }
-
-                addImport(cm, cp.baseType);
-                CodegenProperty innerCp = cp;
-                while (innerCp != null) {
-                    addImport(cm, innerCp.complexType);
-                    innerCp = innerCp.items;
-                }
+                addImportsForPropertyType(cm, cp);
 
                 // if required, add to the list "requiredVars"
-                if (Boolean.TRUE.equals(cp.required)) {
-                    cm.requiredVars.add(cp);
-                } else { // else add to the list "optionalVars" for optional property
+                if (!cp.required) {
                     cm.optionalVars.add(cp);
                 }
 
                 // if readonly, add to readOnlyVars (list of properties)
-                if (Boolean.TRUE.equals(cp.isReadOnly)) {
+                if (cp.isReadOnly) {
                     cm.readOnlyVars.add(cp);
+                    cm.hasReadOnly = true;
                 } else { // else add to readWriteVars (list of properties)
                     // duplicated properties will be removed by removeAllDuplicatedProperty later
                     cm.readWriteVars.add(cp);
                 }
+
+                if (!cp.isNullable) {
+                    cm.nonNullableVars.add(cp);
+                }
             }
         }
-        return;
+    }
+
+    /**
+     * For a given property, adds all needed imports to the model
+     * This includes a flat property type (e.g. property type: ReferencedModel)
+     * as well as container type (property type: array of ReferencedModel's)
+     *
+     * @param model    The codegen representation of the OAS schema.
+     * @param property The codegen representation of the OAS schema's property.
+     */
+    protected void addImportsForPropertyType(CodegenModel model, CodegenProperty property) {
+        if (property.isArray) {
+            if (Boolean.TRUE.equals(property.getUniqueItemsBoolean())) { // set
+                addImport(model.imports, typeMapping.get("set"));
+            } else { // array
+                addImport(model.imports, typeMapping.get("array"));
+            }
+        }
+
+        if (property.isMap) { // map
+            addImport(model.imports, typeMapping.get("map"));
+        }
+
+        addImports(model, property);
     }
 
     /**
@@ -5218,17 +6536,31 @@ public class DefaultCodegen implements CodegenConfig {
         for (Map.Entry<String, Schema> entry : schemas.entrySet()) {
             Schema schema = entry.getValue();
             if (isAliasOfSimpleTypes(schema)) {
-                String oasName = entry.getKey();
-                String schemaType = getPrimitiveType(schema);
-                aliases.put(oasName, schemaType);
+                if (schema.getAllOf() != null && schema.getAllOf().size() == 1) { // allOf with a single item
+                    Schema unaliasSchema = unaliasSchema(schema);
+                    unaliasSchema = ModelUtils.getReferencedSchema(this.openAPI, unaliasSchema);
+                    aliases.put(entry.getKey() /* schema name, e.g. Pet */, getPrimitiveType(unaliasSchema));
+                } else {
+                    aliases.put(entry.getKey() /* schema name, e.g. Pet */, getPrimitiveType(schema));
+                }
             }
-
         }
 
         return aliases;
     }
 
-    private static Boolean isAliasOfSimpleTypes(Schema schema) {
+    private Boolean isAliasOfSimpleTypes(Schema schema) {
+        if (schema == null) {
+            return false;
+        }
+
+        // allOf with a single item
+        if (schema.getAllOf() != null && schema.getAllOf().size() == 1
+                && schema.getAllOf().get(0) instanceof Schema) {
+            schema = unaliasSchema((Schema) schema.getAllOf().get(0));
+            schema = ModelUtils.getReferencedSchema(this.openAPI, schema);
+        }
+
         return (!ModelUtils.isObjectSchema(schema)
                 && !ModelUtils.isArraySchema(schema)
                 && !ModelUtils.isMapSchema(schema)
@@ -5264,17 +6596,70 @@ public class DefaultCodegen implements CodegenConfig {
         return result;
     }
 
+    /**
+     * Return a value that is unique, suffixed with _index to make it unique
+     * Ensures generated files are unique when compared case-insensitive
+     * Not all operating systems support case-sensitive paths
+     */
+    private String uniqueCaseInsensitiveString(String value, Map<String, String> seenValues) {
+        if (seenValues.containsKey(value)) {
+            return seenValues.get(value);
+        }
+
+        // Build the set of already-used lowercase values once, to avoid O(n) re-collection per loop iteration.
+        Set<String> lowercaseValues = seenValues.values().stream()
+                .map(v -> v.toLowerCase(Locale.ROOT))
+                .collect(Collectors.toSet());
+
+        if (lowercaseValues.contains(value.toLowerCase(Locale.ROOT))) {
+            int counter = 0;
+            String uniqueValue = value + "_" + counter;
+            while (lowercaseValues.contains(uniqueValue.toLowerCase(Locale.ROOT))) {
+                counter++;
+                uniqueValue = value + "_" + counter;
+            }
+
+            seenValues.put(value, uniqueValue);
+            return uniqueValue;
+        }
+
+        seenValues.put(value, value);
+        return value;
+    }
+
+    private final Map<String, String> seenApiFilenames = new HashMap<String, String>();
+
     @Override
     public String apiFilename(String templateName, String tag) {
+        String uniqueTag = uniqueCaseInsensitiveString(tag, seenApiFilenames);
         String suffix = apiTemplateFiles().get(templateName);
-        return apiFileFolder() + File.separator + toApiFilename(tag) + suffix;
+        return apiFileFolder() + File.separator + toApiFilename(uniqueTag) + suffix;
     }
 
     @Override
-    public String modelFilename(String templateName, String modelName) {
-        String suffix = modelTemplateFiles().get(templateName);
-        return modelFileFolder() + File.separator + toModelFilename(modelName) + suffix;
+    public String apiFilename(String templateName, String tag, String outputDir) {
+        String uniqueTag = uniqueCaseInsensitiveString(tag, seenApiFilenames);
+        String suffix = apiTemplateFiles().get(templateName);
+        return outputDir + File.separator + toApiFilename(uniqueTag) + suffix;
     }
+
+    private final Map<String, String> seenModelFilenames = new HashMap<String, String>();
+
+    @Override
+    public String modelFilename(String templateName, String modelName) {
+        String uniqueModelName = uniqueCaseInsensitiveString(modelName, seenModelFilenames);
+        String suffix = modelTemplateFiles().get(templateName);
+        return modelFileFolder() + File.separator + toModelFilename(uniqueModelName) + suffix;
+    }
+
+    @Override
+    public String modelFilename(String templateName, String modelName, String outputDir) {
+        String uniqueModelName = uniqueCaseInsensitiveString(modelName, seenModelFilenames);
+        String suffix = modelTemplateFiles().get(templateName);
+        return outputDir + File.separator + toModelFilename(uniqueModelName) + suffix;
+    }
+
+    private final Map<String, String> seenApiDocFilenames = new HashMap<String, String>();
 
     /**
      * Return the full path and API documentation file
@@ -5285,10 +6670,13 @@ public class DefaultCodegen implements CodegenConfig {
      */
     @Override
     public String apiDocFilename(String templateName, String tag) {
+        String uniqueTag = uniqueCaseInsensitiveString(tag, seenApiDocFilenames);
         String docExtension = getDocExtension();
         String suffix = docExtension != null ? docExtension : apiDocTemplateFiles().get(templateName);
-        return apiDocFileFolder() + File.separator + toApiDocFilename(tag) + suffix;
+        return apiDocFileFolder() + File.separator + toApiDocFilename(uniqueTag) + suffix;
     }
+
+    private final Map<String, String> seenApiTestFilenames = new HashMap<String, String>();
 
     /**
      * Return the full path and API test file
@@ -5299,8 +6687,9 @@ public class DefaultCodegen implements CodegenConfig {
      */
     @Override
     public String apiTestFilename(String templateName, String tag) {
+        String uniqueTag = uniqueCaseInsensitiveString(tag, seenApiTestFilenames);
         String suffix = apiTestTemplateFiles().get(templateName);
-        return apiTestFileFolder() + File.separator + toApiTestFilename(tag) + suffix;
+        return apiTestFileFolder() + File.separator + toApiTestFilename(uniqueTag) + suffix;
     }
 
     @Override
@@ -5333,25 +6722,19 @@ public class DefaultCodegen implements CodegenConfig {
         this.removeOperationIdPrefix = removeOperationIdPrefix;
     }
 
-    public String getRemoveOperationIdPrefixDelimiter() {
-        return removeOperationIdPrefixDelimiter;
-    }
-
-    public void setRemoveOperationIdPrefixDelimiter(String removeOperationIdPrefixDelimiter) {
-        this.removeOperationIdPrefixDelimiter = removeOperationIdPrefixDelimiter;
-    }
-
-    public int getRemoveOperationIdPrefixCount() {
-        return removeOperationIdPrefixCount;
-    }
-
-    public void setRemoveOperationIdPrefixCount(int removeOperationIdPrefixCount) {
-        this.removeOperationIdPrefixCount = removeOperationIdPrefixCount;
-    }
-
     @Override
     public void setSkipOperationExample(boolean skipOperationExample) {
         this.skipOperationExample = skipOperationExample;
+    }
+
+    @Override
+    public boolean isSkipSortingOperations() {
+        return this.skipSortingOperations;
+    }
+
+    @Override
+    public void setSkipSortingOperations(boolean skipSortingOperations) {
+        this.skipSortingOperations = skipSortingOperations;
     }
 
     @Override
@@ -5408,6 +6791,7 @@ public class DefaultCodegen implements CodegenConfig {
 
     /**
      * check if current active library equals to passed
+     *
      * @param library - library to be compared with
      * @return {@code true} if passed library is active, {@code false} otherwise
      */
@@ -5541,7 +6925,7 @@ public class DefaultCodegen implements CodegenConfig {
         for (String lib : supportedLibraries.keySet()) {
             sb.append("\n").append(lib).append(" - ").append(supportedLibraries.get(lib));
         }
-        return new CliOption("library", sb.toString());
+        return new CliOption(CodegenConstants.LIBRARY, sb.toString());
     }
 
     /**
@@ -5574,7 +6958,7 @@ public class DefaultCodegen implements CodegenConfig {
      * @return sanitized string
      */
     public String sanitizeName(String name, String removeCharRegEx) {
-        return sanitizeName(name, removeCharRegEx, new ArrayList<String>());
+        return sanitizeName(name, removeCharRegEx, new ArrayList<>());
     }
 
     /**
@@ -5622,6 +7006,9 @@ public class DefaultCodegen implements CodegenConfig {
             // input.name => input_name
             modifiable = this.sanitizeValue(modifiable, "\\.", "_", exceptions);
 
+            // input:name => input_name
+            modifiable = this.sanitizeValue(modifiable, ":", "_", exceptions);
+
             // input-name => input_name
             modifiable = this.sanitizeValue(modifiable, "-", "_", exceptions);
 
@@ -5639,7 +7026,10 @@ public class DefaultCodegen implements CodegenConfig {
             // remove everything else other than word, number and _
             // $php_variable => php_variable
             if (allowUnicodeIdentifiers) { //could be converted to a single line with ?: operator
-                modifiable = Pattern.compile(sanitizeNameOptions.getRemoveCharRegEx(), Pattern.UNICODE_CHARACTER_CLASS).matcher(modifiable).replaceAll("");
+                modifiable = REMOVE_CHAR_UNICODE_PATTERN_CACHE
+                        .computeIfAbsent(sanitizeNameOptions.getRemoveCharRegEx(),
+                                regex -> Pattern.compile(regex, Pattern.UNICODE_CHARACTER_CLASS))
+                        .matcher(modifiable).replaceAll("");
             } else {
                 modifiable = modifiable.replaceAll(sanitizeNameOptions.getRemoveCharRegEx(), "");
             }
@@ -5648,7 +7038,7 @@ public class DefaultCodegen implements CodegenConfig {
     }
 
     private String sanitizeValue(String value, String replaceMatch, String replaceValue, List<String> exceptionList) {
-        if (exceptionList.size() == 0 || !exceptionList.contains(replaceMatch)) {
+        if (exceptionList.isEmpty() || !exceptionList.contains(replaceMatch)) {
             return value.replaceAll(replaceMatch, replaceValue);
         }
         return value;
@@ -5691,69 +7081,71 @@ public class DefaultCodegen implements CodegenConfig {
             LOGGER.error("Codegen Property cannot be null.");
             return;
         }
-        if (Boolean.TRUE.equals(property.isEmail) && Boolean.TRUE.equals(property.isString)) {
+        if (property.isEmail && property.isString) {
             parameter.isEmail = true;
-        } else if (Boolean.TRUE.equals(property.isUuid) && Boolean.TRUE.equals(property.isString)) {
+        } else if (property.isPassword && property.isString) {
+            parameter.isPassword = true;
+        } else if (property.isUuid && property.isString) {
             parameter.isUuid = true;
-        } else if (Boolean.TRUE.equals(property.isByteArray)) {
+        } else if (property.isByteArray) {
             parameter.isByteArray = true;
             parameter.isPrimitiveType = true;
-        } else if (Boolean.TRUE.equals(property.isBinary)) {
+        } else if (property.isBinary) {
             parameter.isBinary = true;
             parameter.isPrimitiveType = true;
-        } else if (Boolean.TRUE.equals(property.isString)) {
+        } else if (property.isString) {
             parameter.isString = true;
             parameter.isPrimitiveType = true;
-        } else if (Boolean.TRUE.equals(property.isBoolean)) {
+        } else if (property.isBoolean) {
             parameter.isBoolean = true;
             parameter.isPrimitiveType = true;
-        } else if (Boolean.TRUE.equals(property.isLong)) {
+        } else if (property.isLong) {
             parameter.isLong = true;
             parameter.isPrimitiveType = true;
-        } else if (Boolean.TRUE.equals(property.isInteger)) {
+        } else if (property.isInteger) {
             parameter.isInteger = true;
             parameter.isPrimitiveType = true;
-            if (Boolean.TRUE.equals(property.isShort)) {
+            if (property.isShort) {
                 parameter.isShort = true;
-            } else if (Boolean.TRUE.equals(property.isUnboundedInteger)) {
+            } else if (property.isUnboundedInteger) {
                 parameter.isUnboundedInteger = true;
             }
-        } else if (Boolean.TRUE.equals(property.isDouble)) {
+        } else if (property.isDouble) {
             parameter.isDouble = true;
             parameter.isPrimitiveType = true;
-        } else if (Boolean.TRUE.equals(property.isFloat)) {
+        } else if (property.isFloat) {
             parameter.isFloat = true;
             parameter.isPrimitiveType = true;
-        } else if (Boolean.TRUE.equals(property.isDecimal)) {
+        } else if (property.isDecimal) {
             parameter.isDecimal = true;
             parameter.isPrimitiveType = true;
-        } else if (Boolean.TRUE.equals(property.isNumber)) {
+        } else if (property.isNumber) {
             parameter.isNumber = true;
             parameter.isPrimitiveType = true;
-        } else if (Boolean.TRUE.equals(property.isDate)) {
+        } else if (property.isDate) {
             parameter.isDate = true;
             parameter.isPrimitiveType = true;
-        } else if (Boolean.TRUE.equals(property.isDateTime)) {
+        } else if (property.isDateTime) {
             parameter.isDateTime = true;
             parameter.isPrimitiveType = true;
-        } else if (Boolean.TRUE.equals(property.isFreeFormObject)) {
+        } else if (property.isFreeFormObject) {
             parameter.isFreeFormObject = true;
-        } else if (Boolean.TRUE.equals(property.isAnyType)) {
+        } else if (property.isAnyType) {
             parameter.isAnyType = true;
         } else {
             LOGGER.debug("Property type is not primitive: {}", property.dataType);
         }
 
-        if (Boolean.TRUE.equals(property.isFile)) {
+        if (property.isFile) {
             parameter.isFile = true;
         }
-        if (Boolean.TRUE.equals(property.isModel)) {
+        if (property.isModel) {
             parameter.isModel = true;
         }
     }
 
     /**
-     * Update codegen property's enum by adding "enumVars" (with name and value)
+     * Update codegen property's enum by adding {@value EnumVarMap#ENUM_VARS} (with name and value)
      *
      * @param var list of CodegenProperty
      */
@@ -5769,40 +7161,45 @@ public class DefaultCodegen implements CodegenConfig {
             return;
         }
 
-        List<Object> values = (List<Object>) allowableValues.get("values");
+        List<Object> values = getEnumValues(allowableValues);
         if (values == null) {
             return;
         }
 
         String varDataType = var.mostInnerItems != null ? var.mostInnerItems.dataType : var.dataType;
-        Optional<Schema> referencedSchema = ModelUtils.getSchemas(openAPI).entrySet().stream()
-                .filter(entry -> Objects.equals(varDataType, toModelName(entry.getKey())))
-                .map(Map.Entry::getValue)
-                .findFirst();
-        String dataType = (referencedSchema.isPresent()) ? getTypeDeclaration(referencedSchema.get()) : varDataType;
-        List<Map<String, Object>> enumVars = buildEnumVars(values, dataType);
+        Schema referencedSchema = getModelNameToSchemaCache().get(varDataType);
+        String dataType = referencedSchema != null ? getTypeDeclaration(referencedSchema) : varDataType;
+        List<EnumVarMap> enumVars = buildEnumVars(values, dataType);
+        postProcessEnumVars(enumVars);
 
         // if "x-enum-varnames" or "x-enum-descriptions" defined, update varnames
         Map<String, Object> extensions = var.mostInnerItems != null ? var.mostInnerItems.getVendorExtensions() : var.getVendorExtensions();
-        if (referencedSchema.isPresent()) {
-            extensions = referencedSchema.get().getExtensions();
+        if (referencedSchema != null) {
+            extensions = referencedSchema.getExtensions();
         }
         updateEnumVarsWithExtensions(enumVars, extensions, dataType);
-        allowableValues.put("enumVars", enumVars);
+        allowableValues.put(ENUM_VARS, enumVars);
 
         // handle default value for enum, e.g. available => StatusEnum.AVAILABLE
         if (var.defaultValue != null) {
             final String enumDefaultValue = getEnumDefaultValue(var.defaultValue, dataType);
 
             String enumName = null;
-            for (Map<String, Object> enumVar : enumVars) {
-                if (enumDefaultValue.equals(enumVar.get("value"))) {
-                    enumName = (String) enumVar.get("name");
+            for (EnumVarMap enumVar : enumVars) {
+                if (enumDefaultValue.equals(enumVar.getEnumValue())) {
+                    enumName = (String) enumVar.getEnumName();
                     break;
                 }
             }
             if (enumName != null) {
-                var.defaultValue = toEnumDefaultValue(enumName, var.datatypeWithEnum);
+                if (!var.isEnum && ModelUtils.isRefToSchemaWithProperties(var.getRef())) {
+                    // A reference to another model's property does not declare an enum type here.
+                    // Preserve ordinary scalar defaults, but discard the unquoted discriminator
+                    // mapping value synthesized by setEnumDiscriminatorDefaultValue (#24874).
+                    var.defaultValue = var.isDiscriminator ? null : enumDefaultValue;
+                } else {
+                    var.defaultValue = toEnumDefaultValue(var, enumName);
+                }
             }
         }
     }
@@ -5817,48 +7214,198 @@ public class DefaultCodegen implements CodegenConfig {
         return enumDefaultValue;
     }
 
-    protected List<Map<String, Object>> buildEnumVars(List<Object> values, String dataType) {
-        List<Map<String, Object>> enumVars = new ArrayList<>();
-        int truncateIdx = 0;
+    /**
+     * Builds enum metadata using the original OpenAPI values for both generation and raw metadata.
+     *
+     * @param values original enum values from the OpenAPI schema; null entries are skipped
+     * @param dataType target data type of the enum
+     * @return enum entries containing generated names, formatted values, and original raw values
+     */
+    protected List<EnumVarMap> buildEnumVars(List<Object> values, String dataType) {
+        return buildEnumVars(values, dataType, values);
+    }
 
-        if (isRemoveEnumValuePrefix()) {
-            String commonPrefix = findCommonPrefixOfVars(values);
-            truncateIdx = commonPrefix.length();
+    /**
+     * Builds enum metadata using separate values for generation and raw metadata.
+     *
+     * @param values values used to generate enum names and formatted values; null entries are skipped
+     * @param dataType target data type of the enum
+     * @param rawValues original OpenAPI values, in the same order and with the same number of
+     *                  entries as values; each emitted entry retains its corresponding raw value and type
+     * @return enum entries containing generated names, formatted values, and original raw values
+     * @throws IllegalArgumentException if the lists have different sizes
+     */
+    protected List<EnumVarMap> buildEnumVars(List<Object> values, String dataType, List<Object> rawValues) {
+        if (values.size() != rawValues.size()) {
+            throw new IllegalArgumentException("values and rawValues must have the same number of entries");
         }
+        List<EnumVarMap> enumVars = new ArrayList<>();
+        int truncateIdx = isRemoveEnumValuePrefix()
+                ? findCommonPrefixOfVars(values).length()
+                : 0;
 
-        for (Object value : values) {
-            Map<String, Object> enumVar = new HashMap<>();
-            String enumName;
-            if (truncateIdx == 0) {
-                enumName = String.valueOf(value);
-            } else {
-                enumName = value.toString().substring(truncateIdx);
-                if ("".equals(enumName)) {
-                    enumName = value.toString();
-                }
+        for (int i = 0; i < values.size(); i++) {
+            Object value = values.get(i);
+            if (value == null) {
+                // raw null values in enums are unions for nullable
+                // attributes, not actual enum values, so we remove them here
+                continue;
+            }
+            EnumVarMap enumVar = new EnumVarMap();
+            String enumName = truncateIdx == 0
+                    ? String.valueOf(value)
+                    : value.toString().substring(truncateIdx);
+
+            if (enumName.isEmpty()) {
+                enumName = value.toString();
             }
 
-            enumVar.put("name", toEnumVarName(enumName, dataType));
-            enumVar.put("value", toEnumValue(String.valueOf(value), dataType));
-            enumVar.put("isString", isDataTypeString(dataType));
+            final String finalEnumName = toEnumVarName(enumName, dataType);
+
+            enumVar.enumVar(finalEnumName, toEnumValue(String.valueOf(value), dataType), isDataTypeString(dataType));
+            enumVar.setEnumRawValue(rawValues.get(i));
+            // TODO: add isNumeric
             enumVars.add(enumVar);
         }
+
+        if (enumUnknownDefaultCase) {
+            injectEnumUnknownDefaultCase(enumVars, dataType);
+        }
+
         return enumVars;
     }
 
-    protected void updateEnumVarsWithExtensions(List<Map<String, Object>> enumVars, Map<String, Object> vendorExtensions, String dataType) {
-        if (vendorExtensions != null) {
-            updateEnumVarsWithExtensions(enumVars, vendorExtensions, "x-enum-varnames", "name");
-            updateEnumVarsWithExtensions(enumVars, vendorExtensions, "x-enum-descriptions", "enumDescription");
+    /**
+     * If the server adds new enum cases, that are unknown by an old spec/client, the client will fail to parse the network response.
+     * This adds a default case to the enum, {@link DefaultCodegen#enumUnknownDefaultCaseName}, that can be used as a fallback for unknown values.
+     *
+     * @param enumVars the enumVars
+     * @param dataType the data type of the enum parameter
+     */
+    private void injectEnumUnknownDefaultCase(List<EnumVarMap> enumVars, String dataType) {
+        EnumVarMap enumVar = new EnumVarMap();
+        String enumName = enumUnknownDefaultCaseName;
+
+        String enumValue = isDataTypeString(dataType)
+                ? enumUnknownDefaultCaseName
+                : // This is a dummy value that attempts to avoid collisions with previously specified cases.
+                // Int.max / 192
+                // The number 192 that is used to calculate this random value, is the Swift Evolution proposal for frozen/non-frozen enums.
+                // [SE-0192](https://github.com/apple/swift-evolution/blob/master/proposals/0192-non-exhaustive-enums.md)
+                // Since this functionality was born in the Swift 5 generator and latter on broth to all generators
+                // https://github.com/OpenAPITools/openapi-generator/pull/11013
+                String.valueOf(11184809);
+
+        enumVar.enumVar(toEnumVarName(enumName, dataType), toEnumValue(enumValue, dataType), isDataTypeString(dataType));
+        enumVar.setEnumRawValue(enumValue);
+        // TODO: add isNumeric
+        enumVars.add(enumVar);
+    }
+
+    /**
+     * Removes any injected default enum value that was created with {@link DefaultCodegen#injectEnumUnknownDefaultCase}
+     * from an operation's non-body enum parameters. This can for example be of interest when generating client code
+     * where a fallback is superfluous for a value that is only sent and never received.
+     *
+     * @param operation operation to be processed
+     */
+    protected void removeEnumUnknownDefaultCase(CodegenOperation operation) {
+        for (CodegenParameter param : operation.allParams) {
+            if (!param.isBodyParam && param.isEnum && hasEnumVars(param.allowableValues)) {
+                List<EnumVarMap> enumVars = getEnumVars(param.allowableValues);
+                if (enumVars != null) {
+                    String unknownName = toEnumVarName(enumUnknownDefaultCaseName, param.dataType);
+                    enumVars.removeIf(ev -> unknownName.equals(ev.getEnumName()));
+                }
+            }
         }
     }
 
-    private void updateEnumVarsWithExtensions(List<Map<String, Object>> enumVars, Map<String, Object> vendorExtensions, String extensionKey, String key) {
+    protected void postProcessEnumVars(List<EnumVarMap> enumVars) {
+        // a new name can already be taken ("EtcGmt1" + "2" is "EtcGmt12"), so repeat until names are unique
+        do {
+            Collections.reverse(enumVars);
+            enumVars.forEach(v -> {
+                String name = (String) v.getEnumName();
+                long count = enumVars.stream().filter(v1 -> v1.getEnumName().equals(name)).count();
+                if (count > 1) {
+                    String uniqueEnumName = getUniqueEnumName(name, enumVars);
+                    LOGGER.debug("Changing duplicate enumeration name from {} to {}", v.getEnumName(), uniqueEnumName);
+                    v.setEnumName(uniqueEnumName);
+                }
+            });
+            Collections.reverse(enumVars);
+        } while (enumVars.stream().map(EnumVarMap::getEnumName).distinct().count() < enumVars.size());
+    }
+
+    private String getUniqueEnumName(String name, List<EnumVarMap> enumVars) {
+        long count = enumVars.stream().filter(v -> v.getEnumName().equals(name)).count();
+        return count > 1
+                ? getUniqueEnumName(name + count, enumVars)
+                : name;
+    }
+
+    /**
+     * Update enum vars with extensions.
+     *
+     * @param enumVars list of enum vars
+     * @param vendorExtensions vendor extensions
+     * @param dataType data type
+     */
+    protected void updateEnumVarsWithExtensions(List<EnumVarMap> enumVars, Map<String, Object> vendorExtensions, String dataType) {
+        if (vendorExtensions != null) {
+            updateEnumVarsWithExtensions(enumVars, vendorExtensions, X_ENUM_VARNAMES, ENUM_NAME, dataType);
+            updateEnumVarsWithExtensions(enumVars, vendorExtensions, X_ENUM_DESCRIPTIONS, ENUM_DESCRIPTION, dataType);
+        }
+    }
+
+    /**
+     * Update enum vars with extensions.
+     *
+     * @param enumVars list of enum vars
+     * @param vendorExtensions vendor extensions
+     * @param extensionKey extension key
+     * @param key key
+     * @param dataType data type
+     */
+    protected void updateEnumVarsWithExtensions(List<EnumVarMap> enumVars, Map<String, Object> vendorExtensions, String extensionKey, String key, String dataType) {
+        updateEnumVarsWithExtensions(enumVars, vendorExtensions, extensionKey, key, dataType, (a, b) -> a);
+    }
+
+    /**
+     * Update enum vars with extensions.
+     *
+     * @param enumVars list of enum vars
+     * @param vendorExtensions vendor extensions
+     * @param extensionKey extension key
+     * @param dataType data type
+     * @param enumDataTypeMapping functions that accepts 2 arguments
+     */
+    protected void updateEnumVarsWithExtensions(List<EnumVarMap> enumVars,
+                                                Map<String, Object> vendorExtensions,
+                                                String extensionKey,
+                                                String key,
+                                                String dataType,
+                                                BiFunction<String, String, String> enumDataTypeMapping) {
         if (vendorExtensions.containsKey(extensionKey)) {
-            List<String> values = (List<String>) vendorExtensions.get(extensionKey);
-            int size = Math.min(enumVars.size(), values.size());
-            for (int i = 0; i < size; i++) {
-                enumVars.get(i).put(key, values.get(i));
+            Object extensionValue = vendorExtensions.get(extensionKey);
+            if (extensionValue instanceof List) {
+                List<String> values = (List<String>) extensionValue;
+                int size = Math.min(enumVars.size(), values.size());
+                for (int i = 0; i < size; i++) {
+                    enumVars.get(i).put(key, enumDataTypeMapping.apply(values.get(i), dataType));
+                }
+            } else if (extensionValue instanceof Map) {
+                Map<String, String> valueMap = (Map<String, String>) extensionValue;
+                for (EnumVarMap enumVar : enumVars) {
+                    String enumValue = (String) enumVar.getEnumValue();
+                    for (Map.Entry<String, String> entry : valueMap.entrySet()) {
+                        if (toEnumValue(entry.getKey(), dataType).equals(enumValue)) {
+                            enumVar.put(key, enumDataTypeMapping.apply(entry.getValue(), dataType));
+                            break;
+                        }
+                    }
+                }
             }
         }
     }
@@ -5897,6 +7444,58 @@ public class DefaultCodegen implements CodegenConfig {
     }
 
     /**
+     * reads propertyKey from additionalProperties, converts it to a boolean and
+     * writes it back to additionalProperties to be usable as a boolean in
+     * mustache files.
+     *
+     * @param propertyKey   property key
+     * @param booleanSetter the setter function reference
+     * @return property value as boolean or false if it does not exist
+     */
+    public boolean convertPropertyToBooleanAndWriteBack(String propertyKey, Consumer<Boolean> booleanSetter) {
+        if (additionalProperties.containsKey(propertyKey)) {
+            boolean result = convertPropertyToBoolean(propertyKey);
+            writePropertyBack(propertyKey, result);
+            booleanSetter.accept(result);
+            return result;
+        }
+        return false;
+    }
+
+    /**
+     * reads propertyKey from additionalProperties, converts it to a string and
+     * writes it back to additionalProperties to be usable as a string in
+     * mustache files.
+     *
+     * @param propertyKey  property key
+     * @param stringSetter the setter function reference
+     * @return property value as String or null if not found
+     */
+    public String convertPropertyToStringAndWriteBack(String propertyKey, Consumer<String> stringSetter) {
+        return convertPropertyToTypeAndWriteBack(propertyKey, Function.identity(), stringSetter);
+    }
+
+    /**
+     * reads propertyKey from additionalProperties, converts it to T and
+     * writes it back to additionalProperties to be usable as T in
+     * mustache files.
+     *
+     * @param propertyKey       property key
+     * @param genericTypeSetter the setter function reference
+     * @return property value as instance of type T or null if not found
+     */
+    public <T> T convertPropertyToTypeAndWriteBack(String propertyKey, Function<String, T> converter, Consumer<T> genericTypeSetter) {
+        if (additionalProperties.containsKey(propertyKey)) {
+            String value = additionalProperties.get(propertyKey).toString();
+            T result = converter.apply(value);
+            writePropertyBack(propertyKey, result);
+            genericTypeSetter.accept(result);
+            return result;
+        }
+        return null;
+    }
+
+    /**
      * Provides an override location, if any is specified, for the .openapi-generator-ignore.
      * <p>
      * This is originally intended for the first generation only.
@@ -5918,6 +7517,82 @@ public class DefaultCodegen implements CodegenConfig {
         this.ignoreFilePathOverride = ignoreFileOverride;
     }
 
+    public List<String> getPropertyAsStringList(String propertyKey) {
+        final Object value = additionalProperties.get(propertyKey);
+        return getObjectAsStringList(value);
+    }
+
+    public static List<String> getObjectAsStringList(Object value) {
+        if (value instanceof List) {
+            List<?> list = (List<?>) value;
+            List<String> stringList = new ArrayList<>();
+            for (Object item : list) {
+                if (item != null) {
+                    stringList.add(item.toString());
+                }
+            }
+            return stringList;
+        } else if (value instanceof String) {
+            return Collections.singletonList((String) value);
+        }
+        return Collections.emptyList();
+    }
+
+    /**
+     * Normalizes a vendor extension value to a mutable list of strings.
+     * In this context, normalization means accepting a missing value, a single string, or a list value
+     * from the extension map and writing back a predictable {@code List<String>}. This gives templates
+     * and downstream generator logic a single shape to iterate over.
+     *
+     * @param vendorExtensions vendor extension map to update
+     * @param name             vendor extension name
+     */
+    public static void normalizeVendorExtensionWithStringList(Map<String, Object> vendorExtensions, String name) {
+        vendorExtensions.put(name, new ArrayList<>(getObjectAsStringList(vendorExtensions.get(name))));
+    }
+
+    public Map<String, String> getPropertyAsStringMap(String propertyKey) {
+        final Object value = additionalProperties.get(propertyKey);
+        return getObjectAsStringMap(value);
+    }
+
+    public static Map<String, String> getObjectAsStringMap(Object value) {
+        if (value instanceof Map) {
+            Map<?, ?> rawMap = (Map<?, ?>) value;
+            Map<String, String> stringMap = new HashMap<>();
+            for (Entry<?, ?> entry : rawMap.entrySet()) {
+                stringMap.put(String.valueOf(entry.getKey()), String.valueOf(entry.getValue()));
+            }
+            return stringMap;
+        }
+        return Collections.emptyMap();
+    }
+
+    public Map<String, List<String>> getPropertyAsStringListMap(String propertyKey) {
+        final Object value = additionalProperties.get(propertyKey);
+        return getObjectAsStringListMap(value);
+    }
+
+    public static Map<String, List<String>> getObjectAsStringListMap(Object value) {
+        if (value instanceof Map) {
+            Map<?, ?> rawMap = (Map<?, ?>) value;
+            Map<String, List<String>> stringMap = new HashMap<>();
+            for (Entry<?, ?> entry : rawMap.entrySet()) {
+                Object entryValue = entry.getValue();
+                if (entryValue instanceof List) {
+                    List<String> stringList = ((List<?>) entryValue).stream()
+                            .map(String::valueOf)
+                            .collect(Collectors.toList());
+                    stringMap.put(String.valueOf(entry.getKey()), stringList);
+                } else {
+                    stringMap.put(String.valueOf(entry.getKey()), Collections.singletonList(String.valueOf(entryValue)));
+                }
+            }
+            return stringMap;
+        }
+        return Collections.emptyMap();
+    }
+
     public boolean convertPropertyToBoolean(String propertyKey) {
         final Object booleanValue = additionalProperties.get(propertyKey);
         boolean result = Boolean.FALSE;
@@ -5926,12 +7601,12 @@ public class DefaultCodegen implements CodegenConfig {
         } else if (booleanValue instanceof String) {
             result = Boolean.parseBoolean((String) booleanValue);
         } else {
-            LOGGER.warn("The value (generator's option) must be either boolean or string. Default to `false`.");
+            LOGGER.warn("The generator's option \"{}\" must be either boolean or string. Default to `false`.", propertyKey);
         }
         return result;
     }
 
-    public void writePropertyBack(String propertyKey, boolean value) {
+    public void writePropertyBack(String propertyKey, Object value) {
         additionalProperties.put(propertyKey, value);
     }
 
@@ -5957,6 +7632,19 @@ public class DefaultCodegen implements CodegenConfig {
                 scopes.add(scope);
             }
             codegenSecurity.scopes = scopes;
+            codegenSecurity.hasScopes = true;
+        }
+    }
+
+    private void setOpenIdConnectInfo(CodegenSecurity codegenSecurity, OAuthFlow flow) {
+        if (flow.getScopes() != null && !flow.getScopes().isEmpty()) {
+            List<Map<String, Object>> scopes = new ArrayList<>();
+            for (Map.Entry<String, String> scopeEntry : flow.getScopes().entrySet()) {
+                Map<String, Object> scope = new HashMap<>();
+                scope.put("scope", scopeEntry.getKey());
+                scopes.add(scope);
+            }
+            codegenSecurity.scopes = scopes;
         }
     }
 
@@ -5974,7 +7662,12 @@ public class DefaultCodegen implements CodegenConfig {
                 // skip as it implies `consumes` in OAS2 is not defined
                 continue;
             } else {
-                mediaType.put("mediaType", escapeText(escapeQuotationMark(key)));
+                mediaType.put("mediaType", escapeQuotationMark(key));
+                if (isJsonMimeType(key)) {
+                    mediaType.put("isJson", "true");
+                } else if (isXmlMimeType(key)) {
+                    mediaType.put("isXml", "true");
+                }
             }
             mediaTypeList.add(mediaType);
         }
@@ -5994,7 +7687,7 @@ public class DefaultCodegen implements CodegenConfig {
         return requestBody.getContent().keySet();
     }
 
-    public boolean hasFormParameter(OpenAPI openAPI, Operation operation) {
+    public boolean hasFormParameter(Operation operation) {
         Set<String> consumesInfo = getConsumesInfo(openAPI, operation);
 
         if (consumesInfo == null || consumesInfo.isEmpty()) {
@@ -6012,7 +7705,7 @@ public class DefaultCodegen implements CodegenConfig {
         return false;
     }
 
-    public boolean hasBodyParameter(OpenAPI openAPI, Operation operation) {
+    public boolean hasBodyParameter(Operation operation) {
         RequestBody requestBody = ModelUtils.getReferencedRequestBody(openAPI, operation.getRequestBody());
         if (requestBody == null) {
             return false;
@@ -6040,11 +7733,16 @@ public class DefaultCodegen implements CodegenConfig {
 
         for (String key : produces) {
             // escape quotation to avoid code injection, "*/*" is a special case, do nothing
-            String encodedKey = "*/*".equals(key) ? key : escapeText(escapeQuotationMark(key));
+            String encodedKey = "*/*".equals(key) ? key : escapeQuotationMark(key);
             //Only unique media types should be added to "produces"
             if (!existingMediaTypes.contains(encodedKey)) {
                 Map<String, String> mediaType = new HashMap<>();
                 mediaType.put("mediaType", encodedKey);
+                if (isJsonMimeType(encodedKey)) {
+                    mediaType.put("isJson", "true");
+                } else if (isXmlMimeType(encodedKey)) {
+                    mediaType.put("isXml", "true");
+                }
                 codegenOperation.produces.add(mediaType);
                 codegenOperation.hasProduces = Boolean.TRUE;
             }
@@ -6052,7 +7750,9 @@ public class DefaultCodegen implements CodegenConfig {
     }
 
     /**
-     * returns the list of MIME types the APIs can produce
+     * returns the list of MIME types the APIs can produce. A content-type variant (see
+     * {@link #divideOperationsByContentType}) produces the single media-type it was narrowed to, whatever
+     * its other responses declare.
      *
      * @param openAPI   current specification instance
      * @param operation Operation
@@ -6063,7 +7763,13 @@ public class DefaultCodegen implements CodegenConfig {
             return null;
         }
 
-        Set<String> produces = new ConcurrentSkipListSet<String>();
+        Set<String> produces = new ConcurrentSkipListSet<>();
+
+        String variantMediaType = contentTypeVariantMediaType(operation, CodegenConstants.X_CONTENT_TYPE_VARIANT_RESPONSE);
+        if (variantMediaType != null) {
+            produces.add(variantMediaType);
+            return produces;
+        }
 
         for (ApiResponse r : operation.getResponses().values()) {
             ApiResponse response = ModelUtils.getReferencedApiResponse(openAPI, r);
@@ -6114,13 +7820,35 @@ public class DefaultCodegen implements CodegenConfig {
         LOGGER.debug("debugging fromRequestBodyToFormParameters= {}", body);
         Schema schema = ModelUtils.getSchemaFromRequestBody(body);
         schema = ModelUtils.getReferencedSchema(this.openAPI, schema);
-        List<String> allRequired = new ArrayList<String>();
+
+        Schema original = null;
+        // check if it's allOf (only 1 sub schema) with or without default/nullable/etc set in the top level
+        if (ModelUtils.isAllOf(schema) && schema.getAllOf().size() == 1 &&
+                (ModelUtils.getType(schema) == null || "object".equals(ModelUtils.getType(schema)))) {
+            if (schema.getAllOf().get(0) instanceof Schema) {
+                original = schema;
+                schema = (Schema) schema.getAllOf().get(0);
+            } else {
+                LOGGER.error("Unknown type in allOf schema. Please report the issue via openapi-generator's Github issue tracker.");
+            }
+        }
+
+        if (ModelUtils.isMapSchema(schema)) {
+            LOGGER.error("Form parameters with additionalProperties are not supported by OpenAPI Generator. Please report the issue to https://github.com/openapitools/openapi-generator if you need help.");
+        }
+        if (ModelUtils.isArraySchema(schema)) {
+            LOGGER.error("Array form parameters are not supported by OpenAPI Generator. Please report the issue to https://github.com/openapitools/openapi-generator if you need help.");
+        }
+
+        List<String> allRequired = new ArrayList<>();
         Map<String, Schema> properties = new LinkedHashMap<>();
         // this traverses a composed schema and extracts all properties in each schema into properties
         // TODO in the future have this return one codegenParameter of type object or composed which includes all definition
         // that will be needed for complex composition use cases
         // https://github.com/OpenAPITools/openapi-generator/issues/10415
-        addProperties(properties, allRequired, schema);
+        addProperties(properties, allRequired, schema, new HashSet<>());
+
+        boolean isOneOfOrAnyOf = ModelUtils.isOneOf(schema) || ModelUtils.isAnyOf(schema);
 
         if (!properties.isEmpty()) {
             for (Map.Entry<String, Schema> entry : properties.entrySet()) {
@@ -6129,15 +7857,18 @@ public class DefaultCodegen implements CodegenConfig {
                 // value => property schema
                 String propertyName = entry.getKey();
                 Schema propertySchema = entry.getValue();
-                if (ModelUtils.isMapSchema(propertySchema)) {
-                    LOGGER.error("Map of form parameters not supported. Please report the issue to https://github.com/openapitools/openapi-generator if you need help.");
-                    continue;
-                }
                 codegenParameter = fromFormProperty(propertyName, propertySchema, imports);
 
-                // Set 'required' flag defined in the schema element
-                if (!codegenParameter.required && schema.getRequired() != null) {
+                if (isOneOfOrAnyOf) {
+                    // for oneOf/anyOf, mark all the properties collected from the sub-schemas as optional
+                    // so that users can choose which property to include in the form parameters
+                    codegenParameter.required = false;
+                } else if (!codegenParameter.required && schema.getRequired() != null) {
+                    // Set 'required' flag defined in the schema element
                     codegenParameter.required = schema.getRequired().contains(entry.getKey());
+                } else if (!codegenParameter.required) {
+                    // Set 'required' flag for properties declared inside the allOf
+                    codegenParameter.required = allRequired.stream().anyMatch(r -> r.equals(codegenParameter.paramName));
                 }
 
                 parameters.add(codegenParameter);
@@ -6151,26 +7882,37 @@ public class DefaultCodegen implements CodegenConfig {
         CodegenParameter codegenParameter = CodegenModelFactory.newInstance(CodegenModelType.PARAMETER);
 
         LOGGER.debug("Debugging fromFormProperty {}: {}", name, propertySchema);
-        CodegenProperty codegenProperty = fromProperty(name, propertySchema);
+        CodegenProperty codegenProperty = fromProperty(name, propertySchema, false);
 
-        Schema ps = unaliasSchema(propertySchema, importMapping);
+        Schema ps = unaliasSchema(propertySchema);
         ModelUtils.syncValidationProperties(ps, codegenParameter);
-        codegenParameter.setTypeProperties(ps);
+        codegenParameter.setTypeProperties(ps, openAPI);
+        codegenParameter.setComposedSchemas(getComposedSchemas(ps));
         if (ps.getPattern() != null) {
             codegenParameter.pattern = toRegularExpression(ps.getPattern());
         }
 
         codegenParameter.baseType = codegenProperty.baseType;
         codegenParameter.dataType = codegenProperty.dataType;
-        codegenParameter.defaultValue = codegenProperty.getDefaultValue();
         codegenParameter.baseName = codegenProperty.baseName;
         codegenParameter.paramName = toParamName(codegenParameter.baseName);
+        codegenParameter.nameInCamelCase = camelize(codegenParameter.paramName, LOWERCASE_FIRST_LETTER);
+        codegenParameter.nameInPascalCase = camelize(codegenParameter.paramName);
+        codegenParameter.nameInSnakeCase = CaseFormat.UPPER_CAMEL.to(CaseFormat.UPPER_UNDERSCORE, codegenParameter.nameInPascalCase);
+        codegenParameter.nameInLowerCase = codegenParameter.paramName.toLowerCase(Locale.ROOT);
+        codegenParameter.isContainer = codegenProperty.isContainer;
+        codegenParameter.containerType = codegenProperty.containerType;
+        codegenParameter.containerTypeMapped = codegenProperty.containerTypeMapped;
         codegenParameter.dataFormat = codegenProperty.dataFormat;
         // non-array/map
         updateCodegenPropertyEnum(codegenProperty);
         codegenParameter.isEnum = codegenProperty.isEnum;
+        codegenParameter.isEnumRef = codegenProperty.isEnumRef;
         codegenParameter._enum = codegenProperty._enum;
         codegenParameter.allowableValues = codegenProperty.allowableValues;
+
+        // set default value
+        codegenParameter.defaultValue = toDefaultParameterValue(codegenProperty, propertySchema);
 
         if (ModelUtils.isFileSchema(ps) && !ModelUtils.isStringSchema(ps)) {
             // swagger v2 only, type file
@@ -6178,6 +7920,8 @@ public class DefaultCodegen implements CodegenConfig {
         } else if (ModelUtils.isStringSchema(ps)) {
             if (ModelUtils.isEmailSchema(ps)) {
                 codegenParameter.isEmail = true;
+            } else if (ModelUtils.isPasswordSchema(ps)) {
+                codegenParameter.isPassword = true;
             } else if (ModelUtils.isUUIDSchema(ps)) {
                 codegenParameter.isUuid = true;
             } else if (ModelUtils.isByteArraySchema(ps)) {
@@ -6201,7 +7945,7 @@ public class DefaultCodegen implements CodegenConfig {
                 codegenParameter.isDecimal = true;
                 codegenParameter.isPrimitiveType = true;
             }
-            if (Boolean.TRUE.equals(codegenParameter.isString)) {
+            if (codegenParameter.isString) {
                 codegenParameter.isPrimitiveType = true;
             }
         } else if (ModelUtils.isBooleanSchema(ps)) {
@@ -6222,29 +7966,38 @@ public class DefaultCodegen implements CodegenConfig {
                 if (ModelUtils.isShortSchema(ps)) { // int32/short format
                     codegenParameter.isShort = true;
                 } else { // unbounded integer
-                    ;
                 }
             }
         } else if (ModelUtils.isTypeObjectSchema(ps)) {
-            if (ModelUtils.isFreeFormObject(openAPI, ps)) {
+            if (ModelUtils.isMapSchema(ps)) {
+                codegenParameter.isMap = true;
+                codegenParameter.additionalProperties = codegenProperty.additionalProperties;
+                codegenParameter.setAdditionalPropertiesIsAnyType(codegenProperty.getAdditionalPropertiesIsAnyType());
+                codegenParameter.items = codegenProperty.items;
+                codegenParameter.isPrimitiveType = false;
+                codegenParameter.mostInnerItems = codegenProperty.mostInnerItems;
+            } else if (ModelUtils.isFreeFormObject(ps, openAPI)) {
                 codegenParameter.isFreeFormObject = true;
             }
         } else if (ModelUtils.isNullType(ps)) {
-            ;
         } else if (ModelUtils.isAnyType(ps)) {
             // any schema with no type set, composed schemas often do this
-            ;
         } else if (ModelUtils.isArraySchema(ps)) {
-            Schema inner = getSchemaItems((ArraySchema) ps);
-            CodegenProperty arrayInnerProperty = fromProperty("inner", inner);
+            Schema inner = ModelUtils.getSchemaItems(ps);
+            CodegenProperty arrayInnerProperty = fromProperty("inner", inner, false);
+            codegenParameter.isArray = true;
             codegenParameter.items = arrayInnerProperty;
             codegenParameter.mostInnerItems = arrayInnerProperty.mostInnerItems;
             codegenParameter.isPrimitiveType = false;
-            codegenParameter.isContainer = true;
             // hoist items data into the array property
             // TODO this hoisting code is generator specific and should be isolated into updateFormPropertyForArray
             codegenParameter.baseType = arrayInnerProperty.dataType;
-            codegenParameter.defaultValue = arrayInnerProperty.getDefaultValue();
+            // TODO we need to fix array of item (with default value) generator by generator
+            // https://github.com/OpenAPITools/openapi-generator/pull/16654/ is a good reference
+            if (!(this instanceof PhpNextgenClientCodegen)) {
+                // no need to set default value here as it was set earlier
+                codegenParameter.defaultValue = arrayInnerProperty.getDefaultValue();
+            }
             if (codegenParameter.items.isFile) {
                 codegenParameter.isFile = true;
                 codegenParameter.dataFormat = codegenParameter.items.dataFormat;
@@ -6258,11 +8011,12 @@ public class DefaultCodegen implements CodegenConfig {
                 LOGGER.warn("Could not compute datatypeWithEnum from {}, {}", arrayInnerProperty.baseType, arrayInnerProperty.enumName);
             }
             // end of hoisting
-            //TODO fix collectionFormat for form parameters
-            //collectionFormat = getCollectionFormat(s);
+
+            // collectionFormat for form parameter does not consider
+            // style and explode from encoding at this point
             String collectionFormat = getCollectionFormat(codegenParameter);
-            // default to csv:
             codegenParameter.collectionFormat = StringUtils.isEmpty(collectionFormat) ? "csv" : collectionFormat;
+            codegenParameter.isCollectionFormatMulti = "multi".equals(collectionFormat);
 
             // recursively add import
             while (arrayInnerProperty != null) {
@@ -6271,10 +8025,9 @@ public class DefaultCodegen implements CodegenConfig {
             }
         } else {
             // referenced schemas
-            ;
         }
 
-        if (Boolean.TRUE.equals(codegenProperty.isModel)) {
+        if (codegenProperty.isModel) {
             codegenParameter.isModel = true;
         }
 
@@ -6282,6 +8035,8 @@ public class DefaultCodegen implements CodegenConfig {
         codegenParameter.description = escapeText(codegenProperty.description);
         codegenParameter.unescapedDescription = codegenProperty.getDescription();
         codegenParameter.jsonSchema = Json.pretty(propertySchema);
+        codegenParameter.containerType = codegenProperty.containerType;
+        codegenParameter.containerTypeMapped = codegenProperty.containerTypeMapped;
 
         if (codegenProperty.getVendorExtensions() != null && !codegenProperty.getVendorExtensions().isEmpty()) {
             codegenParameter.vendorExtensions = codegenProperty.getVendorExtensions();
@@ -6293,19 +8048,22 @@ public class DefaultCodegen implements CodegenConfig {
         if (codegenProperty.isEnum) {
             codegenParameter.datatypeWithEnum = codegenProperty.datatypeWithEnum;
             codegenParameter.enumName = codegenProperty.enumName;
+            if (codegenProperty.defaultValue != null) {
+                codegenParameter.enumDefaultValue = codegenProperty.defaultValue.replace(codegenProperty.enumName + ".", "");
+            }
         }
-        
+
         // import
         if (codegenProperty.complexType != null) {
             imports.add(codegenProperty.complexType);
         }
 
+        // set example value
         setParameterExampleValue(codegenParameter);
+
         // set nullable
         setParameterNullable(codegenParameter, codegenProperty);
 
-        //TODO collectionFormat for form parameter not yet supported
-        //codegenParameter.collectionFormat = getCollectionFormat(propertySchema);
         return codegenParameter;
     }
 
@@ -6332,11 +8090,13 @@ public class DefaultCodegen implements CodegenConfig {
             codegenParameter.isNullable = codegenModel.isNullable;
             imports.add(codegenParameter.baseType);
         } else {
-            CodegenProperty codegenProperty = fromProperty("property", schema);
+            CodegenProperty codegenProperty = fromProperty("property", schema, false);
 
             if (codegenProperty != null && codegenProperty.getComplexType() != null && codegenProperty.getComplexType().contains(" | ")) {
+                // TODO move this splitting logic to the generator that needs it only
                 List<String> parts = Arrays.asList(codegenProperty.getComplexType().split(" \\| "));
                 imports.addAll(parts);
+
                 String codegenModelName = codegenProperty.getComplexType();
                 codegenParameter.baseName = codegenModelName;
                 codegenParameter.paramName = toParamName(codegenParameter.baseName);
@@ -6376,7 +8136,7 @@ public class DefaultCodegen implements CodegenConfig {
                     codegenParameter.description = codegenModelDescription;
                     imports.add(codegenParameter.baseType);
 
-                    if (codegenProperty.complexType != null) {
+                    if (codegenProperty.complexType != null && codegenProperty.getComposedSchemas() == null) {
                         imports.add(codegenProperty.complexType);
                     }
                 }
@@ -6388,19 +8148,31 @@ public class DefaultCodegen implements CodegenConfig {
     }
 
     protected void updateRequestBodyForMap(CodegenParameter codegenParameter, Schema schema, String name, Set<String> imports, String bodyParameterName) {
-        if (ModelUtils.isGenerateAliasAsModel(schema) && StringUtils.isNotBlank(name)) {
+        boolean useModel = true;
+        if (StringUtils.isBlank(name)) {
+            useModel = false;
+        } else {
+            if (ModelUtils.isFreeFormObject(schema, openAPI)) {
+                useModel = ModelUtils.shouldGenerateFreeFormObjectModel(name, this);
+            } else if (ModelUtils.isMapSchema(schema)) {
+                useModel = ModelUtils.shouldGenerateMapModel(schema);
+            } else if (ModelUtils.isArraySchema(schema)) {
+                useModel = ModelUtils.shouldGenerateArrayModel(schema);
+            }
+        }
+
+        if (useModel) {
             this.addBodyModelSchema(codegenParameter, name, schema, imports, bodyParameterName, true);
         } else {
-            Schema inner = getAdditionalProperties(schema);
+            Schema inner = ModelUtils.getAdditionalProperties(schema);
             if (inner == null) {
                 LOGGER.error("No inner type supplied for map parameter `{}`. Default to type:string", schema.getName());
                 inner = new StringSchema().description("//TODO automatically added by openapi-generator");
                 schema.setAdditionalProperties(inner);
             }
-            CodegenProperty codegenProperty = fromProperty("property", schema);
+            CodegenProperty codegenProperty = fromProperty("property", schema, false);
 
             imports.add(codegenProperty.baseType);
-
             CodegenProperty innerCp = codegenProperty;
             while (innerCp != null) {
                 if (innerCp.complexType != null) {
@@ -6422,6 +8194,8 @@ public class DefaultCodegen implements CodegenConfig {
             codegenParameter.isContainer = Boolean.TRUE;
             codegenParameter.isMap = Boolean.TRUE;
             codegenParameter.isNullable = codegenProperty.isNullable;
+            codegenParameter.containerType = codegenProperty.containerType;
+            codegenParameter.containerTypeMapped = codegenProperty.containerTypeMapped;
 
             // set nullable
             setParameterNullable(codegenParameter, codegenProperty);
@@ -6429,7 +8203,7 @@ public class DefaultCodegen implements CodegenConfig {
     }
 
     protected void updateRequestBodyForPrimitiveType(CodegenParameter codegenParameter, Schema schema, String bodyParameterName, Set<String> imports) {
-        CodegenProperty codegenProperty = fromProperty("PRIMITIVE_REQUEST_BODY", schema);
+        CodegenProperty codegenProperty = fromProperty("PRIMITIVE_REQUEST_BODY", schema, false);
         if (codegenProperty != null) {
             if (StringUtils.isEmpty(bodyParameterName)) {
                 codegenParameter.baseName = "body";  // default to body
@@ -6447,7 +8221,6 @@ public class DefaultCodegen implements CodegenConfig {
             if (codegenProperty.complexType != null) {
                 imports.add(codegenProperty.complexType);
             }
-
         }
         // set nullable
         setParameterNullable(codegenParameter, codegenProperty);
@@ -6457,13 +8230,13 @@ public class DefaultCodegen implements CodegenConfig {
         if (ModelUtils.isMapSchema(schema)) {
             // Schema with additionalproperties: true (including composed schemas with additionalproperties: true)
             updateRequestBodyForMap(codegenParameter, schema, name, imports, bodyParameterName);
-        } else if (isFreeFormObject(schema)) {
+        } else if (ModelUtils.isFreeFormObject(schema, openAPI)) {
             // non-composed object type with no properties + additionalProperties
             // additionalProperties must be null, ObjectSchema, or empty Schema
             codegenParameter.isFreeFormObject = true;
 
             // HTTP request body is free form object
-            CodegenProperty codegenProperty = fromProperty("FREE_FORM_REQUEST_BODY", schema);
+            CodegenProperty codegenProperty = fromProperty("FREE_FORM_REQUEST_BODY", schema, false);
             if (codegenProperty != null) {
                 if (StringUtils.isEmpty(bodyParameterName)) {
                     codegenParameter.baseName = "body";  // default to body
@@ -6479,7 +8252,7 @@ public class DefaultCodegen implements CodegenConfig {
             }
             // set nullable
             setParameterNullable(codegenParameter, codegenProperty);
-        } else if (ModelUtils.isObjectSchema(schema)) {
+        } else if (ModelUtils.isObjectSchema(schema) || ModelUtils.isComposedSchema(schema)) {
             // object type schema or composed schema with properties defined
             this.addBodyModelSchema(codegenParameter, name, schema, imports, bodyParameterName, false);
         }
@@ -6490,9 +8263,12 @@ public class DefaultCodegen implements CodegenConfig {
         if (ModelUtils.isGenerateAliasAsModel(schema) && StringUtils.isNotBlank(name)) {
             this.addBodyModelSchema(codegenParameter, name, schema, imports, bodyParameterName, true);
         } else {
-            final ArraySchema arraySchema = (ArraySchema) schema;
-            Schema inner = getSchemaItems(arraySchema);
-            CodegenProperty codegenProperty = fromProperty("property", arraySchema);
+            Schema inner = ModelUtils.getSchemaItems(schema);
+            CodegenProperty codegenProperty = fromProperty("property", schema, false);
+            if (codegenProperty == null) {
+                throw new RuntimeException("CodegenProperty cannot be null. arraySchema for debugging: " + schema);
+            }
+
             imports.add(codegenProperty.baseType);
             CodegenProperty innerCp = codegenProperty;
             CodegenProperty mostInnerItem = innerCp;
@@ -6516,12 +8292,19 @@ public class DefaultCodegen implements CodegenConfig {
                 codegenParameter.baseName = bodyParameterName;
             }
             codegenParameter.paramName = toArrayModelParamName(codegenParameter.baseName);
+            codegenParameter.nameInCamelCase = camelize(codegenParameter.paramName, LOWERCASE_FIRST_LETTER);
+            codegenParameter.nameInPascalCase = camelize(codegenParameter.paramName);
+            codegenParameter.nameInSnakeCase = CaseFormat.UPPER_CAMEL.to(CaseFormat.UPPER_UNDERSCORE, codegenParameter.nameInPascalCase);
+            codegenParameter.nameInLowerCase = codegenParameter.paramName.toLowerCase(Locale.ROOT);
+
             codegenParameter.items = codegenProperty.items;
             codegenParameter.mostInnerItems = codegenProperty.mostInnerItems;
-            codegenParameter.dataType = getTypeDeclaration(arraySchema);
+            codegenParameter.dataType = getTypeDeclaration(schema);
             codegenParameter.baseType = getSchemaType(inner);
             codegenParameter.isContainer = Boolean.TRUE;
             codegenParameter.isNullable = codegenProperty.isNullable;
+            codegenParameter.containerType = codegenProperty.containerType;
+            codegenParameter.containerTypeMapped = codegenProperty.containerTypeMapped;
 
             // set nullable
             setParameterNullable(codegenParameter, codegenProperty);
@@ -6536,6 +8319,7 @@ public class DefaultCodegen implements CodegenConfig {
     protected void updateRequestBodyForString(CodegenParameter codegenParameter, Schema schema, Set<String> imports, String bodyParameterName) {
         updateRequestBodyForPrimitiveType(codegenParameter, schema, bodyParameterName, imports);
         if (ModelUtils.isByteArraySchema(schema)) {
+            codegenParameter.setIsString(false);
             codegenParameter.isByteArray = true;
         } else if (ModelUtils.isBinarySchema(schema)) {
             codegenParameter.isBinary = true;
@@ -6559,6 +8343,113 @@ public class DefaultCodegen implements CodegenConfig {
         codegenParameter.pattern = toRegularExpression(schema.getPattern());
     }
 
+    protected String toMediaTypeSchemaName(String contentType, String mediaTypeSchemaSuffix) {
+        return "SchemaFor" + mediaTypeSchemaSuffix + toModelName(contentType);
+    }
+
+    private CodegenParameter headerToCodegenParameter(Header header, String headerName, Set<String> imports, String mediaTypeSchemaSuffix) {
+        if (header == null) {
+            return null;
+        }
+        Parameter headerParam = new Parameter();
+        headerParam.setName(headerName);
+        headerParam.setIn("header");
+        headerParam.setDescription(header.getDescription());
+        headerParam.setRequired(header.getRequired());
+        headerParam.setDeprecated(header.getDeprecated());
+        Header.StyleEnum style = header.getStyle();
+        if (style != null) {
+            headerParam.setStyle(Parameter.StyleEnum.valueOf(style.name()));
+        }
+        headerParam.setExplode(header.getExplode());
+        headerParam.setSchema(header.getSchema());
+        headerParam.setExamples(header.getExamples());
+        headerParam.setExample(header.getExample());
+        headerParam.setContent(header.getContent());
+        headerParam.setExtensions(header.getExtensions());
+        CodegenParameter param = fromParameter(headerParam, imports);
+        param.setContent(getContent(headerParam.getContent(), imports, mediaTypeSchemaSuffix));
+        return param;
+    }
+
+    protected LinkedHashMap<String, CodegenMediaType> getContent(Content content, Set<String> imports, String mediaTypeSchemaSuffix) {
+        if (content == null) {
+            return null;
+        }
+        LinkedHashMap<String, CodegenMediaType> cmtContent = new LinkedHashMap<>();
+        for (Entry<String, MediaType> contentEntry : content.entrySet()) {
+            MediaType mt = contentEntry.getValue();
+            LinkedHashMap<String, CodegenEncoding> ceMap = null;
+            if (mt.getEncoding() != null) {
+                ceMap = new LinkedHashMap<>();
+                Map<String, Encoding> encMap = mt.getEncoding();
+                for (Entry<String, Encoding> encodingEntry : encMap.entrySet()) {
+                    Encoding enc = encodingEntry.getValue();
+                    List<CodegenParameter> headers = new ArrayList<>();
+                    if (enc.getHeaders() != null) {
+                        Map<String, Header> encHeaders = enc.getHeaders();
+                        for (Entry<String, Header> headerEntry : encHeaders.entrySet()) {
+                            String headerName = headerEntry.getKey();
+                            Header header = ModelUtils.getReferencedHeader(this.openAPI, headerEntry.getValue());
+                            CodegenParameter param = headerToCodegenParameter(header, headerName, imports, mediaTypeSchemaSuffix);
+                            headers.add(param);
+                        }
+                    }
+                    CodegenEncoding ce = new CodegenEncoding(
+                            enc.getContentType(),
+                            headers,
+                            enc.getStyle().toString(),
+                            enc.getExplode() != null && enc.getExplode(),
+                            enc.getAllowReserved() != null && enc.getAllowReserved()
+                    );
+
+                    if (enc.getExtensions() != null) {
+                        ce.vendorExtensions = enc.getExtensions();
+                    }
+
+                    String propName = encodingEntry.getKey();
+                    ceMap.put(propName, ce);
+                }
+            }
+            String contentType = contentEntry.getKey();
+            CodegenProperty schemaProp = null;
+            if (mt.getSchema() != null) {
+                schemaProp = fromProperty(toMediaTypeSchemaName(contentType, mediaTypeSchemaSuffix), mt.getSchema(), false);
+            }
+            HashMap<String, SchemaTestCase> schemaTestCases = null;
+            if (mt.getExtensions() != null && mt.getExtensions().containsKey(xSchemaTestExamplesKey)) {
+                Object objNodeWithRef = mt.getExtensions().get(xSchemaTestExamplesKey);
+                if (objNodeWithRef instanceof LinkedHashMap) {
+                    LinkedHashMap<String, String> nodeWithRef = (LinkedHashMap<String, String>) objNodeWithRef;
+                    String refKey = "$ref";
+                    String refToTestCases = nodeWithRef.getOrDefault(refKey, null);
+                    if (refToTestCases != null) {
+                        schemaTestCases = extractSchemaTestCases(refToTestCases);
+                    }
+                }
+            }
+
+            CodegenMediaType codegenMt;
+            if (mt.getExamples() != null) {
+                codegenMt = new CodegenMediaType(schemaProp, ceMap, schemaTestCases, mt.getExamples());
+            } else if (mt.getExample() != null) {
+                codegenMt = new CodegenMediaType(schemaProp, ceMap, schemaTestCases, mt.getExample());
+            } else {
+                codegenMt = new CodegenMediaType(schemaProp, ceMap, schemaTestCases);
+            }
+
+            if (mt.getExtensions() != null) {
+                codegenMt.vendorExtensions = mt.getExtensions();
+            }
+
+            cmtContent.put(contentType, codegenMt);
+            if (schemaProp != null) {
+                addImports(imports, schemaProp.getImports(true, importBaseType, generatorMetadata.getFeatureSet()));
+            }
+        }
+        return cmtContent;
+    }
+
     public CodegenParameter fromRequestBody(RequestBody body, Set<String> imports, String bodyParameterName) {
         if (body == null) {
             LOGGER.error("body in fromRequestBody cannot be null!");
@@ -6568,6 +8459,7 @@ public class DefaultCodegen implements CodegenConfig {
         codegenParameter.baseName = "UNKNOWN_BASE_NAME";
         codegenParameter.paramName = "UNKNOWN_PARAM_NAME";
         codegenParameter.description = escapeText(body.getDescription());
+        codegenParameter.unescapedDescription = body.getDescription();
         codegenParameter.required = body.getRequired() != null ? body.getRequired() : Boolean.FALSE;
         codegenParameter.isBodyParam = Boolean.TRUE;
         if (body.getExtensions() != null) {
@@ -6578,18 +8470,32 @@ public class DefaultCodegen implements CodegenConfig {
         LOGGER.debug("Request body = {}", body);
         Schema schema = ModelUtils.getSchemaFromRequestBody(body);
         if (schema == null) {
-            throw new RuntimeException("Request body cannot be null. Possible cause: missing schema in body parameter (OAS v2): " + body);
+            LOGGER.error("Schema cannot be null in the request body: {}", body);
+            return null;
+        }
+        Schema original = null;
+        // check if it's allOf (only 1 sub schema) with or without default/nullable/etc set in the top level
+        if (ModelUtils.isAllOf(schema) && schema.getAllOf().size() == 1 &&
+                (ModelUtils.getType(schema) == null || "object".equals(ModelUtils.getType(schema)))) {
+            if (schema.getAllOf().get(0) instanceof Schema) {
+                original = schema;
+                schema = (Schema) schema.getAllOf().get(0);
+            } else {
+                LOGGER.error("Unknown type in allOf schema. Please report the issue via openapi-generator's Github issue tracker.");
+            }
         }
 
+        codegenParameter.setContent(getContent(body.getContent(), imports, "RequestBody"));
         if (StringUtils.isNotBlank(schema.get$ref())) {
             name = ModelUtils.getSimpleRef(schema.get$ref());
         }
 
-        Schema unaliasedSchema = unaliasSchema(schema, importMapping);
+        Schema unaliasedSchema = unaliasSchema(schema);
         schema = ModelUtils.getReferencedSchema(this.openAPI, schema);
 
         ModelUtils.syncValidationProperties(unaliasedSchema, codegenParameter);
-        codegenParameter.setTypeProperties(unaliasedSchema);
+        codegenParameter.setTypeProperties(unaliasedSchema, openAPI);
+        codegenParameter.setComposedSchemas(getComposedSchemas(unaliasedSchema));
         // TODO in the future switch al the below schema usages to unaliasedSchema
         // because it keeps models as refs and will not get their referenced schemas
         if (ModelUtils.isArraySchema(schema)) {
@@ -6633,6 +8539,8 @@ public class DefaultCodegen implements CodegenConfig {
             } else if (ModelUtils.isObjectSchema(schema)) {
                 // object type schema OR (AnyType schema with properties defined)
                 this.addBodyModelSchema(codegenParameter, name, schema, imports, bodyParameterName, false);
+            } else {
+                updateRequestBodyForPrimitiveType(codegenParameter, schema, bodyParameterName, imports);
             }
             addVarsRequiredVarsAdditionalProps(schema, codegenParameter);
         } else {
@@ -6646,32 +8554,131 @@ public class DefaultCodegen implements CodegenConfig {
         // should be overridden by lang codegen
         setParameterExampleValue(codegenParameter, body);
 
+        // restore original schema with description, extensions etc
+        if (original != null) {
+            // evaluate common attributes such as description if defined in the top level
+            if (original.getNullable() != null) {
+                codegenParameter.isNullable = original.getNullable();
+            } else if (original.getExtensions() != null && original.getExtensions().containsKey(X_NULLABLE)) {
+                codegenParameter.isNullable = Boolean.parseBoolean(String.valueOf(original.getExtensions().get(X_NULLABLE)));
+            } else if (ModelUtils.isNullable(original)) {
+                codegenParameter.isNullable = true;
+            }
+
+            if (original.getExtensions() != null) {
+                codegenParameter.vendorExtensions.putAll(original.getExtensions());
+            }
+            if (original.getDeprecated() != null) {
+                codegenParameter.isDeprecated = original.getDeprecated();
+            }
+            if (original.getDescription() != null) {
+                codegenParameter.description = escapeText(original.getDescription());
+                codegenParameter.unescapedDescription = original.getDescription();
+            }
+            if (original.getMaxLength() != null) {
+                codegenParameter.setMaxLength(original.getMaxLength());
+            }
+            if (original.getMinLength() != null) {
+                codegenParameter.setMinLength(original.getMinLength());
+            }
+            if (original.getMaxItems() != null) {
+                codegenParameter.setMaxItems(original.getMaxItems());
+            }
+            if (original.getMinItems() != null) {
+                codegenParameter.setMinItems(original.getMinItems());
+            }
+            if (original.getMaximum() != null) {
+                codegenParameter.setMaximum(ModelUtils.formatNumericBound(original.getMaximum(), schema, false, codegenParameter.getExclusiveMaximum()));
+            }
+            if (original.getMinimum() != null) {
+                codegenParameter.setMinimum(ModelUtils.formatNumericBound(original.getMinimum(), schema, true, codegenParameter.getExclusiveMinimum()));
+            }
+            /* comment out below as we don't store `title` in the codegen parametera the moment
+            if (original.getTitle() != null) {
+                codegenParameter.setTitle(original.getTitle());
+            }
+             */
+        }
+
         return codegenParameter;
     }
 
-    private void addVarsRequiredVarsAdditionalProps(Schema schema, IJsonSchemaValidationProperties property){
-        setAddProps(schema, property);
-        if (!"object".equals(schema.getType())) {
+    protected void addRequiredVarsMap(Schema schema, IJsonSchemaValidationProperties property) {
+        /*
+        this should be called after vars and additionalProperties are set
+        Features added by storing codegenProperty values:
+        - complexType stores reference to additionalProperties definition
+        - baseName stores original name (can be invalid in a programming language)
+        - nameInSnakeCase can store valid name for a programming language
+         */
+        Map<String, Schema> properties = schema.getProperties();
+        Map<String, CodegenProperty> requiredVarsMap = new HashMap<>();
+        List<String> requiredPropertyNames = schema.getRequired();
+        if (requiredPropertyNames == null) {
             return;
         }
-        if (schema instanceof ObjectSchema) {
-            ObjectSchema objSchema = (ObjectSchema) schema;
-            HashSet<String> requiredVars = new HashSet<>();
-            if (objSchema.getRequired() != null) {
-                requiredVars.addAll(objSchema.getRequired());
-            }
-            if (objSchema.getProperties() != null && objSchema.getProperties().size() > 0) {
-                property.setHasVars(true);
-            }
-            addVars(property, property.getVars(), objSchema.getProperties(), requiredVars);
-            List<CodegenProperty> requireCpVars = property.getVars()
-                    .stream()
-                    .filter(p -> Boolean.TRUE.equals(p.required)).collect(Collectors.toList());
-            property.setRequiredVars(requireCpVars);
-            if (property.getRequiredVars() != null && property.getRequiredVars().size() > 0) {
-                property.setHasRequired(true);
+        for (String requiredPropertyName : requiredPropertyNames) {
+            // required property is defined in properties, value is that CodegenProperty
+            String usedRequiredPropertyName = handleSpecialCharacters(requiredPropertyName);
+            if (properties != null && properties.containsKey(requiredPropertyName)) {
+                // get cp from property
+                boolean found = false;
+                for (CodegenProperty cp : property.getVars()) {
+                    if (cp.baseName.equals(requiredPropertyName)) {
+                        found = true;
+                        requiredVarsMap.put(requiredPropertyName, cp);
+                        break;
+                    }
+                }
+                if (!found) {
+                    LOGGER.warn("Property {} is not processed correctly (missing from getVars). Maybe it's a const (not yet supported) in openapi v3.1 spec.", requiredPropertyName);
+                }
+            } else if (schema.getAdditionalProperties() instanceof Boolean && Boolean.FALSE.equals(schema.getAdditionalProperties())) {
+                // TODO add processing for requiredPropertyName
+                // required property is not defined in properties, and additionalProperties is false, value is null
+                requiredVarsMap.put(usedRequiredPropertyName, null);
+            } else {
+                // required property is not defined in properties, and additionalProperties is true or unset value is CodegenProperty made from empty schema
+                // required property is not defined in properties, and additionalProperties is schema, value is CodegenProperty made from schema
+                if (supportsAdditionalPropertiesWithComposedSchema && !disallowAdditionalPropertiesIfNotPresent) {
+                    CodegenProperty cp;
+                    if (schema.getAdditionalProperties() == null) {
+                        // additionalProperties is null
+                        cp = fromProperty(usedRequiredPropertyName, new Schema(), true, true);
+                    } else if (schema.getAdditionalProperties() instanceof Boolean && Boolean.TRUE.equals(schema.getAdditionalProperties())) {
+                        // additionalProperties is True
+                        cp = fromProperty(requiredPropertyName, new Schema(), true, true);
+                    } else {
+                        // additionalProperties is schema
+                        cp = fromProperty(requiredPropertyName, (Schema) schema.getAdditionalProperties(), true, true);
+                    }
+                    requiredVarsMap.put(usedRequiredPropertyName, cp);
+                }
             }
         }
+        if (!requiredVarsMap.isEmpty()) {
+            property.setRequiredVarsMap(requiredVarsMap);
+        }
+    }
+
+    protected void addVarsRequiredVarsAdditionalProps(Schema schema, IJsonSchemaValidationProperties property) {
+        setAddProps(schema, property);
+        Set<String> mandatory = schema.getRequired() == null ? Collections.emptySet()
+                : new TreeSet<>(schema.getRequired());
+        addVars(property, property.getVars(), schema.getProperties(), mandatory);
+        addRequiredVarsMap(schema, property);
+    }
+
+    protected String getItemsName(Schema containingSchema, String containingSchemaName) {
+        // fromProperty use case
+        if (containingSchema.getExtensions() != null && containingSchema.getExtensions().get("x-item-name") != null) {
+            return containingSchema.getExtensions().get("x-item-name").toString();
+        }
+        return toVarName(containingSchemaName);
+    }
+
+    protected String getAdditionalPropertiesName() {
+        return "additional_properties";
     }
 
     private void addJsonSchemaForBodyRequestInCaseItsNotPresent(CodegenParameter codegenParameter, RequestBody body) {
@@ -6680,9 +8687,15 @@ public class DefaultCodegen implements CodegenConfig {
     }
 
     protected void addOption(String key, String description, String defaultValue) {
+        addOption(key, description, defaultValue, null);
+    }
+
+    protected void addOption(String key, String description, String defaultValue, Map<String, String> enumValues) {
         CliOption option = new CliOption(key, description);
         if (defaultValue != null)
             option.defaultValue(defaultValue);
+        if (enumValues != null)
+            option.setEnum(enumValues);
         cliOptions.add(option);
     }
 
@@ -6759,6 +8772,11 @@ public class DefaultCodegen implements CodegenConfig {
             cs.description = escapeText(server.getDescription());
             cs.url = server.getUrl();
             cs.variables = this.fromServerVariables(server.getVariables());
+
+            if (server.getExtensions() != null) {
+                cs.vendorExtensions = server.getExtensions();
+            }
+
             codegenServers.add(cs);
         }
         return codegenServers;
@@ -6783,6 +8801,10 @@ public class DefaultCodegen implements CodegenConfig {
             codegenServerVariable.enumValues = enums;
             codegenServerVariable.name = variableEntry.getKey();
 
+            if (variable.getExtensions() != null) {
+                codegenServerVariable.vendorExtensions = variable.getExtensions();
+            }
+
             // Sets the override value for a server variable pattern.
             // NOTE: OpenAPI Specification doesn't prevent multiple server URLs with variables. If multiple objects have the same
             //       variables pattern, user overrides will apply to _all_ of these patterns. We may want to consider indexed overrides.
@@ -6791,7 +8813,7 @@ public class DefaultCodegen implements CodegenConfig {
                 codegenServerVariable.value = value;
 
                 if (enums != null && !enums.isEmpty() && !enums.contains(value)) {
-                    if(LOGGER.isWarnEnabled()) { // prevents calculating StringUtils.join when debug isn't enabled
+                    if (LOGGER.isWarnEnabled()) { // prevents calculating StringUtils.join when debug isn't enabled
                         LOGGER.warn("Variable override of '{}' is not listed in the enum of allowed values ({}).", value, StringUtils.join(enums, ","));
                     }
                 }
@@ -6813,7 +8835,7 @@ public class DefaultCodegen implements CodegenConfig {
 
     /**
      * Post-process the auto-generated file, e.g. using go-fmt to format the Go code. The file type can be "model-test",
-     * "model-doc", "model", "api", "api-test", "api-doc", "supporting-mustache", "supporting-common",
+     * "model-doc", "model", "api", "api-test", "api-doc", "supporting-file",
      * "openapi-generator-ignore", "openapi-generator-version"
      * <p>
      * TODO: store these values in enum instead
@@ -6824,6 +8846,43 @@ public class DefaultCodegen implements CodegenConfig {
     @Override
     public void postProcessFile(File file, String fileType) {
         LOGGER.debug("Post processing file {} ({})", file, fileType);
+    }
+
+    /**
+     * Executes an external command for file post processing.
+     *
+     * @param commandArr an array of commands and arguments. They will be concatenated with space and tokenized again.
+     * @return Whether the execution passed (true) or failed (false)
+     */
+    protected boolean executePostProcessor(String[] commandArr) {
+        final String command = String.join(" ", commandArr);
+        try {
+            // we don't use the array variant here, because the command passed in by the user is often not only a single binary
+            // but a combination of binary + parameters, e.g. `/etc/bin prettier -w`, which would then not be found, as the
+            // first array item would be expected to be the binary only. The exec method is tokenizing the command for us.
+            Process p = Runtime.getRuntime().exec(command);
+            p.waitFor();
+            int exitValue = p.exitValue();
+            if (exitValue != 0) {
+                try (InputStreamReader inputStreamReader = new InputStreamReader(p.getErrorStream(), StandardCharsets.UTF_8);
+                     BufferedReader br = new BufferedReader(inputStreamReader)) {
+                    StringBuilder sb = new StringBuilder();
+                    String line;
+                    while ((line = br.readLine()) != null) {
+                        sb.append(line);
+                    }
+                    LOGGER.error("Error running the command ({}). Exit value: {}, Error output: {}", command, exitValue, sb);
+                }
+            } else {
+                LOGGER.info("Successfully executed: {}", command);
+                return true;
+            }
+        } catch (InterruptedException | IOException e) {
+            LOGGER.error("Error running the command ({}). Exception: {}", command, e.getMessage());
+            // Restore interrupted state
+            Thread.currentThread().interrupt();
+        }
+        return false;
     }
 
     /**
@@ -6913,57 +8972,55 @@ public class DefaultCodegen implements CodegenConfig {
     /**
      * Add "x-one-of-name" extension to a given oneOf schema (assuming it has at least 1 oneOf elements)
      *
-     * @param s    schema to add the extension to
-     * @param name name of the parent oneOf schema
+     * @param schema schema to add the extension to
+     * @param name   name of the parent oneOf schema
      */
-    public void addOneOfNameExtension(ComposedSchema s, String name) {
-        if (s.getOneOf() != null && s.getOneOf().size() > 0) {
-            s.addExtension("x-one-of-name", name);
+    public void addOneOfNameExtension(Schema schema, String name) {
+        if (ModelUtils.hasOneOf(schema)) {
+            schema.addExtension(X_ONE_OF_NAME, name);
         }
     }
 
     /**
      * Add a given ComposedSchema as an interface model to be generated, assuming it has `oneOf` defined
      *
-     * @param cs      ComposedSchema object to create as interface model
-     * @param type    name to use for the generated interface model
-     * @param openAPI OpenAPI spec that we are using
+     * @param cs   ComposedSchema object to create as interface model
+     * @param type name to use for the generated interface model
      */
-    public void addOneOfInterfaceModel(ComposedSchema cs, String type, OpenAPI openAPI) {
+    public void addOneOfInterfaceModel(Schema cs, String type) {
         if (cs.getOneOf() == null) {
             return;
         }
 
         CodegenModel cm = new CodegenModel();
 
-        cm.setDiscriminator(createDiscriminator("", cs, openAPI));
-        if (!this.getLegacyDiscriminatorBehavior()) {
-            cm.addDiscriminatorMappedModelsImports();
-        }
-        for (Schema o : Optional.ofNullable(cs.getOneOf()).orElse(Collections.emptyList())) {
-            if (o.get$ref() == null) {
-                if (cm.discriminator != null && o.get$ref() == null) {
+        cm.setDiscriminator(createDiscriminator("", cs));
+
+        for (Object o : Optional.ofNullable(cs.getOneOf()).orElse(Collections.emptyList())) {
+            if (((Schema) o).get$ref() == null) {
+                if (cm.discriminator != null && ((Schema) o).get$ref() == null) {
                     // OpenAPI spec states that inline objects should not be considered when discriminator is used
-                    // https://github.com/OAI/OpenAPI-Specification/blob/master/versions/3.0.2.md#discriminatorObject
+                    // https://github.com/OAI/OpenAPI-Specification/blob/master/versions/3.0.2.md#discriminator-object
                     LOGGER.warn("Ignoring inline object in oneOf definition of {}, since discriminator is used", type);
                 } else {
                     LOGGER.warn("Inline models are not supported in oneOf definition right now");
                 }
                 continue;
             }
-            cm.oneOf.add(toModelName(ModelUtils.getSimpleRef(o.get$ref())));
+            cm.oneOf.add(toModelName(ModelUtils.getSimpleRef(((Schema) o).get$ref())));
         }
         cm.name = type;
         cm.classname = type;
-        cm.vendorExtensions.put("x-is-one-of-interface", true);
-        cm.interfaceModels = new ArrayList<CodegenModel>();
+        cm.vendorExtensions.put(X_IS_ONE_OF_INTERFACE, true);
+        cm.interfaceModels = new ArrayList<>();
 
         addOneOfInterfaces.add(cm);
     }
 
     public void addImportsToOneOfInterface(List<Map<String, String>> imports) {
     }
-    //// End of methods related to the "useOneOfInterfaces" feature
+
+    /// / End of methods related to the "useOneOfInterfaces" feature
 
     protected void modifyFeatureSet(Consumer<FeatureSet.Builder> processor) {
         FeatureSet.Builder builder = getFeatureSet().modify();
@@ -6975,7 +9032,9 @@ public class DefaultCodegen implements CodegenConfig {
     /**
      * An map entry for cached sanitized names.
      */
+    @Getter
     private static class SanitizeNameOptions {
+
         public SanitizeNameOptions(String name, String removeCharRegEx, List<String> exceptions) {
             this.name = name;
             this.removeCharRegEx = removeCharRegEx;
@@ -6986,26 +9045,16 @@ public class DefaultCodegen implements CodegenConfig {
             }
         }
 
-        public String getName() {
-            return name;
-        }
-
-        public String getRemoveCharRegEx() {
-            return removeCharRegEx;
-        }
-
-        public List<String> getExceptions() {
-            return exceptions;
-        }
-
-        private String name;
-        private String removeCharRegEx;
-        private List<String> exceptions;
+        private final String name;
+        private final String removeCharRegEx;
+        private final List<String> exceptions;
 
         @Override
         public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
+            if (this == o)
+                return true;
+            if (o == null || getClass() != o.getClass())
+                return false;
             SanitizeNameOptions that = (SanitizeNameOptions) o;
             return Objects.equals(getName(), that.getName()) &&
                     Objects.equals(getRemoveCharRegEx(), that.getRemoveCharRegEx()) &&
@@ -7019,105 +9068,6 @@ public class DefaultCodegen implements CodegenConfig {
     }
 
     /**
-     * This method has been kept to keep the introduction of ModelUtils.isAnyType as a non-breaking change
-     * this way, existing forks of our generator can continue to use this method
-     * TODO in 6.0.0 replace this method with ModelUtils.isAnyType
-     * Return true if the schema value can be any type, i.e. it can be
-     * the null value, integer, number, string, object or array.
-     * One use case is when the "type" attribute in the OAS schema is unspecified.
-     *
-     * Examples:
-     *
-     *     arbitraryTypeValue:
-     *       description: This is an arbitrary type schema.
-     *         It is not a free-form object.
-     *         The value can be any type except the 'null' value.
-     *     arbitraryTypeNullableValue:
-     *       description: This is an arbitrary type schema.
-     *         It is not a free-form object.
-     *         The value can be any type, including the 'null' value.
-     *       nullable: true
-     *
-     * @param schema the OAS schema.
-     * @return true if the schema value can be an arbitrary type.
-     */
-    public boolean isAnyTypeSchema(Schema schema) {
-        if (schema == null) {
-            once(LOGGER).error("Schema cannot be null in isAnyTypeSchema check");
-            return false;
-        }
-
-        if (isFreeFormObject(schema)) {
-            // make sure it's not free form object
-            return false;
-        }
-
-        if (schema.getClass().equals(Schema.class) && schema.get$ref() == null && schema.getType() == null &&
-                (schema.getProperties() == null || schema.getProperties().isEmpty()) &&
-                schema.getAdditionalProperties() == null && schema.getNot() == null &&
-                schema.getEnum() == null) {
-            return true;
-            // If and when type arrays are supported in a future OAS specification,
-            // we could return true if the type array includes all possible JSON schema types.
-        }
-        return false;
-    }
-
-    /**
-     * Check to see if the schema is a free form object.
-     *
-     * A free form object is an object (i.e. 'type: object' in a OAS document) that:
-     * 1) Does not define properties, and
-     * 2) Is not a composed schema (no anyOf, oneOf, allOf), and
-     * 3) additionalproperties is not defined, or additionalproperties: true, or additionalproperties: {}.
-     *
-     * Examples:
-     *
-     * components:
-     *   schemas:
-     *     arbitraryObject:
-     *       type: object
-     *       description: This is a free-form object.
-     *         The value must be a map of strings to values. The value cannot be 'null'.
-     *         It cannot be array, string, integer, number.
-     *     arbitraryNullableObject:
-     *       type: object
-     *       description: This is a free-form object.
-     *         The value must be a map of strings to values. The value can be 'null',
-     *         It cannot be array, string, integer, number.
-     *       nullable: true
-     *     arbitraryTypeValue:
-     *       description: This is NOT a free-form object.
-     *         The value can be any type except the 'null' value.
-     *
-     * @param schema potentially containing a '$ref'
-     * @return true if it's a free-form object
-     */
-    protected boolean isFreeFormObject(Schema schema) {
-        // TODO remove this method and replace all usages with ModelUtils.isFreeFormObject
-        return ModelUtils.isFreeFormObject(this.openAPI, schema);
-    }
-
-    /**
-     * Returns the additionalProperties Schema for the specified input schema.
-     *
-     * The additionalProperties keyword is used to control the handling of additional, undeclared
-     * properties, that is, properties whose names are not listed in the properties keyword.
-     * The additionalProperties keyword may be either a boolean or an object.
-     * If additionalProperties is a boolean and set to false, no additional properties are allowed.
-     * By default when the additionalProperties keyword is not specified in the input schema,
-     * any additional properties are allowed. This is equivalent to setting additionalProperties
-     * to the boolean value True or setting additionalProperties: {}
-     *
-     * @param schema the input schema that may or may not have the additionalProperties keyword.
-     * @return the Schema of the additionalProperties. The null value is returned if no additional
-     *         properties are allowed.
-     */
-    protected Schema getAdditionalProperties(Schema schema) {
-        return ModelUtils.getAdditionalProperties(openAPI, schema);
-    }
-
-    /**
      * Check if the given MIME is a JSON MIME.
      * JSON MIME examples:
      * application/json
@@ -7127,8 +9077,12 @@ public class DefaultCodegen implements CodegenConfig {
      * @param mime MIME string
      * @return true if the input matches the JSON MIME
      */
-    protected static boolean isJsonMimeType(String mime) {
+    public static boolean isJsonMimeType(String mime) {
         return mime != null && (JSON_MIME_PATTERN.matcher(mime).matches());
+    }
+
+    public static boolean isXmlMimeType(String mime) {
+        return mime != null && (XML_MIME_PATTERN.matcher(mime).matches());
     }
 
     /**
@@ -7145,13 +9099,217 @@ public class DefaultCodegen implements CodegenConfig {
     }
 
     /**
-     * Returns null by default but can be overwritten to return a valid collectionFormat
+     * Builds OAPI 2.0 collectionFormat value based on style and explode values
      * for the {@link CodegenParameter}.
      *
      * @param codegenParameter parameter
      * @return string for a collectionFormat.
      */
     protected String getCollectionFormat(CodegenParameter codegenParameter) {
+        if ("form".equals(codegenParameter.style)) {
+            // Ref: https://github.com/OAI/OpenAPI-Specification/blob/master/versions/3.0.1.md#style-values
+            if (codegenParameter.isExplode) {
+                return "multi";
+            } else {
+                return "csv";
+            }
+        } else if ("simple".equals(codegenParameter.style)) {
+            return "csv";
+        } else if ("pipeDelimited".equals(codegenParameter.style)) {
+            return "pipes";
+        } else if ("spaceDelimited".equals(codegenParameter.style)) {
+            return "ssv";
+        } else {
+            // Doesn't map to any of the collectionFormat strings
+            return null;
+        }
+    }
+
+    private CodegenComposedSchemas getComposedSchemas(Schema schema) {
+        if (!(ModelUtils.isComposedSchema(schema)) && schema.getNot() == null) {
+            return null;
+        }
+        Schema notSchema = schema.getNot();
+        CodegenProperty notProperty = null;
+        if (notSchema != null) {
+            notProperty = fromProperty("not_schema", notSchema, false);
+        }
+        List<CodegenProperty> allOf = new ArrayList<>();
+        List<CodegenProperty> oneOf = new ArrayList<>();
+        List<CodegenProperty> anyOf = new ArrayList<>();
+        if (ModelUtils.isComposedSchema(schema)) {
+            allOf = getComposedProperties(schema.getAllOf(), "all_of");
+            oneOf = getComposedProperties(schema.getOneOf(), "one_of");
+            anyOf = getComposedProperties(schema.getAnyOf(), "any_of");
+        }
+        return new CodegenComposedSchemas(
+                allOf,
+                oneOf,
+                anyOf,
+                notProperty
+        );
+    }
+
+    private List<CodegenProperty> getComposedProperties(List<Schema> xOfCollection, String collectionName) {
+        if (xOfCollection == null) {
+            return null;
+        }
+        List<CodegenProperty> xOf = new ArrayList<>();
+        Set<String> dataTypeSet = new HashSet<>(); // to keep track of dataType
+        Set<String> dataTypeSetIgnoringErasure = new HashSet<>();
+        int i = 0;
+        for (Schema xOfSchema : xOfCollection) {
+            CodegenProperty cp = fromProperty(collectionName + "_" + i, xOfSchema, false);
+            xOf.add(cp);
+            i += 1;
+
+            if (dataTypeSet.contains(cp.dataType)
+                    || (isTypeErasedGenerics() && dataTypeSet.contains(cp.baseType))) {
+                // add "x-duplicated-data-type" to indicate if the (base) dataType already occurs before
+                // in other sub-schemas of allOf/anyOf/oneOf
+                cp.vendorExtensions.putIfAbsent("x-duplicated-data-type", true);
+            } else {
+                if (isTypeErasedGenerics()) {
+                    dataTypeSet.add(cp.baseType);
+                } else {
+                    dataTypeSet.add(cp.dataType);
+                }
+            }
+            if (dataTypeSetIgnoringErasure.contains(cp.dataType)) {
+                // add "x-duplicated-data-type-ignoring-erasure" to indicate if the dataType already occurs before
+                // in other sub-schemas of allOf/anyOf/oneOf
+                cp.vendorExtensions.putIfAbsent("x-duplicated-data-type-ignoring-erasure", true);
+            } else {
+                dataTypeSetIgnoringErasure.add(cp.dataType);
+            }
+        }
+        return xOf;
+    }
+
+    @Override
+    public String defaultTemplatingEngine() {
+        return "mustache";
+    }
+
+    @Override
+    public GeneratorLanguage generatorLanguage() {
+        return GeneratorLanguage.JAVA;
+    }
+
+    @Override
+    public String generatorLanguageVersion() {
         return null;
+    }
+
+    @Override
+    public List<VendorExtension> getSupportedVendorExtensions() {
+        return new ArrayList<>();
+    }
+
+    @Override
+    public boolean getUseInlineModelResolver() {
+        return true;
+    }
+
+    @Override
+    public boolean getUseOpenapiNormalizer() {
+        return true;
+    }
+
+    @Override
+    public Set<String> getOpenapiGeneratorIgnoreList() {
+        return openapiGeneratorIgnoreList;
+    }
+
+    @Override
+    public boolean isTypeErasedGenerics() {
+        return false;
+    }
+
+    /*
+        A function to convert yaml or json ingested strings like property names
+        And convert special characters like newline, tab, carriage return
+        Into strings that can be rendered in the language that the generator will output to
+        */
+    protected String handleSpecialCharacters(String name) {
+        return name;
+    }
+
+    /**
+     * Used to ensure that null or Schema is returned given an input Boolean/Schema/null
+     * This will be used in openapi 3.1.0 spec processing to ensure that Booleans become Schemas
+     * Because our generators only understand Schemas
+     * Note: use getIsBooleanSchemaTrue or getIsBooleanSchemaFalse on the IJsonSchemaValidationProperties
+     * if you need to be able to detect if the original schema's value was true or false
+     *
+     * @param schema the input Boolean or Schema data to convert to a Schema
+     * @return Schema the input data converted to a Schema if possible
+     */
+    protected Schema getSchemaFromBooleanOrSchema(Object schema) {
+        if (schema == null) {
+            return null;
+        } else if (schema instanceof Boolean) {
+            if (Boolean.TRUE.equals(schema)) {
+                return trueSchema;
+            } else if (Boolean.FALSE.equals(schema)) {
+                return falseSchema;
+            }
+            // null case
+            return null;
+        } else if (schema instanceof Schema) {
+            return (Schema) schema;
+        } else {
+            throw new IllegalArgumentException("Invalid schema type; type must be Boolean or Schema");
+        }
+    }
+
+    /**
+     * This method removes all constant Query, Header and Cookie Params from allParams and sets them as constantParams in the CodegenOperation.
+     * The definition of constant is single valued required enum params.
+     * The constantParams in the generated code should be hardcoded to the constantValue if autosetConstants feature is enabled.
+     *
+     * @param operation - operation to be processed
+     */
+    protected void handleConstantParams(CodegenOperation operation) {
+        if (!autosetConstants || operation.allParams.isEmpty()) {
+            return;
+        }
+        final ArrayList<CodegenParameter> copy = new ArrayList<>(operation.allParams);
+        // Remove all params from Params, Non constant params will be added back later.
+        operation.allParams.clear();
+
+        // Finds all constant params, removes them from allParams and adds them to constant params.
+        // Also, adds back non constant params to allParams.
+        for (CodegenParameter p : copy) {
+            if (p.isEnum && p.required && p._enum != null && p._enum.size() == 1) {
+                // Add to constantParams for use in the code generation templates.
+                operation.constantParams.add(p);
+                if (p.isQueryParam) {
+                    operation.queryParams.removeIf(param -> param.baseName.equals(p.baseName));
+                }
+                if (p.isHeaderParam) {
+                    operation.headerParams.removeIf(param -> param.baseName.equals(p.baseName));
+                }
+                if (p.isCookieParam) {
+                    operation.cookieParams.removeIf(param -> param.baseName.equals(p.baseName));
+                }
+                LOGGER.info("Update operation [{}]. Remove parameter [{}] because it can only have a fixed value of [{}]", operation.operationId, p.baseName, p._enum.get(0));
+            } else {
+                // Add back to allParams as the param is not a constant.
+                operation.allParams.add(p);
+            }
+        }
+    }
+
+    /**
+     * Adjust the model name of the list of {@link MappedModel} to ensure that the names are consistent with the
+     * language specific model name expressed in the {@link CodegenConfig#toModelName(String)} method.
+     * @param mappedModels The {@link MappedModel}
+     * @return The {@link MappedModel} with the modelName adjusted to the language specific model name.
+     */
+    private List<MappedModel> adjustModelNames(List<MappedModel> mappedModels) {
+        return mappedModels.stream()
+                .peek(mappedModel -> mappedModel.setModelName(toModelName(mappedModel.getSchemaName())))
+                .collect(Collectors.toList());
     }
 }

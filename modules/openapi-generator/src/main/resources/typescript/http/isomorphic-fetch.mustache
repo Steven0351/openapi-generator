@@ -1,8 +1,8 @@
-import {HttpLibrary, RequestContext, ResponseContext} from './http{{extensionForDeno}}';
-import { from, Observable } from {{#useRxJS}}'rxjs'{{/useRxJS}}{{^useRxJS}}'../rxjsStub{{extensionForDeno}}'{{/useRxJS}};
+import {HttpLibrary, RequestContext, ResponseContext} from './http{{importFileExtension}}';
+import { from, Observable } from {{#useRxJS}}'rxjs'{{/useRxJS}}{{^useRxJS}}'../rxjsStub{{importFileExtension}}'{{/useRxJS}};
 {{#platforms}}
 {{#node}}
-import fetch from "node-fetch";
+import { fetch } from 'undici';
 {{/node}}
 {{#browser}}
 import "whatwg-fetch";
@@ -19,7 +19,11 @@ export class IsomorphicFetchHttpLibrary implements HttpLibrary {
             method: method,
             body: body as any,
             headers: request.getHeaders(),
+            signal: request.getSignal(),
             {{#platforms}}
+            {{#node}}
+            dispatcher: request.getDispatcher(),
+            {{/node}}
             {{#browser}}
             credentials: "same-origin"
             {{/browser}}
@@ -34,7 +38,8 @@ export class IsomorphicFetchHttpLibrary implements HttpLibrary {
             {{#node}}
             const body = {
               text: () => resp.text(),
-              binary: () => resp.buffer()
+              binary: () => resp.buffer(),
+              stream: () => resp.body
             };
             {{/node}}
             {{^node}}

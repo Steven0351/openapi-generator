@@ -1,14 +1,18 @@
 package org.openapitools.model;
 
+import com.fasterxml.jackson.annotation.JsonTypeName;
 import javax.validation.constraints.*;
 import javax.validation.Valid;
 
 import io.swagger.annotations.ApiModelProperty;
+import java.util.Objects;
 import com.fasterxml.jackson.annotation.JsonProperty;
+
 
 public class SpecialModelName  {
   
   @ApiModelProperty(value = "")
+
   private Long $specialPropertyName;
  /**
    * Get $specialPropertyName
@@ -28,6 +32,22 @@ public class SpecialModelName  {
     return this;
   }
 
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    SpecialModelName $specialModelName = (SpecialModelName) o;
+    return Objects.equals(this.$specialPropertyName, $specialModelName.$specialPropertyName);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash($specialPropertyName);
+  }
 
   @Override
   public String toString() {
@@ -44,10 +64,7 @@ public class SpecialModelName  {
    * (except the first line).
    */
   private static String toIndentedString(Object o) {
-    if (o == null) {
-      return "null";
-    }
-    return o.toString().replace("\n", "\n    ");
+    return o == null ? "null" : o.toString().replace("\n", "\n    ");
   }
 }
 

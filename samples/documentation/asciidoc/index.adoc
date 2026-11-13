@@ -3,9 +3,9 @@ team@openapitools.org
 1.0.0
 :toc: left
 :numbered:
-:toclevels: 3
+:toclevels: 4
 :source-highlighter: highlightjs
-:keywords: openapi, rest, OpenAPI Petstore 
+:keywords: openapi, rest, OpenAPI Petstore
 :specDir: modules/openapi-generator/src/main/resources/asciidoc-documentation
 :snippetDir: .
 :generator-template: v1 2019-12-20
@@ -22,10 +22,10 @@ This is a sample server Petstore server. For this sample, you can use the api ke
 
 == Access
 
-
-* *APIKey* KeyParamName:     _api_key_,     KeyInQuery: _false_, KeyInHeader: _true_
 * *OAuth*  AuthorizationUrl: _http://petstore.swagger.io/api/oauth/dialog_, TokenUrl:   __ 
 
+
+* *APIKey* KeyParamName:     _api_key_,     KeyInQuery: _false_, KeyInHeader: _true_
 
 
 == Endpoints
@@ -37,12 +37,12 @@ This is a sample server Petstore server. For this sample, you can use the api ke
 
 [.addPet]
 ==== addPet
-    
+
 `POST /pet`
 
 Add a new pet to the store
 
-===== Description 
+===== Description
 
 
 
@@ -57,16 +57,16 @@ Add a new pet to the store
 ====== Body Parameter
 
 [cols="2,3,1,1,1"]
-|===         
+|===
 |Name| Description| Required| Default| Pattern
 
-| Pet 
-| Pet object that needs to be added to the store <<Pet>> 
-| X 
-|  
-|  
+| Pet
+a| Pet object that needs to be added to the store <<Pet>>
+| X
+| 
+| 
 
-|===         
+|===
 
 
 
@@ -84,10 +84,10 @@ Add a new pet to the store
 
 ===== Responses
 
-.http response codes
+.HTTP Response Codes
 [cols="2,3,1"]
-|===         
-| Code | Message | Datatype 
+|===
+| Code | Message | Datatype
 
 
 | 200
@@ -99,7 +99,7 @@ Add a new pet to the store
 | Invalid input
 |  <<>>
 
-|===         
+|===
 
 ===== Samples
 
@@ -125,12 +125,12 @@ endif::internal-generation[]
 
 [.deletePet]
 ==== deletePet
-    
+
 `DELETE /pet/{petId}`
 
 Deletes a pet
 
-===== Description 
+===== Description
 
 
 
@@ -144,32 +144,32 @@ Deletes a pet
 ====== Path Parameters
 
 [cols="2,3,1,1,1"]
-|===         
+|===
 |Name| Description| Required| Default| Pattern
 
-| petId 
-| Pet id to delete  
-| X 
-| null 
-|  
+| petId
+a| Pet id to delete 
+| X
+| null
+| 
 
-|===         
+|===
 
 
 
 ====== Header Parameters
 
 [cols="2,3,1,1,1"]
-|===         
+|===
 |Name| Description| Required| Default| Pattern
 
-| api_key 
-|   
-| - 
-| null 
-|  
+| api_key
+a|  
+| -
+| null
+| 
 
-|===         
+|===
 
 
 
@@ -182,17 +182,17 @@ Deletes a pet
 
 ===== Responses
 
-.http response codes
+.HTTP Response Codes
 [cols="2,3,1"]
-|===         
-| Code | Message | Datatype 
+|===
+| Code | Message | Datatype
 
 
 | 400
 | Invalid pet value
 |  <<>>
 
-|===         
+|===
 
 ===== Samples
 
@@ -218,12 +218,12 @@ endif::internal-generation[]
 
 [.findPetsByStatus]
 ==== findPetsByStatus
-    
+
 `GET /pet/findByStatus`
 
 Finds Pets by status
 
-===== Description 
+===== Description
 
 Multiple status values can be provided with comma separated strings
 
@@ -241,16 +241,16 @@ Multiple status values can be provided with comma separated strings
 ====== Query Parameters
 
 [cols="2,3,1,1,1"]
-|===         
+|===
 |Name| Description| Required| Default| Pattern
 
-| status 
-| Status values that need to be considered for filter <<String>> 
-| X 
-| null 
-|  
+| status
+a| Status values that need to be considered for filter <<String>>
+| X
+| null
+| 
 
-|===         
+|===
 
 
 ===== Return Type
@@ -265,10 +265,10 @@ array[<<Pet>>]
 
 ===== Responses
 
-.http response codes
+.HTTP Response Codes
 [cols="2,3,1"]
-|===         
-| Code | Message | Datatype 
+|===
+| Code | Message | Datatype
 
 
 | 200
@@ -280,7 +280,7 @@ array[<<Pet>>]
 | Invalid status value
 |  <<>>
 
-|===         
+|===
 
 ===== Samples
 
@@ -306,12 +306,12 @@ endif::internal-generation[]
 
 [.findPetsByTags]
 ==== findPetsByTags
-    
+
 `GET /pet/findByTags`
 
 Finds Pets by tags
 
-===== Description 
+===== Description
 
 Multiple tags can be provided with comma separated strings. Use tag1, tag2, tag3 for testing.
 
@@ -329,16 +329,16 @@ Multiple tags can be provided with comma separated strings. Use tag1, tag2, tag3
 ====== Query Parameters
 
 [cols="2,3,1,1,1"]
-|===         
+|===
 |Name| Description| Required| Default| Pattern
 
-| tags 
-| Tags to filter by <<String>> 
-| X 
-| null 
-|  
+| tags
+a| Tags to filter by <<String>>
+| X
+| null
+| 
 
-|===         
+|===
 
 
 ===== Return Type
@@ -353,10 +353,10 @@ array[<<Pet>>]
 
 ===== Responses
 
-.http response codes
+.HTTP Response Codes
 [cols="2,3,1"]
-|===         
-| Code | Message | Datatype 
+|===
+| Code | Message | Datatype
 
 
 | 200
@@ -368,7 +368,7 @@ array[<<Pet>>]
 | Invalid tag value
 |  <<>>
 
-|===         
+|===
 
 ===== Samples
 
@@ -394,12 +394,12 @@ endif::internal-generation[]
 
 [.getPetById]
 ==== getPetById
-    
+
 `GET /pet/{petId}`
 
 Find pet by ID
 
-===== Description 
+===== Description
 
 Returns a single pet
 
@@ -413,16 +413,16 @@ Returns a single pet
 ====== Path Parameters
 
 [cols="2,3,1,1,1"]
-|===         
+|===
 |Name| Description| Required| Default| Pattern
 
-| petId 
-| ID of pet to return  
-| X 
-| null 
-|  
+| petId
+a| ID of pet to return 
+| X
+| null
+| 
 
-|===         
+|===
 
 
 
@@ -441,10 +441,10 @@ Returns a single pet
 
 ===== Responses
 
-.http response codes
+.HTTP Response Codes
 [cols="2,3,1"]
-|===         
-| Code | Message | Datatype 
+|===
+| Code | Message | Datatype
 
 
 | 200
@@ -461,7 +461,7 @@ Returns a single pet
 | Pet not found
 |  <<>>
 
-|===         
+|===
 
 ===== Samples
 
@@ -487,12 +487,12 @@ endif::internal-generation[]
 
 [.updatePet]
 ==== updatePet
-    
+
 `PUT /pet`
 
 Update an existing pet
 
-===== Description 
+===== Description
 
 
 
@@ -507,16 +507,16 @@ Update an existing pet
 ====== Body Parameter
 
 [cols="2,3,1,1,1"]
-|===         
+|===
 |Name| Description| Required| Default| Pattern
 
-| Pet 
-| Pet object that needs to be added to the store <<Pet>> 
-| X 
-|  
-|  
+| Pet
+a| Pet object that needs to be added to the store <<Pet>>
+| X
+| 
+| 
 
-|===         
+|===
 
 
 
@@ -534,10 +534,10 @@ Update an existing pet
 
 ===== Responses
 
-.http response codes
+.HTTP Response Codes
 [cols="2,3,1"]
-|===         
-| Code | Message | Datatype 
+|===
+| Code | Message | Datatype
 
 
 | 200
@@ -559,7 +559,7 @@ Update an existing pet
 | Validation exception
 |  <<>>
 
-|===         
+|===
 
 ===== Samples
 
@@ -585,12 +585,12 @@ endif::internal-generation[]
 
 [.updatePetWithForm]
 ==== updatePetWithForm
-    
+
 `POST /pet/{petId}`
 
 Updates a pet in the store with form data
 
-===== Description 
+===== Description
 
 
 
@@ -604,37 +604,37 @@ Updates a pet in the store with form data
 ====== Path Parameters
 
 [cols="2,3,1,1,1"]
-|===         
+|===
 |Name| Description| Required| Default| Pattern
 
-| petId 
-| ID of pet that needs to be updated  
-| X 
-| null 
-|  
+| petId
+a| ID of pet that needs to be updated 
+| X
+| null
+| 
 
-|===         
+|===
 
 
 ====== Form Parameters
 
 [cols="2,3,1,1,1"]
-|===         
+|===
 |Name| Description| Required| Default| Pattern
 
-| name 
-| Updated name of the pet <<string>> 
-| - 
-| null 
-|  
+| name
+a| Updated name of the pet <<string>>
+| -
+| null
+| 
 
-| status 
-| Updated status of the pet <<string>> 
-| - 
-| null 
-|  
+| status
+a| Updated status of the pet <<string>>
+| -
+| null
+| 
 
-|===         
+|===
 
 
 
@@ -648,17 +648,17 @@ Updates a pet in the store with form data
 
 ===== Responses
 
-.http response codes
+.HTTP Response Codes
 [cols="2,3,1"]
-|===         
-| Code | Message | Datatype 
+|===
+| Code | Message | Datatype
 
 
 | 405
 | Invalid input
 |  <<>>
 
-|===         
+|===
 
 ===== Samples
 
@@ -684,12 +684,12 @@ endif::internal-generation[]
 
 [.uploadFile]
 ==== uploadFile
-    
+
 `POST /pet/{petId}/uploadImage`
 
 uploads an image
 
-===== Description 
+===== Description
 
 
 
@@ -703,37 +703,37 @@ uploads an image
 ====== Path Parameters
 
 [cols="2,3,1,1,1"]
-|===         
+|===
 |Name| Description| Required| Default| Pattern
 
-| petId 
-| ID of pet to update  
-| X 
-| null 
-|  
+| petId
+a| ID of pet to update 
+| X
+| null
+| 
 
-|===         
+|===
 
 
 ====== Form Parameters
 
 [cols="2,3,1,1,1"]
-|===         
+|===
 |Name| Description| Required| Default| Pattern
 
-| additionalMetadata 
-| Additional data to pass to server <<string>> 
-| - 
-| null 
-|  
+| additionalMetadata
+a| Additional data to pass to server <<string>>
+| -
+| null
+| 
 
-| file 
-| file to upload <<file>> 
-| - 
-| null 
-|  
+| file
+a| file to upload <<file>>
+| -
+| null
+| 
 
-|===         
+|===
 
 
 
@@ -749,17 +749,17 @@ uploads an image
 
 ===== Responses
 
-.http response codes
+.HTTP Response Codes
 [cols="2,3,1"]
-|===         
-| Code | Message | Datatype 
+|===
+| Code | Message | Datatype
 
 
 | 200
 | successful operation
 |  <<ApiResponse>>
 
-|===         
+|===
 
 ===== Samples
 
@@ -789,12 +789,12 @@ endif::internal-generation[]
 
 [.deleteOrder]
 ==== deleteOrder
-    
+
 `DELETE /store/order/{orderId}`
 
 Delete purchase order by ID
 
-===== Description 
+===== Description
 
 For valid response try integer IDs with value < 1000. Anything above 1000 or nonintegers will generate API errors
 
@@ -808,16 +808,16 @@ For valid response try integer IDs with value < 1000. Anything above 1000 or non
 ====== Path Parameters
 
 [cols="2,3,1,1,1"]
-|===         
+|===
 |Name| Description| Required| Default| Pattern
 
-| orderId 
-| ID of the order that needs to be deleted  
-| X 
-| null 
-|  
+| orderId
+a| ID of the order that needs to be deleted 
+| X
+| null
+| 
 
-|===         
+|===
 
 
 
@@ -833,10 +833,10 @@ For valid response try integer IDs with value < 1000. Anything above 1000 or non
 
 ===== Responses
 
-.http response codes
+.HTTP Response Codes
 [cols="2,3,1"]
-|===         
-| Code | Message | Datatype 
+|===
+| Code | Message | Datatype
 
 
 | 400
@@ -848,7 +848,7 @@ For valid response try integer IDs with value < 1000. Anything above 1000 or non
 | Order not found
 |  <<>>
 
-|===         
+|===
 
 ===== Samples
 
@@ -874,12 +874,12 @@ endif::internal-generation[]
 
 [.getInventory]
 ==== getInventory
-    
+
 `GET /store/inventory`
 
 Returns pet inventories by status
 
-===== Description 
+===== Description
 
 Returns a map of status codes to quantities
 
@@ -908,17 +908,17 @@ Returns a map of status codes to quantities
 
 ===== Responses
 
-.http response codes
+.HTTP Response Codes
 [cols="2,3,1"]
-|===         
-| Code | Message | Datatype 
+|===
+| Code | Message | Datatype
 
 
 | 200
 | successful operation
 | Map[<<integer>>] 
 
-|===         
+|===
 
 ===== Samples
 
@@ -944,14 +944,14 @@ endif::internal-generation[]
 
 [.getOrderById]
 ==== getOrderById
-    
+
 `GET /store/order/{orderId}`
 
 Find purchase order by ID
 
-===== Description 
+===== Description
 
-For valid response try integer IDs with value <= 5 or > 10. Other values will generated exceptions
+For valid response try integer IDs with value <= 5 or > 10. Other values will generate exceptions
 
 
 // markup not found, no include::{specDir}store/order/\{orderId\}/GET/spec.adoc[opts=optional]
@@ -963,16 +963,16 @@ For valid response try integer IDs with value <= 5 or > 10. Other values will ge
 ====== Path Parameters
 
 [cols="2,3,1,1,1"]
-|===         
+|===
 |Name| Description| Required| Default| Pattern
 
-| orderId 
-| ID of pet that needs to be fetched  
-| X 
-| null 
-|  
+| orderId
+a| ID of pet that needs to be fetched 
+| X
+| null
+| 
 
-|===         
+|===
 
 
 
@@ -991,10 +991,10 @@ For valid response try integer IDs with value <= 5 or > 10. Other values will ge
 
 ===== Responses
 
-.http response codes
+.HTTP Response Codes
 [cols="2,3,1"]
-|===         
-| Code | Message | Datatype 
+|===
+| Code | Message | Datatype
 
 
 | 200
@@ -1011,7 +1011,7 @@ For valid response try integer IDs with value <= 5 or > 10. Other values will ge
 | Order not found
 |  <<>>
 
-|===         
+|===
 
 ===== Samples
 
@@ -1037,12 +1037,12 @@ endif::internal-generation[]
 
 [.placeOrder]
 ==== placeOrder
-    
+
 `POST /store/order`
 
 Place an order for a pet
 
-===== Description 
+===== Description
 
 
 
@@ -1057,16 +1057,16 @@ Place an order for a pet
 ====== Body Parameter
 
 [cols="2,3,1,1,1"]
-|===         
+|===
 |Name| Description| Required| Default| Pattern
 
-| Order 
-| order placed for purchasing the pet <<Order>> 
-| X 
-|  
-|  
+| Order
+a| order placed for purchasing the pet <<Order>>
+| X
+| 
+| 
 
-|===         
+|===
 
 
 
@@ -1084,10 +1084,10 @@ Place an order for a pet
 
 ===== Responses
 
-.http response codes
+.HTTP Response Codes
 [cols="2,3,1"]
-|===         
-| Code | Message | Datatype 
+|===
+| Code | Message | Datatype
 
 
 | 200
@@ -1099,7 +1099,7 @@ Place an order for a pet
 | Invalid Order
 |  <<>>
 
-|===         
+|===
 
 ===== Samples
 
@@ -1129,12 +1129,12 @@ endif::internal-generation[]
 
 [.createUser]
 ==== createUser
-    
+
 `POST /user`
 
 Create user
 
-===== Description 
+===== Description
 
 This can only be done by the logged in user.
 
@@ -1149,16 +1149,16 @@ This can only be done by the logged in user.
 ====== Body Parameter
 
 [cols="2,3,1,1,1"]
-|===         
+|===
 |Name| Description| Required| Default| Pattern
 
-| User 
-| Created user object <<User>> 
-| X 
-|  
-|  
+| User
+a| Created user object <<User>>
+| X
+| 
+| 
 
-|===         
+|===
 
 
 
@@ -1173,17 +1173,17 @@ This can only be done by the logged in user.
 
 ===== Responses
 
-.http response codes
+.HTTP Response Codes
 [cols="2,3,1"]
-|===         
-| Code | Message | Datatype 
+|===
+| Code | Message | Datatype
 
 
 | 0
 | successful operation
 |  <<>>
 
-|===         
+|===
 
 ===== Samples
 
@@ -1209,12 +1209,12 @@ endif::internal-generation[]
 
 [.createUsersWithArrayInput]
 ==== createUsersWithArrayInput
-    
+
 `POST /user/createWithArray`
 
 Creates list of users with given input array
 
-===== Description 
+===== Description
 
 
 
@@ -1229,16 +1229,16 @@ Creates list of users with given input array
 ====== Body Parameter
 
 [cols="2,3,1,1,1"]
-|===         
+|===
 |Name| Description| Required| Default| Pattern
 
-| User 
-| List of user object <<User>> 
-| X 
-|  
-|  
+| User
+a| List of user object <<User>>
+| X
+| 
+| 
 
-|===         
+|===
 
 
 
@@ -1253,17 +1253,17 @@ Creates list of users with given input array
 
 ===== Responses
 
-.http response codes
+.HTTP Response Codes
 [cols="2,3,1"]
-|===         
-| Code | Message | Datatype 
+|===
+| Code | Message | Datatype
 
 
 | 0
 | successful operation
 |  <<>>
 
-|===         
+|===
 
 ===== Samples
 
@@ -1289,12 +1289,12 @@ endif::internal-generation[]
 
 [.createUsersWithListInput]
 ==== createUsersWithListInput
-    
+
 `POST /user/createWithList`
 
 Creates list of users with given input array
 
-===== Description 
+===== Description
 
 
 
@@ -1309,16 +1309,16 @@ Creates list of users with given input array
 ====== Body Parameter
 
 [cols="2,3,1,1,1"]
-|===         
+|===
 |Name| Description| Required| Default| Pattern
 
-| User 
-| List of user object <<User>> 
-| X 
-|  
-|  
+| User
+a| List of user object <<User>>
+| X
+| 
+| 
 
-|===         
+|===
 
 
 
@@ -1333,17 +1333,17 @@ Creates list of users with given input array
 
 ===== Responses
 
-.http response codes
+.HTTP Response Codes
 [cols="2,3,1"]
-|===         
-| Code | Message | Datatype 
+|===
+| Code | Message | Datatype
 
 
 | 0
 | successful operation
 |  <<>>
 
-|===         
+|===
 
 ===== Samples
 
@@ -1369,12 +1369,12 @@ endif::internal-generation[]
 
 [.deleteUser]
 ==== deleteUser
-    
+
 `DELETE /user/{username}`
 
 Delete user
 
-===== Description 
+===== Description
 
 This can only be done by the logged in user.
 
@@ -1388,16 +1388,16 @@ This can only be done by the logged in user.
 ====== Path Parameters
 
 [cols="2,3,1,1,1"]
-|===         
+|===
 |Name| Description| Required| Default| Pattern
 
-| username 
-| The name that needs to be deleted  
-| X 
-| null 
-|  
+| username
+a| The name that needs to be deleted 
+| X
+| null
+| 
 
-|===         
+|===
 
 
 
@@ -1413,10 +1413,10 @@ This can only be done by the logged in user.
 
 ===== Responses
 
-.http response codes
+.HTTP Response Codes
 [cols="2,3,1"]
-|===         
-| Code | Message | Datatype 
+|===
+| Code | Message | Datatype
 
 
 | 400
@@ -1428,7 +1428,7 @@ This can only be done by the logged in user.
 | User not found
 |  <<>>
 
-|===         
+|===
 
 ===== Samples
 
@@ -1454,12 +1454,12 @@ endif::internal-generation[]
 
 [.getUserByName]
 ==== getUserByName
-    
+
 `GET /user/{username}`
 
 Get user by user name
 
-===== Description 
+===== Description
 
 
 
@@ -1473,16 +1473,16 @@ Get user by user name
 ====== Path Parameters
 
 [cols="2,3,1,1,1"]
-|===         
+|===
 |Name| Description| Required| Default| Pattern
 
-| username 
-| The name that needs to be fetched. Use user1 for testing.  
-| X 
-| null 
-|  
+| username
+a| The name that needs to be fetched. Use user1 for testing. 
+| X
+| null
+| 
 
-|===         
+|===
 
 
 
@@ -1501,10 +1501,10 @@ Get user by user name
 
 ===== Responses
 
-.http response codes
+.HTTP Response Codes
 [cols="2,3,1"]
-|===         
-| Code | Message | Datatype 
+|===
+| Code | Message | Datatype
 
 
 | 200
@@ -1521,7 +1521,7 @@ Get user by user name
 | User not found
 |  <<>>
 
-|===         
+|===
 
 ===== Samples
 
@@ -1547,12 +1547,12 @@ endif::internal-generation[]
 
 [.loginUser]
 ==== loginUser
-    
+
 `GET /user/login`
 
 Logs user into the system
 
-===== Description 
+===== Description
 
 
 
@@ -1570,22 +1570,22 @@ Logs user into the system
 ====== Query Parameters
 
 [cols="2,3,1,1,1"]
-|===         
+|===
 |Name| Description| Required| Default| Pattern
 
-| username 
-| The user name for login  
-| X 
-| null 
-| /^[a-zA-Z0-9]+[a-zA-Z0-9\\.\\-_]*[a-zA-Z0-9]+$/ 
+| username
+a| The user name for login 
+| X
+| null
+| /^[a-zA-Z0-9]+[a-zA-Z0-9\.\-_]*[a-zA-Z0-9]+$/
 
-| password 
-| The password for login in clear text  
-| X 
-| null 
-|  
+| password
+a| The password for login in clear text 
+| X
+| null
+| 
 
-|===         
+|===
 
 
 ===== Return Type
@@ -1601,10 +1601,10 @@ Logs user into the system
 
 ===== Responses
 
-.http response codes
+.HTTP Response Codes
 [cols="2,3,1"]
-|===         
-| Code | Message | Datatype 
+|===
+| Code | Message | Datatype
 
 
 | 200
@@ -1616,7 +1616,7 @@ Logs user into the system
 | Invalid username/password supplied
 |  <<>>
 
-|===         
+|===
 
 ===== Samples
 
@@ -1642,12 +1642,12 @@ endif::internal-generation[]
 
 [.logoutUser]
 ==== logoutUser
-    
+
 `GET /user/logout`
 
 Logs out current logged in user session
 
-===== Description 
+===== Description
 
 
 
@@ -1673,17 +1673,17 @@ Logs out current logged in user session
 
 ===== Responses
 
-.http response codes
+.HTTP Response Codes
 [cols="2,3,1"]
-|===         
-| Code | Message | Datatype 
+|===
+| Code | Message | Datatype
 
 
 | 0
 | successful operation
 |  <<>>
 
-|===         
+|===
 
 ===== Samples
 
@@ -1709,12 +1709,12 @@ endif::internal-generation[]
 
 [.updateUser]
 ==== updateUser
-    
+
 `PUT /user/{username}`
 
 Updated user
 
-===== Description 
+===== Description
 
 This can only be done by the logged in user.
 
@@ -1728,30 +1728,30 @@ This can only be done by the logged in user.
 ====== Path Parameters
 
 [cols="2,3,1,1,1"]
-|===         
+|===
 |Name| Description| Required| Default| Pattern
 
-| username 
-| name that need to be deleted  
-| X 
-| null 
-|  
+| username
+a| name that need to be deleted 
+| X
+| null
+| 
 
-|===         
+|===
 
 ====== Body Parameter
 
 [cols="2,3,1,1,1"]
-|===         
+|===
 |Name| Description| Required| Default| Pattern
 
-| User 
-| Updated user object <<User>> 
-| X 
-|  
-|  
+| User
+a| Updated user object <<User>>
+| X
+| 
+| 
 
-|===         
+|===
 
 
 
@@ -1766,10 +1766,10 @@ This can only be done by the logged in user.
 
 ===== Responses
 
-.http response codes
+.HTTP Response Codes
 [cols="2,3,1"]
-|===         
-| Code | Message | Datatype 
+|===
+| Code | Message | Datatype
 
 
 | 400
@@ -1781,7 +1781,7 @@ This can only be done by the logged in user.
 | User not found
 |  <<>>
 
-|===         
+|===
 
 ===== Samples
 
@@ -1814,30 +1814,35 @@ endif::internal-generation[]
 
 Describes the result of uploading an image resource
 
+
 [.fields-ApiResponse]
-[cols="2,1,2,4,1"]
-|===         
-| Field Name| Required| Type| Description| Format
+[cols="2,1,1,2,4,1"]
+|===
+| Field Name| Required| Nullable | Type| Description | Format
 
-| code 
-|  
-| Integer  
+| code
 | 
-| int32 
+| 
+|   Integer  
+a| 
+| int32    
 
-| type 
-|  
-| String  
+| type
 | 
-|  
+| 
+|   String  
+a| 
+|     
 
-| message 
-|  
-| String  
+| message
 | 
-|  
+| 
+|   String  
+a| 
+|     
 
 |===
+
 
 
 [#Category]
@@ -1845,74 +1850,28 @@ Describes the result of uploading an image resource
 
 A category for a pet
 
+
 [.fields-Category]
-[cols="2,1,2,4,1"]
-|===         
-| Field Name| Required| Type| Description| Format
+[cols="2,1,1,2,4,1"]
+|===
+| Field Name| Required| Nullable | Type| Description | Format
 
-| id 
-|  
-| Long  
+| id
 | 
-| int64 
-
-| name 
-|  
-| String  
 | 
-|  
+|   Long  
+a| 
+| int64    
+
+| name
+| 
+| 
+|   String  
+a| 
+|     
 
 |===
 
-
-[#InlineObject]
-=== _InlineObject_ 
-
-
-
-[.fields-InlineObject]
-[cols="2,1,2,4,1"]
-|===         
-| Field Name| Required| Type| Description| Format
-
-| name 
-|  
-| String  
-| Updated name of the pet
-|  
-
-| status 
-|  
-| String  
-| Updated status of the pet
-|  
-
-|===
-
-
-[#InlineObject1]
-=== _InlineObject1_ 
-
-
-
-[.fields-InlineObject1]
-[cols="2,1,2,4,1"]
-|===         
-| Field Name| Required| Type| Description| Format
-
-| additionalMetadata 
-|  
-| String  
-| Additional data to pass to server
-|  
-
-| file 
-|  
-| File  
-| file to upload
-| binary 
-
-|===
 
 
 [#Order]
@@ -1920,48 +1879,56 @@ A category for a pet
 
 An order for a pets from the pet store
 
+
 [.fields-Order]
-[cols="2,1,2,4,1"]
-|===         
-| Field Name| Required| Type| Description| Format
+[cols="2,1,1,2,4,1"]
+|===
+| Field Name| Required| Nullable | Type| Description | Format
 
-| id 
-|  
-| Long  
+| id
 | 
-| int64 
-
-| petId 
-|  
-| Long  
 | 
-| int64 
+|   Long  
+a| 
+| int64    
 
-| quantity 
-|  
-| Integer  
+| petId
 | 
-| int32 
-
-| shipDate 
-|  
-| Date  
 | 
-| date-time 
+|   Long  
+a| 
+| int64    
 
-| status 
-|  
-| String  
-| Order Status
-|  _Enum:_ placed, approved, delivered, 
-
-| complete 
-|  
-| Boolean  
+| quantity
 | 
-|  
+| 
+|   Integer  
+a| 
+| int32    
+
+| shipDate
+| 
+| 
+|   Date  
+a| 
+| date-time    
+
+| status
+| 
+| 
+|  <<String>>  
+a| Order Status
+|  _Enum:_ placed, approved, delivered,  
+
+| complete
+| 
+| 
+|   Boolean  
+a| 
+|     
 
 |===
+
 
 
 [#Pet]
@@ -1969,48 +1936,56 @@ An order for a pets from the pet store
 
 A pet for sale in the pet store
 
+
 [.fields-Pet]
-[cols="2,1,2,4,1"]
-|===         
-| Field Name| Required| Type| Description| Format
+[cols="2,1,1,2,4,1"]
+|===
+| Field Name| Required| Nullable | Type| Description | Format
 
-| id 
-|  
-| Long  
+| id
 | 
-| int64 
-
-| category 
-|  
-| Category  
 | 
-|  
+|   Long  
+a| 
+| int64    
 
-| name 
-| X 
-| String  
+| category
 | 
-|  
-
-| photoUrls 
-| X 
-| List  of <<string>> 
 | 
-|  
+| <<Category>>    
+a| 
+|     
 
-| tags 
-|  
-| List  of <<Tag>> 
+| name
+| X
 | 
-|  
+|   String  
+a| 
+|     
 
-| status 
-|  
-| String  
-| pet status in the store
-|  _Enum:_ available, pending, sold, 
+| photoUrls
+| X
+| 
+|   List   of <<string>>
+a| 
+|     
+
+| tags
+| 
+| 
+|   List   of <<Tag>>
+a| 
+|     
+
+| status
+| 
+| 
+|  <<String>>  
+a| pet status in the store
+|  _Enum:_ available, pending, sold,  
 
 |===
+
 
 
 [#Tag]
@@ -2018,24 +1993,28 @@ A pet for sale in the pet store
 
 A tag for a pet
 
+
 [.fields-Tag]
-[cols="2,1,2,4,1"]
-|===         
-| Field Name| Required| Type| Description| Format
+[cols="2,1,1,2,4,1"]
+|===
+| Field Name| Required| Nullable | Type| Description | Format
 
-| id 
-|  
-| Long  
+| id
 | 
-| int64 
+| 
+|   Long  
+a| 
+| int64    
 
-| name 
-|  
-| String  
+| name
 | 
-|  
+| 
+|   String  
+a| 
+|     
 
 |===
+
 
 
 [#User]
@@ -2043,59 +2022,69 @@ A tag for a pet
 
 A User who is purchasing from the pet store
 
+
 [.fields-User]
-[cols="2,1,2,4,1"]
-|===         
-| Field Name| Required| Type| Description| Format
+[cols="2,1,1,2,4,1"]
+|===
+| Field Name| Required| Nullable | Type| Description | Format
 
-| id 
-|  
-| Long  
+| id
 | 
-| int64 
-
-| username 
-|  
-| String  
 | 
-|  
+|   Long  
+a| 
+| int64    
 
-| firstName 
-|  
-| String  
+| username
 | 
-|  
-
-| lastName 
-|  
-| String  
 | 
-|  
+|   String  
+a| 
+|     
 
-| email 
-|  
-| String  
+| firstName
 | 
-|  
-
-| password 
-|  
-| String  
 | 
-|  
+|   String  
+a| 
+|     
 
-| phone 
-|  
-| String  
+| lastName
 | 
-|  
+| 
+|   String  
+a| 
+|     
 
-| userStatus 
-|  
-| Integer  
-| User Status
-| int32 
+| email
+| 
+| 
+|   String  
+a| 
+|     
+
+| password
+| 
+| 
+|   String  
+a| 
+|     
+
+| phone
+| 
+| 
+|   String  
+a| 
+|     
+
+| userStatus
+| 
+| 
+|   Integer  
+a| User Status
+| int32    
 
 |===
+
 
 

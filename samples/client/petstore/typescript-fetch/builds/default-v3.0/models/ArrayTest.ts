@@ -12,13 +12,14 @@
  * Do not edit the class manually.
  */
 
-import { exists, mapValues } from '../runtime';
+import { mapValues } from '../runtime';
+import type { ReadOnlyFirst } from './ReadOnlyFirst';
 import {
-    ReadOnlyFirst,
     ReadOnlyFirstFromJSON,
     ReadOnlyFirstFromJSONTyped,
     ReadOnlyFirstToJSON,
-} from './';
+    ReadOnlyFirstToJSONTyped,
+} from './ReadOnlyFirst';
 
 /**
  * 
@@ -28,22 +29,23 @@ import {
 export interface ArrayTest {
     /**
      * 
-     * @type {Array<string>}
-     * @memberof ArrayTest
      */
     arrayOfString?: Array<string>;
     /**
      * 
-     * @type {Array<Array<number>>}
-     * @memberof ArrayTest
      */
     arrayArrayOfInteger?: Array<Array<number>>;
     /**
      * 
-     * @type {Array<Array<ReadOnlyFirst>>}
-     * @memberof ArrayTest
      */
     arrayArrayOfModel?: Array<Array<ReadOnlyFirst>>;
+}
+
+/**
+ * Check if a given object implements the ArrayTest interface.
+ */
+export function instanceOfArrayTest(value: object): value is ArrayTest {
+    return true;
 }
 
 export function ArrayTestFromJSON(json: any): ArrayTest {
@@ -51,29 +53,31 @@ export function ArrayTestFromJSON(json: any): ArrayTest {
 }
 
 export function ArrayTestFromJSONTyped(json: any, ignoreDiscriminator: boolean): ArrayTest {
-    if ((json === undefined) || (json === null)) {
+    if (json == null) {
         return json;
     }
     return {
         
-        'arrayOfString': !exists(json, 'array_of_string') ? undefined : json['array_of_string'],
-        'arrayArrayOfInteger': !exists(json, 'array_array_of_integer') ? undefined : json['array_array_of_integer'],
-        'arrayArrayOfModel': !exists(json, 'array_array_of_model') ? undefined : json['array_array_of_model'],
+        'arrayOfString': json['array_of_string'] == null ? undefined : json['array_of_string'],
+        'arrayArrayOfInteger': json['array_array_of_integer'] == null ? undefined : json['array_array_of_integer'],
+        'arrayArrayOfModel': json['array_array_of_model'] == null ? undefined : json['array_array_of_model'],
     };
 }
 
-export function ArrayTestToJSON(value?: ArrayTest | null): any {
-    if (value === undefined) {
-        return undefined;
+export function ArrayTestToJSON(json: any): ArrayTest {
+    return ArrayTestToJSONTyped(json, false);
+}
+
+export function ArrayTestToJSONTyped(value?: ArrayTest | null, ignoreDiscriminator: boolean = false): any {
+    if (value == null) {
+        return value;
     }
-    if (value === null) {
-        return null;
-    }
+
     return {
         
-        'array_of_string': value.arrayOfString,
-        'array_array_of_integer': value.arrayArrayOfInteger,
-        'array_array_of_model': value.arrayArrayOfModel,
+        'array_of_string': value['arrayOfString'],
+        'array_array_of_integer': value['arrayArrayOfInteger'],
+        'array_array_of_model': value['arrayArrayOfModel'],
     };
 }
 

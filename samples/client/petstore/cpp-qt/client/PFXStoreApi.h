@@ -15,6 +15,7 @@
 #include "PFXHelpers.h"
 #include "PFXHttpRequest.h"
 #include "PFXServerConfiguration.h"
+#include "PFXOauth.h"
 
 #include "PFXOrder.h"
 #include <QMap>
@@ -38,6 +39,7 @@ public:
     void initializeServerConfigs();
     int setDefaultServerValue(int serverIndex,const QString &operation, const QString &variable,const QString &val);
     void setServerIndex(const QString &operation, int serverIndex);
+    void setServerIndex(int serverIndex);
     void setApiKey(const QString &apiKeyName, const QString &apiKey);
     void setBearerToken(const QString &token);
     void setUsername(const QString &username);
@@ -59,23 +61,30 @@ public:
     /**
     * @param[in]  order_id QString [required]
     */
-    void deleteOrder(const QString &order_id);
+    virtual void deleteOrder(const QString &order_id);
 
 
-    void getInventory();
+    virtual void getInventory();
 
     /**
     * @param[in]  order_id qint64 [required]
     */
-    void getOrderById(const qint64 &order_id);
+    virtual void getOrderById(const qint64 &order_id);
 
     /**
-    * @param[in]  body PFXOrder [required]
+    * @param[in]  pfx_order PFXOrder [required]
     */
-    void placeOrder(const PFXOrder &body);
+    virtual void placeOrder(const PFXOrder &pfx_order);
 
 
 private:
+    enum class OauthMethod : int {
+        INVALID_VALUE_OPENAPI_GENERATED = 0,
+        ImplicitFlow = 1,
+        AuthorizationFlow = 2,
+        ClientCredentialsFlow = 3,
+        ResourceOwnerPasswordFlow = 4
+    };
     QMap<QString,int> _serverIndices;
     QMap<QString,QList<PFXServerConfiguration>> _serverConfigs;
     QMap<QString, QString> _apiKeys;
@@ -88,36 +97,48 @@ private:
     QMap<QString, QString> _defaultHeaders;
     bool _isResponseCompressionEnabled;
     bool _isRequestCompressionEnabled;
+    PFXHttpRequestInput _latestInput;
+    PFXHttpRequestWorker *_latestWorker;
+    QStringList _latestScope;
+    OauthCode _authFlow;
+    OauthImplicit _implicitFlow;
+    OauthCredentials _credentialFlow;
+    OauthPassword _passwordFlow;
+    OauthMethod _OauthMethod = OauthMethod::INVALID_VALUE_OPENAPI_GENERATED;
 
     void deleteOrderCallback(PFXHttpRequestWorker *worker);
     void getInventoryCallback(PFXHttpRequestWorker *worker);
     void getOrderByIdCallback(PFXHttpRequestWorker *worker);
     void placeOrderCallback(PFXHttpRequestWorker *worker);
 
-signals:
+Q_SIGNALS:
 
     void deleteOrderSignal();
     void getInventorySignal(QMap<QString, qint32> summary);
     void getOrderByIdSignal(PFXOrder summary);
     void placeOrderSignal(PFXOrder summary);
 
+
     void deleteOrderSignalFull(PFXHttpRequestWorker *worker);
     void getInventorySignalFull(PFXHttpRequestWorker *worker, QMap<QString, qint32> summary);
     void getOrderByIdSignalFull(PFXHttpRequestWorker *worker, PFXOrder summary);
     void placeOrderSignalFull(PFXHttpRequestWorker *worker, PFXOrder summary);
 
-    void deleteOrderSignalE(QNetworkReply::NetworkError error_type, QString error_str);
-    void getInventorySignalE(QMap<QString, qint32> summary, QNetworkReply::NetworkError error_type, QString error_str);
-    void getOrderByIdSignalE(PFXOrder summary, QNetworkReply::NetworkError error_type, QString error_str);
-    void placeOrderSignalE(PFXOrder summary, QNetworkReply::NetworkError error_type, QString error_str);
+    void deleteOrderSignalError(QNetworkReply::NetworkError error_type, const QString &error_str);
+    void getInventorySignalError(QMap<QString, qint32> summary, QNetworkReply::NetworkError error_type, const QString &error_str);
+    void getOrderByIdSignalError(PFXOrder summary, QNetworkReply::NetworkError error_type, const QString &error_str);
+    void placeOrderSignalError(PFXOrder summary, QNetworkReply::NetworkError error_type, const QString &error_str);
 
-    void deleteOrderSignalEFull(PFXHttpRequestWorker *worker, QNetworkReply::NetworkError error_type, QString error_str);
-    void getInventorySignalEFull(PFXHttpRequestWorker *worker, QNetworkReply::NetworkError error_type, QString error_str);
-    void getOrderByIdSignalEFull(PFXHttpRequestWorker *worker, QNetworkReply::NetworkError error_type, QString error_str);
-    void placeOrderSignalEFull(PFXHttpRequestWorker *worker, QNetworkReply::NetworkError error_type, QString error_str);
+    void deleteOrderSignalErrorFull(PFXHttpRequestWorker *worker, QNetworkReply::NetworkError error_type, const QString &error_str);
+    void getInventorySignalErrorFull(PFXHttpRequestWorker *worker, QNetworkReply::NetworkError error_type, const QString &error_str);
+    void getOrderByIdSignalErrorFull(PFXHttpRequestWorker *worker, QNetworkReply::NetworkError error_type, const QString &error_str);
+    void placeOrderSignalErrorFull(PFXHttpRequestWorker *worker, QNetworkReply::NetworkError error_type, const QString &error_str);
 
     void abortRequestsSignal();
     void allPendingRequestsCompleted();
+
+public Q_SLOTS:
+    void tokenAvailable();
 };
 
 } // namespace test_namespace

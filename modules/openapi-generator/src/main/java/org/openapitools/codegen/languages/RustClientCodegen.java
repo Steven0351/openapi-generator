@@ -17,53 +17,100 @@
 
 package org.openapitools.codegen.languages;
 
-import com.google.common.base.Strings;
-import io.swagger.v3.oas.models.media.ArraySchema;
+import com.google.common.collect.ImmutableMap;
+import com.samskivert.mustache.Mustache;
+import com.samskivert.mustache.Mustache.Lambda;
+import com.samskivert.mustache.Template;
+import io.swagger.v3.oas.models.media.Discriminator;
 import io.swagger.v3.oas.models.media.Schema;
-import io.swagger.v3.oas.models.media.StringSchema;
 import io.swagger.v3.parser.util.SchemaTypeUtil;
+import lombok.AccessLevel;
+import lombok.Setter;
 import org.openapitools.codegen.*;
 import org.openapitools.codegen.meta.features.*;
+import org.openapitools.codegen.model.ModelMap;
+import org.openapitools.codegen.model.ModelsMap;
+import org.openapitools.codegen.model.OperationMap;
+import org.openapitools.codegen.model.OperationsMap;
+import org.openapitools.codegen.templating.mustache.ReplaceAllLambda;
 import org.openapitools.codegen.utils.ModelUtils;
 import org.openapitools.codegen.utils.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.Writer;
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
-import static org.openapitools.codegen.utils.StringUtils.camelize;
-import static org.openapitools.codegen.utils.StringUtils.underscore;
-
-public class RustClientCodegen extends DefaultCodegen implements CodegenConfig {
+/**
+ * <p>Mustache templates are located in {@code src/main/resources/rust/}.
+ */
+public class RustClientCodegen extends AbstractRustCodegen implements CodegenConfig {
     private final Logger LOGGER = LoggerFactory.getLogger(RustClientCodegen.class);
-    private boolean useSingleRequestParameter = false;
-    private boolean supportAsync = true;
+    @Setter(AccessLevel.PRIVATE) private boolean useSingleRequestParameter = false;
+    @Setter(AccessLevel.PRIVATE) private boolean supportAsync = true;
+    @Setter(AccessLevel.PRIVATE) private boolean supportMiddleware = false;
+    @Setter(AccessLevel.PRIVATE) private boolean useSerdePathToError = false;
+    @Setter(AccessLevel.PRIVATE) private boolean supportTokenSource = false;
+    private boolean useChrono = true;
     private boolean supportMultipleResponses = false;
+    private boolean withAWSV4Signature = false;
+    @Setter private boolean preferUnsignedInt = false;
+    @Setter private boolean bestFitInt = false;
+    @Setter private boolean avoidBoxedModels = false;
+    private List<String> reqwestDefaultFeatures = Arrays.asList("native-tls");
 
     public static final String PACKAGE_NAME = "packageName";
+    public static final String EXTERN_CRATE_NAME = "externCrateName";
     public static final String PACKAGE_VERSION = "packageVersion";
     public static final String HYPER_LIBRARY = "hyper";
+    public static final String HYPER0X_LIBRARY = "hyper0x";
     public static final String REQWEST_LIBRARY = "reqwest";
+    public static final String REQWEST_TRAIT_LIBRARY = "reqwest-trait";
+    public static final String REQWEST_TRAIT_LIBRARY_ATTR = "reqwestTrait";
     public static final String SUPPORT_ASYNC = "supportAsync";
+    public static final String SUPPORT_MIDDLEWARE = "supportMiddleware";
+    public static final String USE_SERDE_PATH_TO_ERROR = "useSerdePathToError";
+    public static final String SUPPORT_TOKEN_SOURCE = "supportTokenSource";
+    public static final String USE_CHRONO = "useChrono";
     public static final String SUPPORT_MULTIPLE_RESPONSES = "supportMultipleResponses";
+    public static final String PREFER_UNSIGNED_INT = "preferUnsignedInt";
+    public static final String BEST_FIT_INT = "bestFitInt";
+    public static final String AVOID_BOXED_MODELS = "avoidBoxedModels";
+    public static final String TOP_LEVEL_API_CLIENT = "topLevelApiClient";
+    public static final String MOCKALL = "mockall";
+    public static final String BON_BUILDER = "useBonBuilder";
+    public static final String REQWEST_DEFAULT_FEATURES = "reqwestDefaultFeatures";
 
-    protected String packageName = "openapi";
-    protected String packageVersion = "1.0.0";
+    @Setter protected String packageName = "openapi";
+    @Setter protected String packageVersion = "1.0.0";
     protected String apiDocPath = "docs/";
     protected String modelDocPath = "docs/";
     protected String apiFolder = "src/apis";
     protected String modelFolder = "src/models";
-    protected String enumSuffix = ""; // default to empty string for backward compatibility
+    // The API has at least one UUID type.
+    // If the API does not contain any UUIDs we do not need depend on the `uuid` crate
+    private boolean hasUUIDs = false;
+    // The API has at least one Chrono type.
+    // If the API does not contain any Dates or DateTimes we do not need to depend on the `chrono` crate
+    private boolean usesChronoTypes = false;
 
+    @Override
     public CodegenType getTag() {
         return CodegenType.CLIENT;
     }
 
+    @Override
     public String getName() {
         return "rust";
     }
 
+    @Override
     public String getHelp() {
         return "Generates a Rust client library (beta).";
     }
@@ -76,8 +123,10 @@ public class RustClientCodegen extends DefaultCodegen implements CodegenConfig {
                 .wireFormatFeatures(EnumSet.of(WireFormatFeature.JSON, WireFormatFeature.XML, WireFormatFeature.Custom))
                 .securityFeatures(EnumSet.of(
                         SecurityFeature.BasicAuth,
+                        SecurityFeature.BearerToken,
                         SecurityFeature.ApiKey,
-                        SecurityFeature.OAuth2_Implicit
+                        SecurityFeature.OAuth2_Implicit,
+                        SecurityFeature.AWSV4Signature
                 ))
                 .excludeGlobalFeatures(
                         GlobalFeature.XMLStructureDefinitions,
@@ -90,6 +139,9 @@ public class RustClientCodegen extends DefaultCodegen implements CodegenConfig {
                 )
                 .excludeParameterFeatures(
                         ParameterFeature.Cookie
+                )
+                .includeSchemaSupportFeatures(
+                        SchemaSupportFeature.oneOf
                 )
                 .includeClientModificationFeatures(
                         ClientModificationFeature.BasePath,
@@ -108,29 +160,13 @@ public class RustClientCodegen extends DefaultCodegen implements CodegenConfig {
 
         embeddedTemplateDir = templateDir = "rust";
 
-        setReservedWordsLowerCase(
-                Arrays.asList(
-                        "abstract", "alignof", "as", "become", "box",
-                        "break", "const", "continue", "crate", "do",
-                        "else", "enum", "extern", "false", "final",
-                        "fn", "for", "if", "impl", "in",
-                        "let", "loop", "macro", "match", "mod",
-                        "move", "mut", "offsetof", "override", "priv",
-                        "proc", "pub", "pure", "ref", "return",
-                        "Self", "self", "sizeof", "static", "struct",
-                        "super", "trait", "true", "type", "typeof",
-                        "unsafe", "unsized", "use", "virtual", "where",
-                        "while", "yield", "async", "await", "dyn", "try"
-                )
-        );
-
-        defaultIncludes = new HashSet<String>(
+        defaultIncludes = new HashSet<>(
                 Arrays.asList(
                         "map",
                         "array")
         );
 
-        languageSpecificPrimitives = new HashSet<String>(
+        languageSpecificPrimitives = new HashSet<>(
                 Arrays.asList(
                         "i8", "i16", "i32", "i64",
                         "u8", "u16", "u32", "u64",
@@ -145,16 +181,22 @@ public class RustClientCodegen extends DefaultCodegen implements CodegenConfig {
         typeMapping.clear();
         typeMapping.put("integer", "i32");
         typeMapping.put("long", "i64");
-        typeMapping.put("number", "f32");
+        typeMapping.put("number", "f64");
         typeMapping.put("float", "f32");
         typeMapping.put("double", "f64");
         typeMapping.put("boolean", "bool");
         typeMapping.put("string", "String");
-        typeMapping.put("UUID", "String");
+        typeMapping.put("array", "Vec");
+        typeMapping.put("map", "std::collections::HashMap");
+        typeMapping.put("UUID", "uuid::Uuid");
         typeMapping.put("URI", "String");
-        typeMapping.put("date", "string");
-        typeMapping.put("DateTime", "String");
+        // Temporarily set the default to chrono. Then when `processOpts` is called it will update to not use chrono if specified
+        typeMapping.put("date", "chrono::NaiveDate");
+        typeMapping.put("DateTime", "chrono::DateTime<chrono::FixedOffset>");
+
         typeMapping.put("password", "String");
+        typeMapping.put("decimal", "String");
+
         // TODO(bcourtine): review file mapping.
         // I tried to map as "std::io::File", but Reqwest multipart file requires a "AsRef<Path>" param.
         // Getting a file from a Path is simple, but the opposite is difficult. So I map as "std::path::Path".
@@ -178,12 +220,39 @@ public class RustClientCodegen extends DefaultCodegen implements CodegenConfig {
                 .defaultValue(Boolean.FALSE.toString()));
         cliOptions.add(new CliOption(SUPPORT_ASYNC, "If set, generate async function call instead. This option is for 'reqwest' library only", SchemaTypeUtil.BOOLEAN_TYPE)
                 .defaultValue(Boolean.TRUE.toString()));
-        cliOptions.add(new CliOption(SUPPORT_MULTIPLE_RESPONSES, "If set, return type wraps an enum of all possible 2xx schemas. This option is for 'reqwest' library only", SchemaTypeUtil.BOOLEAN_TYPE)
-            .defaultValue(Boolean.FALSE.toString()));
+        cliOptions.add(new CliOption(SUPPORT_MIDDLEWARE, "If set, add support for reqwest-middleware. This option is for 'reqwest' and 'reqwest-trait' library only", SchemaTypeUtil.BOOLEAN_TYPE)
+                .defaultValue(Boolean.FALSE.toString()));
+        cliOptions.add(new CliOption(USE_SERDE_PATH_TO_ERROR, "If set, use the serde_path_to_error library to enhance serde error messages. This option is for 'reqwest' and 'reqwest-trait' library only", SchemaTypeUtil.BOOLEAN_TYPE)
+                .defaultValue(Boolean.FALSE.toString()));
+        cliOptions.add(new CliOption(SUPPORT_TOKEN_SOURCE, "If set, add support for google-cloud-token. This option is for 'reqwest' and 'reqwest-trait' library only and requires the 'supportAsync' option", SchemaTypeUtil.BOOLEAN_TYPE)
+                .defaultValue(Boolean.FALSE.toString()));
+        cliOptions.add(new CliOption(USE_CHRONO, "If set, use chrono to represent date time objects (`chrono::NaiveDate` for `date` and `chrono::DateTime<chrono::FixedOffset>>` for `date-time`)", SchemaTypeUtil.BOOLEAN_TYPE)
+                .defaultValue(Boolean.TRUE.toString()));
+        cliOptions.add(new CliOption(SUPPORT_MULTIPLE_RESPONSES, "If set, return type wraps an enum of all possible 2xx schemas. This option is for 'reqwest' and 'reqwest-trait' library only", SchemaTypeUtil.BOOLEAN_TYPE)
+                .defaultValue(Boolean.FALSE.toString()));
         cliOptions.add(new CliOption(CodegenConstants.ENUM_NAME_SUFFIX, CodegenConstants.ENUM_NAME_SUFFIX_DESC).defaultValue(this.enumSuffix));
+        cliOptions.add(new CliOption(CodegenConstants.WITH_AWSV4_SIGNATURE_COMMENT, CodegenConstants.WITH_AWSV4_SIGNATURE_COMMENT_DESC, SchemaTypeUtil.BOOLEAN_TYPE)
+                .defaultValue(Boolean.FALSE.toString()));
+        cliOptions.add(new CliOption(PREFER_UNSIGNED_INT, "Prefer unsigned integers where minimum value is >= 0", SchemaTypeUtil.BOOLEAN_TYPE)
+                .defaultValue(Boolean.FALSE.toString()));
+        cliOptions.add(new CliOption(BEST_FIT_INT, "Use best fitting integer type where minimum or maximum is set", SchemaTypeUtil.BOOLEAN_TYPE)
+                .defaultValue(Boolean.FALSE.toString()));
+        cliOptions.add(new CliOption(AVOID_BOXED_MODELS, "If set, `Box<T>` will not be used for models", SchemaTypeUtil.BOOLEAN_TYPE)
+                .defaultValue(Boolean.FALSE.toString()));
+        cliOptions.add(new CliOption(MOCKALL, "Adds `#[automock]` from the mockall crate to api traits. This option is for 'reqwest-trait' library only", SchemaTypeUtil.BOOLEAN_TYPE)
+                .defaultValue(Boolean.FALSE.toString()));
+        cliOptions.add(new CliOption(TOP_LEVEL_API_CLIENT, "Creates a top level `Api` trait and `ApiClient` struct that contain all Apis. This option is for 'reqwest-trait' library only", SchemaTypeUtil.BOOLEAN_TYPE)
+                .defaultValue(Boolean.FALSE.toString()));
+        cliOptions.add(new CliOption(BON_BUILDER, "Use the bon crate for building parameter types. This option is for the 'reqwest-trait' library only", SchemaTypeUtil.BOOLEAN_TYPE)
+                .defaultValue(Boolean.FALSE.toString()));
+        cliOptions.add(new CliOption(REQWEST_DEFAULT_FEATURES, "Default features for the reqwest dependency (comma-separated). Use empty for no defaults. This option is for 'reqwest' and 'reqwest-trait' library only.")
+                .defaultValue("native-tls"));
 
-        supportedLibraries.put(HYPER_LIBRARY, "HTTP client: Hyper.");
+        supportedLibraries.put(HYPER_LIBRARY, "HTTP client: Hyper (v1.x).");
+        supportedLibraries.put(HYPER0X_LIBRARY, "HTTP client: Hyper (v0.x).");
         supportedLibraries.put(REQWEST_LIBRARY, "HTTP client: Reqwest.");
+        supportedLibraries.put(REQWEST_TRAIT_LIBRARY, "HTTP client: Reqwest (trait based).");
+
 
         CliOption libraryOption = new CliOption(CodegenConstants.LIBRARY, "library template (sub-template) to use.");
         libraryOption.setEnum(supportedLibraries);
@@ -194,60 +263,236 @@ public class RustClientCodegen extends DefaultCodegen implements CodegenConfig {
     }
 
     @Override
-    public Map<String, Object> postProcessModels(Map<String, Object> objs) {
-        // process enum in models
-        return postProcessModelsEnum(objs);
-    }
+    public CodegenModel fromModel(String name, Schema model) {
+        CodegenModel mdl = super.fromModel(name, model);
 
-    @SuppressWarnings({"static-method", "unchecked"})
-    public Map<String, Object> postProcessAllModels(Map<String, Object> objs) {
-        // Index all CodegenModels by model name.
-        Map<String, CodegenModel> allModels = new HashMap<>();
+        // set correct names and baseNames to oneOf in composed-schema to use as enum variant names & mapping
+        if (mdl.getComposedSchemas() != null && mdl.getComposedSchemas().getOneOf() != null
+                && !mdl.getComposedSchemas().getOneOf().isEmpty()) {
 
-        for (Map.Entry<String, Object> entry : objs.entrySet()) {
-            String modelName = toModelName(entry.getKey());
-            Map<String, Object> inner = (Map<String, Object>) entry.getValue();
-            List<Map<String, Object>> models = (List<Map<String, Object>>) inner.get("models");
-            for (Map<String, Object> mo : models) {
-                CodegenModel cm = (CodegenModel) mo.get("model");
-                allModels.put(modelName, cm);
+            List<CodegenProperty> newOneOfs = mdl.getComposedSchemas().getOneOf().stream()
+                    .map(CodegenProperty::clone)
+                    .collect(Collectors.toList());
+            List<Schema> schemas = ModelUtils.getInterfaces(model);
+            if (newOneOfs.size() != schemas.size()) {
+                // For safety reasons, this should never happen unless there is an error in the code
+                throw new RuntimeException("oneOf size does not match the model");
             }
+
+            Map<String, String> refsMapping = Optional.ofNullable(model.getDiscriminator())
+                    .map(Discriminator::getMapping).orElse(Collections.emptyMap());
+
+            // Reverse mapped references to use as baseName for oneOF, but different keys may point to the same $ref.
+            // Thus, we group them by the value
+            Map<String, List<String>> mappedNamesByRef = refsMapping.entrySet().stream()
+                    .collect(Collectors.groupingBy(Map.Entry::getValue,
+                            Collectors.mapping(Map.Entry::getKey, Collectors.toList())
+                    ));
+
+            for (int i = 0; i < newOneOfs.size(); i++) {
+                CodegenProperty oneOf = newOneOfs.get(i);
+                Schema schema = schemas.get(i);
+
+                if (mappedNamesByRef.containsKey(schema.get$ref())) {
+                    // prefer mapped names if present
+                    // remove mapping not in order not to reuse for the next occurrence of the ref
+                    List<String> names = mappedNamesByRef.get(schema.get$ref());
+                    String mappedName = names.remove(0);
+                    oneOf.setBaseName(mappedName);
+                    oneOf.setName(toModelName(mappedName));
+                } else if (!org.apache.commons.lang3.StringUtils.isEmpty(schema.get$ref())) {
+                    // use $ref if it's reference
+                    String refName = ModelUtils.getSimpleRef(schema.get$ref());
+                    if (refName != null) {
+                        String modelName = toModelName(refName);
+                        oneOf.setName(modelName);
+                        oneOf.setBaseName(refName);
+                    }
+                } else if (oneOf.isArray) {
+                    // If the type is an array, extend the name with the inner type to prevent name collisions
+                    // in case multiple arrays with different types are defined. If the user has manually specified
+                    // a name, use that name instead.
+                    String collectionWithTypeName = toModelName(schema.getType()) + oneOf.containerTypeMapped + oneOf.items.baseType;
+                    String oneOfName = Optional.ofNullable(schema.getTitle()).orElse(collectionWithTypeName);
+                    oneOf.setName(oneOfName);
+                }
+                else {
+                    // In-placed type (primitive), because there is no mapping or ref for it.
+                    // use camelized `title` if present, otherwise use `type`, otherwise the property's base type
+                    String oneOfName = Optional.ofNullable(schema.getTitle())
+                            .or(() -> Optional.ofNullable(ModelUtils.getType(schema)))
+                            .orElse(oneOf.baseType);
+                    oneOf.setName(toModelName(oneOfName));
+                }
+            }
+
+            mdl.getComposedSchemas().setOneOf(newOneOfs);
         }
 
-        for (Map.Entry<String, Object> entry : objs.entrySet()) {
-            Map<String, Object> inner = (Map<String, Object>) entry.getValue();
-            List<Map<String, Object>> models = (List<Map<String, Object>>) inner.get("models");
-            for (Map<String, Object> mo : models) {
-                CodegenModel cm = (CodegenModel) mo.get("model");
-                if (cm.discriminator != null) {
-                    List<Object> discriminatorVars = new ArrayList<>();
-                    for (CodegenDiscriminator.MappedModel mappedModel : cm.discriminator.getMappedModels()) {
-                        CodegenModel model = allModels.get(mappedModel.getModelName());
-                        Map<String, Object> mas = new HashMap<>();
-                        mas.put("modelName", camelize(mappedModel.getModelName()));
-                        mas.put("mappingName", mappedModel.getMappingName());
+        return mdl;
+    }
 
-                        // TODO: deleting the variable from the array was
-                        // problematic; I don't know what this is supposed to do
-                        // so I'm just cloning it for the moment
-                        List<CodegenProperty> vars = new ArrayList<>(model.getVars());
-                        vars.removeIf(p -> p.name.equals(cm.discriminator.getPropertyName()));
-                        mas.put("vars", vars);
-                        discriminatorVars.add(mas);
+    @Override
+    public Map<String, ModelsMap> postProcessAllModels(Map<String, ModelsMap> objs) {
+        objs = super.postProcessAllModels(objs);
+
+        for (ModelsMap modelsMap : objs.values()) {
+            for (ModelMap modelMap : modelsMap.getModels()) {
+                CodegenModel cm = modelMap.getModel();
+                CodegenDiscriminator discriminator = cm.discriminator;
+                if (discriminator == null || discriminator.getMappedModels() == null) {
+                    continue;
+                }
+                // a oneOf variant whose tag is an enum (inline or $ref) cannot default it after serde consumed it, and
+                // its copy would be written next to the tag: keep the tag in the content the variant deserializes
+                // from and serialize the variant as is, so the variant structs are untouched
+                if (!cm.oneOf.isEmpty() && cm.getComposedSchemas() != null && cm.getComposedSchemas().getOneOf() != null
+                        && discriminator.getMappedModels().stream()
+                        .map(CodegenDiscriminator.MappedModel::getModel)
+                        .filter(Objects::nonNull)
+                        .flatMap(m -> m.vars.stream())
+                        .anyMatch(v -> discriminator.getPropertyBaseName().equals(v.baseName) && v.getIsEnumOrRef())) {
+                    discriminator.getVendorExtensions().put("x-rust-tagged-content", true);
+                    // the variants' own vendorExtensions shadow the discriminator's inside their loop
+                    cm.getComposedSchemas().getOneOf().forEach(v -> v.vendorExtensions.put("x-rust-tagged-content", true));
+                    continue;
+                }
+                // a mapping that names the base itself leaves no struct to wrap, and an enum-typed tag would be
+                // written twice (the child's copy keeps its default): keep the inline variants
+                if (discriminator.getMappedModels().stream().anyMatch(m -> cm.name.equals(m.getSchemaName()))
+                        || cm.allVars.stream().anyMatch(v -> discriminator.getPropertyBaseName().equals(v.baseName) && v.getIsEnumOrRef())) {
+                    discriminator.getVendorExtensions().put("x-rust-inline-variants", true);
+                    continue;
+                }
+                // a mapped child's discriminator doubles as the union's serde tag, which is consumed before the
+                // child deserializes: mark it so the template defaults it and skips it while unset
+                for (CodegenDiscriminator.MappedModel mapped : discriminator.getMappedModels()) {
+                    if (mapped.getModel() == null) {
+                        continue;
                     }
-                    // TODO: figure out how to properly have the original property type that didn't go through toVarName
-                    String vendorExtensionTagName = cm.discriminator.getPropertyName().replace("_", "");
-                    cm.vendorExtensions.put("x-tag-name", vendorExtensionTagName);
-                    cm.vendorExtensions.put("x-mapped-models", discriminatorVars);
+                    for (CodegenProperty var : mapped.getModel().vars) {
+                        if (discriminator.getPropertyBaseName().equals(var.baseName)) {
+                            var.isDiscriminator = true;
+                        }
+                    }
                 }
             }
         }
+
         return objs;
+    }
+
+    @Override
+    public ModelsMap postProcessModels(ModelsMap objs) {
+        for (ModelMap model : objs.getModels()) {
+            CodegenModel cm = model.getModel();
+
+            // Remove the discriminator field from the model, serde will take care of this
+            if (cm.discriminator != null) {
+                String reserved_var_name = cm.discriminator.getPropertyBaseName();
+
+                for (CodegenProperty cp : cm.vars) {
+                    if (cp.baseName.equals(reserved_var_name)) {
+                        cm.vars.remove(cp);
+                        break;
+                    }
+                }
+
+                // Check if there are duplicate mappings in the discriminator
+                // ie.
+                // ```
+                // mappings:
+                //   student: '#/components/schemas/Person'
+                //   teacher: '#/components/schemas/Person'
+                //   car: '#/components/schemas/Vehicle'
+                // ```
+                //
+                // Should be mapped to an enum with `PersonStudent`, `PersonTeacher`, `Vehicle` to 2 `Person` enum variants. (a compiler error)
+                if (cm.discriminator.getMapping() != null) {
+                    if (hasDuplicateValues(cm.discriminator.getMapping())) {
+                        var inverted = invertMap(cm.discriminator.getMapping());
+                        for (var s : inverted.entrySet()) {
+                            if (s.getValue().size() > 1) {
+                                LOGGER.debug("Found duplicated enum model (" + s.getKey() + ") in model " + cm.name + ". Adding suffix to model names.");
+                                for (var m : cm.discriminator.getMappedModels()) {
+                                    if (s.getValue().contains(m.getMappingName())) {
+                                        m.setModelName(m.getModelName() + StringUtils.camelize(m.getMappingName()));
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Flag structs with byteArrays in them so that we can annotate them with the serde_as macro
+            for (CodegenProperty cp : cm.vars) {
+                if (cp.isByteArray) {
+                    cm.vendorExtensions.put("x-rust-has-byte-array", true);
+                    break;
+                }
+            }
+
+            // Flag structs with integer-enum properties so the template can emit serde_repr import once
+            if (!cm.isEnum) {
+                for (CodegenProperty cp : cm.vars) {
+                    if (cp.isEnum && cp.isInteger) {
+                        cm.vendorExtensions.put("x-rust-has-integer-property-enum", true);
+                        break;
+                    }
+                }
+            }
+
+            // Compute documentation type for each property
+            // This matches the actual generated code type, including HashSet for uniqueItems
+            for (CodegenProperty cp : cm.vars) {
+                String docType;
+
+                if (cp.datatypeWithEnum != null && !cp.datatypeWithEnum.isEmpty()) {
+                    // Use enum type if available (e.g., Vec<UniqueItemArray> instead of Vec<String>)
+                    docType = cp.datatypeWithEnum;
+                } else {
+                    // Use regular dataType
+                    docType = cp.dataType;
+                }
+
+                // Apply uniqueItems logic (matching model.mustache lines 139, 161)
+                // Arrays with uniqueItems=true use HashSet instead of Vec in the generated code
+                if (Boolean.TRUE.equals(cp.getUniqueItems()) && docType.startsWith("Vec<")) {
+                    docType = docType.replace("Vec<", "HashSet<");
+                }
+
+                cp.vendorExtensions.put("x-doc-type", docType);
+
+                // Determine if this type should have a doc link
+                // Only local models should link, not external types from std lib or crates
+                boolean shouldLink = false;
+                if (cp.complexType != null && !cp.complexType.isEmpty()) {
+                    // Check if it's an external type by looking for known prefixes
+                    String[] externalPrefixes = {"std::", "serde_json::", "uuid::", "chrono::", "url::"};
+                    boolean isExternal = false;
+                    for (String prefix : externalPrefixes) {
+                        if (cp.complexType.startsWith(prefix)) {
+                            isExternal = true;
+                            break;
+                        }
+                    }
+                    shouldLink = !isExternal;
+                }
+                cp.vendorExtensions.put("x-should-link", shouldLink);
+            }
+        }
+        // process enum in models
+        return postProcessModelsEnum(objs);
     }
 
     @Override
     public void processOpts() {
         super.processOpts();
+
+        if (additionalProperties.containsKey(CodegenConstants.WITH_AWSV4_SIGNATURE_COMMENT)) {
+            withAWSV4Signature = Boolean.parseBoolean(additionalProperties.get(CodegenConstants.WITH_AWSV4_SIGNATURE_COMMENT).toString());
+        }
 
         if (additionalProperties.containsKey(CodegenConstants.ENUM_NAME_SUFFIX)) {
             enumSuffix = additionalProperties.get(CodegenConstants.ENUM_NAME_SUFFIX).toString();
@@ -277,21 +522,77 @@ public class RustClientCodegen extends DefaultCodegen implements CodegenConfig {
         }
         writePropertyBack(SUPPORT_ASYNC, getSupportAsync());
 
+        if (additionalProperties.containsKey(SUPPORT_MIDDLEWARE)) {
+            this.setSupportMiddleware(convertPropertyToBoolean(SUPPORT_MIDDLEWARE));
+        }
+        writePropertyBack(SUPPORT_MIDDLEWARE, getSupportMiddleware());
+
+        if (additionalProperties.containsKey(USE_SERDE_PATH_TO_ERROR)) {
+            this.setUseSerdePathToError(convertPropertyToBoolean(USE_SERDE_PATH_TO_ERROR));
+        }
+        writePropertyBack(USE_SERDE_PATH_TO_ERROR, getUseSerdePathToError());
+
+        if (additionalProperties.containsKey(SUPPORT_TOKEN_SOURCE)) {
+            this.setSupportTokenSource(convertPropertyToBoolean(SUPPORT_TOKEN_SOURCE));
+        }
+        writePropertyBack(SUPPORT_TOKEN_SOURCE, getSupportTokenSource());
+
+        if (additionalProperties.containsKey(USE_CHRONO)) {
+            this.setUseChrono(convertPropertyToBoolean(USE_CHRONO));
+        }
+        writePropertyBack(USE_CHRONO, isUseChrono());
+
         if (additionalProperties.containsKey(SUPPORT_MULTIPLE_RESPONSES)) {
             this.setSupportMultipleReturns(convertPropertyToBoolean(SUPPORT_MULTIPLE_RESPONSES));
         }
         writePropertyBack(SUPPORT_MULTIPLE_RESPONSES, getSupportMultipleReturns());
 
+        if (additionalProperties.containsKey(PREFER_UNSIGNED_INT)) {
+            this.setPreferUnsignedInt(convertPropertyToBoolean(PREFER_UNSIGNED_INT));
+        }
+        writePropertyBack(PREFER_UNSIGNED_INT, getPreferUnsignedInt());
+
+        if (additionalProperties.containsKey(BEST_FIT_INT)) {
+            this.setBestFitInt(convertPropertyToBoolean(BEST_FIT_INT));
+        }
+        writePropertyBack(BEST_FIT_INT, getBestFitInt());
+
+        if (additionalProperties.containsKey(AVOID_BOXED_MODELS)) {
+            this.setAvoidBoxedModels(convertPropertyToBoolean(AVOID_BOXED_MODELS));
+        }
+        writePropertyBack(AVOID_BOXED_MODELS, getAvoidBoxedModels());
+
+        if (additionalProperties.containsKey(REQWEST_DEFAULT_FEATURES)) {
+            Object value = additionalProperties.get(REQWEST_DEFAULT_FEATURES);
+            if (value instanceof List) {
+                reqwestDefaultFeatures = (List<String>) value;
+            } else if (value instanceof String) {
+                String str = (String) value;
+                if (str.isEmpty()) {
+                    reqwestDefaultFeatures = new ArrayList<>();
+                } else {
+                    reqwestDefaultFeatures = Arrays.asList(str.split(",\\s*"));
+                }
+            }
+        }
+        additionalProperties.put(REQWEST_DEFAULT_FEATURES, reqwestDefaultFeatures);
+
         additionalProperties.put(CodegenConstants.PACKAGE_NAME, packageName);
         additionalProperties.put(CodegenConstants.PACKAGE_VERSION, packageVersion);
+        additionalProperties.put(EXTERN_CRATE_NAME, getExternCrateName());
 
         additionalProperties.put("apiDocPath", apiDocPath);
         additionalProperties.put("modelDocPath", modelDocPath);
 
         if (HYPER_LIBRARY.equals(getLibrary())) {
             additionalProperties.put(HYPER_LIBRARY, "true");
+        } else if (HYPER0X_LIBRARY.equals(getLibrary())) {
+            additionalProperties.put(HYPER_LIBRARY, "true");
+            additionalProperties.put(HYPER0X_LIBRARY, "true");
         } else if (REQWEST_LIBRARY.equals(getLibrary())) {
             additionalProperties.put(REQWEST_LIBRARY, "true");
+        } else if (REQWEST_TRAIT_LIBRARY.equals(getLibrary())) {
+            additionalProperties.put(REQWEST_TRAIT_LIBRARY_ATTR, "true");
         } else {
             LOGGER.error("Unknown library option (-l/--library): {}", getLibrary());
         }
@@ -315,14 +616,50 @@ public class RustClientCodegen extends DefaultCodegen implements CodegenConfig {
             supportingFiles.add(new SupportingFile("request.rs", apiFolder, "request.rs"));
             supportingFiles.add(new SupportingFile(getLibrary() + "/client.mustache", apiFolder, "client.rs"));
         }
+
+        // add lambda for sanitize version (e.g. v1.2.3-beta => 1.2.3-beta)
+        additionalProperties.put("lambdaVersion", new Mustache.Lambda() {
+            @Override
+            public void execute(Template.Fragment fragment, Writer writer) throws IOException {
+                String content = fragment.execute();
+                // remove v or V
+                content = content.trim().replace("v", "");
+                content = content.replace("V", "");
+
+                String[] contents = content.split("[.]");
+                if (contents.length == 1) {
+                    // convert 5 to 5.0.0 for example
+                    content += ".0.0";
+                } else if (contents.length == 2) {
+                    // convert 5.2 to 5.2.0 for example
+                    content += ".0";
+                }
+
+                writer.write(content);
+            }
+        });
+
+    }
+
+    private String getExternCrateName() {
+        // The external name used when importing a crate has all '-' replaced with '_'.
+        return packageName.replace('-', '_');
     }
 
     private boolean getSupportAsync() {
         return supportAsync;
     }
 
-    private void setSupportAsync(boolean supportAsync) {
-        this.supportAsync = supportAsync;
+    private boolean getSupportMiddleware() {
+        return supportMiddleware;
+    }
+
+    private boolean getUseSerdePathToError() {
+        return useSerdePathToError;
+    }
+
+    private boolean getSupportTokenSource() {
+        return supportTokenSource;
     }
 
     public boolean getSupportMultipleReturns() {
@@ -333,20 +670,20 @@ public class RustClientCodegen extends DefaultCodegen implements CodegenConfig {
         this.supportMultipleResponses = supportMultipleResponses;
     }
 
+    public boolean getPreferUnsignedInt() {
+        return preferUnsignedInt;
+    }
+
+    public boolean getBestFitInt() {
+        return bestFitInt;
+    }
+
     private boolean getUseSingleRequestParameter() {
         return useSingleRequestParameter;
     }
 
-    private void setUseSingleRequestParameter(boolean useSingleRequestParameter) {
-        this.useSingleRequestParameter = useSingleRequestParameter;
-    }
-
-    @Override
-    public String escapeReservedWord(String name) {
-        if (this.reservedWordsMappings().containsKey(name)) {
-            return this.reservedWordsMappings().get(name);
-        }
-        return '_' + name;
+    public boolean getAvoidBoxedModels() {
+        return avoidBoxedModels;
     }
 
     @Override
@@ -354,85 +691,15 @@ public class RustClientCodegen extends DefaultCodegen implements CodegenConfig {
         return (outputFolder + File.separator + apiFolder).replace("/", File.separator);
     }
 
+    @Override
     public String modelFileFolder() {
         return (outputFolder + File.separator + modelFolder).replace("/", File.separator);
     }
 
     @Override
-    public String toVarName(String name) {
-        // translate @ for properties (like @type) to at_. 
-        // Otherwise an additional "type" property will leed to duplcates
-        name = name.replaceAll("^@", "at_");
-
-        // replace - with _ e.g. created-at => created_at
-        name = sanitizeName(name.replaceAll("-", "_"));
-
-        // if it's all upper case, do nothing
-        if (name.matches("^[A-Z_]*$"))
-            return name;
-
-        // snake_case, e.g. PetId => pet_id
-        name = underscore(name);
-
-        // for reserved word or word starting with number, append _
-        if (isReservedWord(name))
-            name = escapeReservedWord(name);
-
-        // for reserved word or word starting with number, append _
-        if (name.matches("^\\d.*"))
-            name = "var_" + name;
-
-        return name;
-    }
-
-    @Override
-    public String toParamName(String name) {
-        return toVarName(name);
-    }
-
-    @Override
-    public String toModelName(String name) {
-        // camelize the model name
-        // phone_number => PhoneNumber
-        return camelize(toModelFilename(name));
-    }
-
-    @Override
-    public String toModelFilename(String name) {
-
-        if (!Strings.isNullOrEmpty(modelNamePrefix)) {
-            name = modelNamePrefix + "_" + name;
-        }
-
-        if (!Strings.isNullOrEmpty(modelNameSuffix)) {
-            name = name + "_" + modelNameSuffix;
-        }
-
-        name = sanitizeName(name);
-
-        // model name cannot use reserved keyword, e.g. return
-        if (isReservedWord(name)) {
-            LOGGER.warn("{} (reserved word) cannot be used as model name. Renamed to {}", name, "model_" + name);
-            name = "model_" + name; // e.g. return => ModelReturn (after camelize)
-        }
-
-        // model name starts with number
-        if (name.matches("^\\d.*")) {
-            LOGGER.warn("{} (model name starts with number) cannot be used as model name. Renamed to {}", name,
-                    "model_" + name);
-            name = "model_" + name; // e.g. 200Response => Model200Response (after camelize)
-        }
-
-        return underscore(name);
-    }
-
-    @Override
-    public String toApiFilename(String name) {
-        // replace - with _ e.g. created-at => created_at
-        name = name.replaceAll("-", "_"); // FIXME: a parameter should not be assigned. Also declare the methods parameters as 'final'.
-
-        // e.g. PetApi.rs => pet_api.rs
-        return underscore(name) + "_api";
+    public String modelFilename(String templateName, String modelName) {
+        String suffix = modelTemplateFiles().get(templateName);
+        return modelFileFolder() + File.separator + toModelFilename(modelName) + suffix;
     }
 
     @Override
@@ -446,94 +713,223 @@ public class RustClientCodegen extends DefaultCodegen implements CodegenConfig {
     }
 
     @Override
-    public String toModelDocFilename(String name) {
-        return toModelName(name);
-    }
-
-    @Override
-    public String toApiDocFilename(String name) {
-        return toApiName(name);
-    }
-
-    @Override
     public String getTypeDeclaration(Schema p) {
-        if (ModelUtils.isArraySchema(p)) {
-            ArraySchema ap = (ArraySchema) p;
-            Schema inner = ap.getItems();
-            if (inner == null) {
-                LOGGER.warn("{}(array property) does not have a proper inner type defined.Default to string",
-                        ap.getName());
-                inner = new StringSchema().description("TODO default missing array inner type to string");
-            }
-            return "Vec<" + getTypeDeclaration(inner) + ">";
-        } else if (ModelUtils.isMapSchema(p)) {
-            Schema inner = getAdditionalProperties(p);
-            if (inner == null) {
-                LOGGER.warn("{}(map property) does not have a proper inner type defined. Default to string", p.getName());
-                inner = new StringSchema().description("TODO default missing map inner type to string");
-            }
-            return "::std::collections::HashMap<String, " + getTypeDeclaration(inner) + ">";
-        }
-
-        // Not using the supertype invocation, because we want to UpperCamelize
-        // the type.
-        String schemaType = getSchemaType(p);
-        if (typeMapping.containsKey(schemaType)) {
-            return typeMapping.get(schemaType);
-        }
-
-        if (typeMapping.containsValue(schemaType)) {
-            return schemaType;
-        }
-
-        if (languageSpecificPrimitives.contains(schemaType)) {
-            return schemaType;
-        }
-
-        // return fully-qualified model name
-        // crate::models::{{classnameFile}}::{{classname}}
-        return "crate::models::" + toModelName(schemaType);
+        // use unaliased schema for client-side
+        Schema unaliasSchema = unaliasSchema(p);
+        return super.getTypeDeclaration(unaliasSchema);
     }
 
     @Override
     public String getSchemaType(Schema p) {
         String schemaType = super.getSchemaType(p);
-        if (typeMapping.containsKey(schemaType)) {
-            return typeMapping.get(schemaType);
+        String type = typeMapping.getOrDefault(schemaType, schemaType);
+
+        // Implement integer type fitting (when property is enabled)
+        if (Objects.equals(p.getType(), "integer")) {
+            boolean bestFit = convertPropertyToBoolean(BEST_FIT_INT);
+            boolean preferUnsigned = convertPropertyToBoolean(PREFER_UNSIGNED_INT);
+
+            BigInteger minimum = Optional.ofNullable(p.getMinimum()).map(BigDecimal::toBigInteger).orElse(null);
+            boolean exclusiveMinimum = Optional.ofNullable(p.getExclusiveMinimum()).orElse(false);
+
+            boolean unsigned = preferUnsigned && canFitIntoUnsigned(minimum, exclusiveMinimum);
+
+            if (org.apache.commons.lang3.StringUtils.isEmpty(p.getFormat())) {
+                if (bestFit) {
+                    return bestFittingIntegerType(
+                            minimum,
+                            exclusiveMinimum,
+                            Optional.ofNullable(p.getMaximum()).map(BigDecimal::toBigInteger).orElse(null),
+                            Optional.ofNullable(p.getExclusiveMaximum()).orElse(false),
+                            preferUnsigned);
+                } else {
+                    return unsigned ? "u32" : "i32";
+                }
+            } else {
+                switch (p.getFormat()) {
+                    case "int8":
+                        return unsigned ? "u8" : "i8";
+                    case "int16":
+                        return unsigned ? "u16" : "i16";
+                    case "int32":
+                        return unsigned ? "u32" : "i32";
+                    case "int64":
+                        return unsigned ? "u64" : "i64";
+                    case "uint8":
+                        return "u8";
+                    case "uint16":
+                        return "u16";
+                    case "uint32":
+                        return "u32";
+                    case "uint64":
+                        return "u64";
+                }
+            }
         }
-        return schemaType;
+
+        return type;
     }
 
     @Override
-    public String toOperationId(String operationId) {
-        String sanitizedOperationId = sanitizeName(operationId);
+    public void postProcessModelProperty(CodegenModel model, CodegenProperty property) {
+        super.postProcessModelProperty(model, property);
 
-        // method name cannot use reserved keyword, e.g. return
-        if (isReservedWord(sanitizedOperationId)) {
-            LOGGER.warn("{} (reserved word) cannot be used as method name. Renamed to {}", operationId, StringUtils.underscore("call_" + operationId));
-            sanitizedOperationId = "call_" + sanitizedOperationId;
+        // If a property is both nullable and non-required then we represent this using a double Option
+        // which requires the `serde_with` extension crate for deserialization.
+        // See: https://docs.rs/serde_with/latest/serde_with/rust/double_option/index.html
+        if (property.isNullable && !property.required) {
+            additionalProperties.put("serdeWith", true);
         }
 
-        return StringUtils.underscore(sanitizedOperationId);
+        // Add a field for checking if a field is with optional or required in templates.
+        // This is useful in Mustache templates as it's not possible to do OR logic between variables.
+        property.vendorExtensions.put("isMandatory", !property.isNullable && property.required);
+
+        // If a property is a base64-encoded byte array, use `serde_with` for deserialization.
+        if (property.isByteArray) {
+            additionalProperties.put("serdeWith", true);
+            // If a byte array is both nullable and not required we need to include our own
+            // custom double option as serde_as does not work with serde_with's double_option.
+            if (property.isNullable && !property.required) {
+                additionalProperties.put("serdeAsDoubleOption", true);
+            }
+        }
     }
 
     @Override
-    public Map<String, Object> postProcessOperationsWithModels(Map<String, Object> objs, List<Object> allModels) {
-        @SuppressWarnings("unchecked")
-        Map<String, Object> objectMap = (Map<String, Object>) objs.get("operations");
-        @SuppressWarnings("unchecked")
-        List<CodegenOperation> operations = (List<CodegenOperation>) objectMap.get("operation");
+    public void postProcessParameter(CodegenParameter parameter) {
+        super.postProcessParameter(parameter);
+        // in order to avoid name conflicts, we map parameters inside the functions
+        String inFunctionIdentifier = "";
+        String locationSuffix = "";
+
+        // Determine parameter location using the boolean flags in case of parameters with the same name but in different locations
+        if (parameter.isPathParam) {
+            locationSuffix = "path_";
+        } else if (parameter.isQueryParam) {
+            locationSuffix = "query_";
+        } else if (parameter.isHeaderParam) {
+            locationSuffix = "header_";
+        } else if (parameter.isBodyParam) {
+            locationSuffix = "body_";
+        } else if (parameter.isCookieParam) {
+            locationSuffix = "cookie_";
+        } else if (parameter.isFormParam) {
+            locationSuffix = "form_";
+        }
+        if (this.useSingleRequestParameter) {
+            inFunctionIdentifier = "params." + parameter.paramName;
+        } else {
+            if (parameter.paramName.startsWith("r#")) {
+                inFunctionIdentifier = "p_" + locationSuffix + parameter.paramName.substring(2);
+            } else {
+                inFunctionIdentifier = "p_" + locationSuffix + parameter.paramName;
+            }
+        }
+        if (!parameter.vendorExtensions.containsKey(this.VENDOR_EXTENSION_PARAM_IDENTIFIER)) { // allow to overwrite this value
+            parameter.vendorExtensions.put(this.VENDOR_EXTENSION_PARAM_IDENTIFIER, inFunctionIdentifier);
+        }
+
+        // chrono's `Display` for `DateTime` is not RFC 3339 (e.g. "2024-01-02 03:04:05 +00:00"),
+        // so path, query and header params of that type are serialized with `to_rfc3339()` instead.
+        if (parameter.isDateTime && parameter.dataType != null && parameter.dataType.startsWith("chrono::DateTime")) {
+            parameter.vendorExtensions.put("x-rust-chrono-date-time", true);
+        }
+    }
+
+    @Override
+    public OperationsMap postProcessOperationsWithModels(OperationsMap objs, List<ModelMap> allModels) {
+        OperationMap objectMap = objs.getOperations();
+        boolean useAsyncFileStream = false;
+        List<CodegenOperation> operations = objectMap.getOperation();
         for (CodegenOperation operation : operations) {
+            // For types with `isAnyType` we assume it's a `serde_json::Value` type.
+            // However for path, query, and headers it's unlikely to be JSON so we default to `String`.
+            // Note that we keep the default `serde_json::Value` for body parameters.
+            for (var param : operation.allParams) {
+                if (param.isAnyType && (param.isPathParam || param.isQueryParam || param.isHeaderParam)) {
+                    param.dataType = "String";
+                    param.isPrimitiveType = true;
+                    param.isString = true;
+                }
+
+                // Free-form objects are `serde_json::Value`, which is not in `models`: mark them primitive, as
+                // DefaultCodegen.updateRequestBodyForObject does for bodies, so no `models::` prefix is added.
+                // Free-form maps (`additionalProperties`) are containers and keep their handling.
+                if (param.isFreeFormObject && !param.isContainer) {
+                    param.isPrimitiveType = true;
+                }
+            }
+
+            if (operation.pathParams != null && operation.pathParams.size() > 0) {
+                for (var pathParam : operation.pathParams) {
+                    if (!pathParam.baseName.contains("-")) {
+                        continue;
+                    }
+
+                    var newName = pathParam.baseName.replace("-", "_");
+                    LOGGER.info(pathParam.baseName + " cannot be used as a path param. Renamed to " + newName);
+
+                    operation.path = operation.path.replace("{" + pathParam.baseName + "}", "{" + newName + "}");
+                    pathParam.baseName = newName;
+                }
+            }
+
+            // Check for UUIDs
+            for (var param : operation.allParams) {
+                if (!hasUUIDs && param.isUuid) {
+                    hasUUIDs = true;
+                    break;
+                }
+            }
+            // Check for Chrono Types
+            if(isUseChrono()){
+                for (CodegenParameter param : operation.allParams) {
+                    if (!usesChronoTypes && (param.isDate || param.isDateTime)) {
+                        LOGGER.debug("Found Chrono Type in operation Parameter: {}", param.paramName);
+                        usesChronoTypes = true;
+                        break;
+                    }
+                }
+            }
+
+            // If we use a file body parameter, we need to include the imports and crates for it
+            // But they should be added only once per file
+            for (var param: operation.bodyParams) {
+                if (param.isFile && supportAsync && !useAsyncFileStream) {
+                    useAsyncFileStream = true;
+                    additionalProperties.put("useAsyncFileStream", Boolean.TRUE);
+                    operation.vendorExtensions.put("useAsyncFileStream", Boolean.TRUE);
+                    break;
+                }
+            }
+
+            // Also check form params for file uploads (multipart)
+            if (!useAsyncFileStream) {
+                for (var param: operation.formParams) {
+                    if (param.isFile && supportAsync) {
+                        useAsyncFileStream = true;
+                        additionalProperties.put("useAsyncFileStream", Boolean.TRUE);
+                        operation.vendorExtensions.put("useAsyncFileStream", Boolean.TRUE);
+                        break;
+                    }
+                }
+            }
+
             // http method verb conversion, depending on client library (e.g. Hyper: PUT => Put, Reqwest: PUT => put)
             if (HYPER_LIBRARY.equals(getLibrary())) {
                 operation.httpMethod = StringUtils.camelize(operation.httpMethod.toLowerCase(Locale.ROOT));
-            } else if (REQWEST_LIBRARY.equals(getLibrary())) {
+            } else if (REQWEST_LIBRARY.equals(getLibrary()) || REQWEST_TRAIT_LIBRARY.equals(getLibrary())) {
                 operation.httpMethod = operation.httpMethod.toUpperCase(Locale.ROOT);
             }
 
             // add support for single request parameter using x-group-parameters
             if (!operation.vendorExtensions.containsKey("x-group-parameters") && useSingleRequestParameter) {
                 operation.vendorExtensions.put("x-group-parameters", Boolean.TRUE);
+            }
+
+            if (operation.producesTextPlain() && "String".equals(operation.returnType)) {
+                operation.vendorExtensions.put("x-supports-plain-text", Boolean.TRUE);
             }
 
             // update return type to conform to rust standard
@@ -587,99 +983,70 @@ public class RustClientCodegen extends DefaultCodegen implements CodegenConfig {
             }*/
         }
 
+        if (!hasUUIDs) {
+            for (var map : allModels) {
+                CodegenModel m = map.getModel();
+                if (m.getIsUuid() || hasUuidInProperties(m.vars)) {
+                    hasUUIDs = true;
+                    LOGGER.debug("Found UUID in model: {}", m.name);
+                    break;
+                }
+            }
+        }
+
+        if (isUseChrono() && !usesChronoTypes) {
+            for (var map : allModels) {
+                CodegenModel m = map.getModel();
+                if (m.getIsDate() || hasChronoTypeInProperties(m.vars)) {
+                    usesChronoTypes = true;
+                    LOGGER.debug("Found Chrono Type in model: {}", m.name);
+                    break;
+                }
+            }
+        }
+
+        this.additionalProperties.put("hasUUIDs", hasUUIDs);
+        this.additionalProperties.put("usesChronoTypes", isUseChrono() && usesChronoTypes);
         return objs;
     }
 
-    @Override
-    protected boolean needToImport(String type) {
-        return !defaultIncludes.contains(type)
-                && !languageSpecificPrimitives.contains(type);
+    /**
+     * Recursively searches for a model's properties for a UUID type field.
+     */
+    private boolean hasUuidInProperties(List<CodegenProperty> properties) {
+        return checkForPropertiesRecursively(properties, (property) -> property.isUuid);
     }
 
-    public void setPackageName(String packageName) {
-        this.packageName = packageName;
+    /**
+     * Recursively searches for a model's properties for a Date or DateTime type field.
+     */
+    private boolean hasChronoTypeInProperties(List<CodegenProperty> properties) {
+        return checkForPropertiesRecursively(properties, (property) -> property.isDate || property.isDateTime);
     }
 
-    public void setPackageVersion(String packageVersion) {
-        this.packageVersion = packageVersion;
-    }
-
-    @Override
-    public String escapeQuotationMark(String input) {
-        // remove " to avoid code injection
-        return input.replace("\"", "");
-    }
-
-    @Override
-    public String escapeUnsafeCharacters(String input) {
-        return input.replace("*/", "*_/").replace("/*", "/_*");
-    }
-
-
-    @Override
-    public String toEnumValue(String value, String datatype) {
-        if ("int".equals(datatype) || "double".equals(datatype) || "float".equals(datatype)) {
-            return value;
-        } else {
-            return escapeText(value);
+    /**
+     * Recursively searches for a condition in a property
+     * @param properties the {@link CodegenProperty} to recursively search for
+     * @param propertyCheck the {@link Function} to be applied to check an individual {@link CodegenProperty} for a match
+     * @return true if there is at least one match, false if there is no match
+     */
+    private boolean checkForPropertiesRecursively(List<CodegenProperty> properties, Function<CodegenProperty, Boolean> propertyCheck){
+        for (CodegenProperty property : properties) {
+            if (propertyCheck.apply(property)) {
+                return true;
+            }
+            // Check nested properties
+            if (property.items != null && checkForPropertiesRecursively(Collections.singletonList(property.items), propertyCheck)) {
+                return true;
+            }
+            if (property.additionalProperties != null && checkForPropertiesRecursively(Collections.singletonList(property.additionalProperties), propertyCheck)) {
+                return true;
+            }
+            if (property.vars != null && checkForPropertiesRecursively(property.vars, propertyCheck)) {
+                return true;
+            }
         }
-    }
-
-    @Override
-    public String toEnumDefaultValue(String value, String datatype) {
-        return datatype + "_" + value;
-    }
-
-    @Override
-    public String toEnumVarName(String name, String datatype) {
-        if (name.length() == 0) {
-            return "Empty";
-        }
-
-        // number
-        if ("int".equals(datatype) || "double".equals(datatype) || "float".equals(datatype)) {
-            String varName = name;
-            varName = varName.replaceAll("-", "Minus");
-            varName = varName.replaceAll("\\+", "Plus");
-            varName = varName.replaceAll("\\.", "Dot");
-            return varName;
-        }
-
-        // for symbol, e.g. $, #
-        if (getSymbolName(name) != null) {
-            return getSymbolName(name);
-        }
-
-        // string
-        String enumName = camelize(sanitizeName(name));
-        enumName = enumName.replaceFirst("^_", "");
-        enumName = enumName.replaceFirst("_$", "");
-
-        if (isReservedWord(enumName) || enumName.matches("\\d.*")) { // reserved word or starts with number
-            return escapeReservedWord(enumName);
-        } else {
-            return enumName;
-        }
-    }
-
-    @Override
-    public String toEnumName(CodegenProperty property) {
-        String name = property.name;
-        if (!org.apache.commons.lang3.StringUtils.isEmpty(enumSuffix)) {
-            name = name + "_" + enumSuffix;
-        }
-        // camelize the enum name
-        // phone_number => PhoneNumber
-        String enumName = camelize(toModelName(name));
-
-        // remove [] for array or map of enum
-        enumName = enumName.replace("[]", "");
-
-        if (enumName.matches("\\d.*")) { // starts with number
-            return "_" + enumName;
-        } else {
-            return enumName;
-        }
+        return false;
     }
 
     @Override
@@ -688,6 +1055,46 @@ public class RustClientCodegen extends DefaultCodegen implements CodegenConfig {
             return p.getDefault().toString();
         } else {
             return null;
+        }
+    }
+
+    @Override
+    protected ImmutableMap.Builder<String, Lambda> addMustacheLambdas() {
+        return super.addMustacheLambdas()
+                // Convert variable names to lifetime names.
+                // Generally they are the same, but `#` is not valid in lifetime names.
+                // Rust uses `r#` prefix for variables that are also keywords.
+                .put("lifetimeName", new ReplaceAllLambda("^r#", "r_"));
+    }
+
+    public static <K, V> Map<V, List<K>> invertMap(Map<K, V> map) {
+        Map<V, List<K>> invertedMap = new HashMap<>();
+
+        for (Map.Entry<K, V> entry : map.entrySet()) {
+            invertedMap.computeIfAbsent(entry.getValue(), k -> new ArrayList<>()).add(entry.getKey());
+        }
+
+        return invertedMap;
+    }
+
+    public static <K, V> boolean hasDuplicateValues(Map<K, V> map) {
+        Set<V> uniqueValues = new HashSet<>(map.values());
+        return uniqueValues.size() < map.size();
+    }
+
+
+    private boolean isUseChrono() {
+        return useChrono;
+    }
+
+    private void setUseChrono(boolean useChrono) {
+        this.useChrono = useChrono;
+        if(isUseChrono()){
+            typeMapping.put("date", "chrono::NaiveDate");
+            typeMapping.put("DateTime", "chrono::DateTime<chrono::FixedOffset>");
+        }else{
+            typeMapping.put("date", "String");
+            typeMapping.put("DateTime", "String");
         }
     }
 }

@@ -1,40 +1,65 @@
 package org.openapitools.model;
 
+import java.net.URI;
 import java.util.Objects;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
-import io.swagger.annotations.ApiModel;
-import io.swagger.annotations.ApiModelProperty;
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import org.springframework.lang.Nullable;
 import org.openapitools.jackson.nullable.JsonNullable;
-import javax.validation.Valid;
-import javax.validation.constraints.*;
+import java.time.OffsetDateTime;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.*;
+import io.swagger.v3.oas.annotations.media.Schema;
+
+
+import java.util.*;
+import jakarta.annotation.Generated;
 
 /**
  * TypeHolderExample
  */
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.SpringCodegen")
-public class TypeHolderExample   {
-  @JsonProperty("string_item")
+
+@Generated(value = "org.openapitools.codegen.languages.SpringCodegen", comments = "Generator version: 7.28.0-SNAPSHOT")
+public class TypeHolderExample {
+
+  @JsonInclude(JsonInclude.Include.NON_NULL)
   private String stringItem;
 
-  @JsonProperty("number_item")
+  @JsonInclude(JsonInclude.Include.NON_NULL)
   private BigDecimal numberItem;
 
-  @JsonProperty("float_item")
+  @JsonInclude(JsonInclude.Include.NON_NULL)
   private Float floatItem;
 
-  @JsonProperty("integer_item")
+  @JsonInclude(JsonInclude.Include.NON_NULL)
   private Integer integerItem;
 
-  @JsonProperty("bool_item")
+  @JsonInclude(JsonInclude.Include.NON_NULL)
   private Boolean boolItem;
 
-  @JsonProperty("array_item")
-  @Valid
+  @JsonInclude(JsonInclude.Include.NON_NULL)
   private List<Integer> arrayItem = new ArrayList<>();
+
+  public TypeHolderExample() {
+    super();
+  }
+
+  /**
+   * Constructor with only required parameters
+   */
+  public TypeHolderExample(String stringItem, BigDecimal numberItem, Float floatItem, Integer integerItem, Boolean boolItem, List<Integer> arrayItem) {
+    this.stringItem = stringItem;
+    this.numberItem = numberItem;
+    this.floatItem = floatItem;
+    this.integerItem = integerItem;
+    this.boolItem = boolItem;
+    this.arrayItem = arrayItem;
+  }
 
   public TypeHolderExample stringItem(String stringItem) {
     this.stringItem = stringItem;
@@ -44,15 +69,15 @@ public class TypeHolderExample   {
   /**
    * Get stringItem
    * @return stringItem
-  */
-  @ApiModelProperty(example = "what", required = true, value = "")
-  @NotNull
-
-
+   */
+  @NotNull 
+  @Schema(name = "string_item", example = "what", requiredMode = Schema.RequiredMode.REQUIRED)
+  @JsonProperty("string_item")
   public String getStringItem() {
     return stringItem;
   }
 
+  @JsonProperty("string_item")
   public void setStringItem(String stringItem) {
     this.stringItem = stringItem;
   }
@@ -65,16 +90,15 @@ public class TypeHolderExample   {
   /**
    * Get numberItem
    * @return numberItem
-  */
-  @ApiModelProperty(example = "1.234", required = true, value = "")
-  @NotNull
-
-  @Valid
-
+   */
+  @NotNull @Valid 
+  @Schema(name = "number_item", example = "1.234", requiredMode = Schema.RequiredMode.REQUIRED)
+  @JsonProperty("number_item")
   public BigDecimal getNumberItem() {
     return numberItem;
   }
 
+  @JsonProperty("number_item")
   public void setNumberItem(BigDecimal numberItem) {
     this.numberItem = numberItem;
   }
@@ -87,15 +111,15 @@ public class TypeHolderExample   {
   /**
    * Get floatItem
    * @return floatItem
-  */
-  @ApiModelProperty(example = "1.234", required = true, value = "")
-  @NotNull
-
-
+   */
+  @NotNull 
+  @Schema(name = "float_item", example = "1.234", requiredMode = Schema.RequiredMode.REQUIRED)
+  @JsonProperty("float_item")
   public Float getFloatItem() {
     return floatItem;
   }
 
+  @JsonProperty("float_item")
   public void setFloatItem(Float floatItem) {
     this.floatItem = floatItem;
   }
@@ -108,15 +132,15 @@ public class TypeHolderExample   {
   /**
    * Get integerItem
    * @return integerItem
-  */
-  @ApiModelProperty(example = "-2", required = true, value = "")
-  @NotNull
-
-
+   */
+  @NotNull 
+  @Schema(name = "integer_item", example = "-2", requiredMode = Schema.RequiredMode.REQUIRED)
+  @JsonProperty("integer_item")
   public Integer getIntegerItem() {
     return integerItem;
   }
 
+  @JsonProperty("integer_item")
   public void setIntegerItem(Integer integerItem) {
     this.integerItem = integerItem;
   }
@@ -129,15 +153,15 @@ public class TypeHolderExample   {
   /**
    * Get boolItem
    * @return boolItem
-  */
-  @ApiModelProperty(example = "true", required = true, value = "")
-  @NotNull
-
-
+   */
+  @NotNull 
+  @Schema(name = "bool_item", example = "true", requiredMode = Schema.RequiredMode.REQUIRED)
+  @JsonProperty("bool_item")
   public Boolean getBoolItem() {
     return boolItem;
   }
 
+  @JsonProperty("bool_item")
   public void setBoolItem(Boolean boolItem) {
     this.boolItem = boolItem;
   }
@@ -148,6 +172,9 @@ public class TypeHolderExample   {
   }
 
   public TypeHolderExample addArrayItemItem(Integer arrayItemItem) {
+    if (this.arrayItem == null) {
+      this.arrayItem = new ArrayList<>();
+    }
     this.arrayItem.add(arrayItemItem);
     return this;
   }
@@ -155,19 +182,18 @@ public class TypeHolderExample   {
   /**
    * Get arrayItem
    * @return arrayItem
-  */
-  @ApiModelProperty(example = "[0, 1, 2, 3]", required = true, value = "")
-  @NotNull
-
-
+   */
+  @NotNull 
+  @Schema(name = "array_item", example = "[0,1,2,3]", requiredMode = Schema.RequiredMode.REQUIRED)
+  @JsonProperty("array_item")
   public List<Integer> getArrayItem() {
     return arrayItem;
   }
 
+  @JsonProperty("array_item")
   public void setArrayItem(List<Integer> arrayItem) {
     this.arrayItem = arrayItem;
   }
-
 
   @Override
   public boolean equals(Object o) {
@@ -195,7 +221,6 @@ public class TypeHolderExample   {
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class TypeHolderExample {\n");
-    
     sb.append("    stringItem: ").append(toIndentedString(stringItem)).append("\n");
     sb.append("    numberItem: ").append(toIndentedString(numberItem)).append("\n");
     sb.append("    floatItem: ").append(toIndentedString(floatItem)).append("\n");
@@ -210,11 +235,96 @@ public class TypeHolderExample   {
    * Convert the given object to string with each line indented by 4 spaces
    * (except the first line).
    */
-  private String toIndentedString(Object o) {
-    if (o == null) {
-      return "null";
-    }
-    return o.toString().replace("\n", "\n    ");
+  private String toIndentedString(@Nullable Object o) {
+    return o == null ? "null" : o.toString().replace("\n", "\n    ");
   }
+  
+  public static class Builder {
+
+    private TypeHolderExample instance;
+
+    public Builder() {
+      this(new TypeHolderExample());
+    }
+
+    protected Builder(TypeHolderExample instance) {
+      this.instance = instance;
+    }
+
+    protected Builder copyOf(TypeHolderExample value) { 
+      this.instance.setStringItem(value.stringItem);
+      this.instance.setNumberItem(value.numberItem);
+      this.instance.setFloatItem(value.floatItem);
+      this.instance.setIntegerItem(value.integerItem);
+      this.instance.setBoolItem(value.boolItem);
+      this.instance.setArrayItem(value.arrayItem);
+      return this;
+    }
+
+    public TypeHolderExample.Builder stringItem(String stringItem) {
+      this.instance.stringItem(stringItem);
+      return this;
+    }
+    
+    public TypeHolderExample.Builder numberItem(BigDecimal numberItem) {
+      this.instance.numberItem(numberItem);
+      return this;
+    }
+    
+    public TypeHolderExample.Builder floatItem(Float floatItem) {
+      this.instance.floatItem(floatItem);
+      return this;
+    }
+    
+    public TypeHolderExample.Builder integerItem(Integer integerItem) {
+      this.instance.integerItem(integerItem);
+      return this;
+    }
+    
+    public TypeHolderExample.Builder boolItem(Boolean boolItem) {
+      this.instance.boolItem(boolItem);
+      return this;
+    }
+    
+    public TypeHolderExample.Builder arrayItem(List<Integer> arrayItem) {
+      this.instance.arrayItem(arrayItem);
+      return this;
+    }
+    
+    /**
+    * returns a built TypeHolderExample instance.
+    *
+    * The builder is not reusable (NullPointerException)
+    */
+    public TypeHolderExample build() {
+      try {
+        return this.instance;
+      } finally {
+        // ensure that this.instance is not reused
+        this.instance = null;
+      }
+    }
+
+    @Override
+    public String toString() {
+      return getClass() + "=(" + instance + ")";
+    }
+  }
+
+  /**
+  * Create a builder with no initialized field (except for the default values).
+  */
+  public static TypeHolderExample.Builder builder() {
+    return new TypeHolderExample.Builder();
+  }
+
+  /**
+  * Create a builder with a shallow copy of this instance.
+  */
+  public TypeHolderExample.Builder toBuilder() {
+    TypeHolderExample.Builder builder = new TypeHolderExample.Builder();
+    return builder.copyOf(this);
+  }
+
 }
 

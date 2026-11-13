@@ -1,6 +1,6 @@
 package org.openapitools.api;
 
-import java.util.List;
+import java.util.Date;
 import org.openapitools.model.User;
 
 import javax.ws.rs.*;
@@ -14,36 +14,46 @@ import java.util.List;
 import javax.validation.constraints.*;
 import javax.validation.Valid;
 
+/**
+* Represents a collection of functions to interact with the API endpoints.
+*/
 @Path("/user")
 @Api(description = "the user API")
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaJAXRSSpecServerCodegen")public class UserApi {
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaJAXRSSpecServerCodegen", comments = "Generator version: 7.28.0-SNAPSHOT")
+public class UserApi {
 
     @POST
+    @Consumes({ "application/json" })
     @ApiOperation(value = "Create user", notes = "This can only be done by the logged in user.", response = Void.class, tags={ "user" })
     @ApiResponses(value = { 
         @ApiResponse(code = 200, message = "successful operation", response = Void.class)
     })
-    public Response createUser(@Valid @NotNull User body) {
+    public Response createUser(@Valid @NotNull User user
+) {
         return Response.ok().entity("magic!").build();
     }
 
     @POST
     @Path("/createWithArray")
+    @Consumes({ "application/json" })
     @ApiOperation(value = "Creates list of users with given input array", notes = "", response = Void.class, tags={ "user" })
     @ApiResponses(value = { 
         @ApiResponse(code = 200, message = "successful operation", response = Void.class)
     })
-    public Response createUsersWithArrayInput(@Valid @NotNull List<User> body) {
+    public Response createUsersWithArrayInput(@NotNull List<@Valid User> user
+) {
         return Response.ok().entity("magic!").build();
     }
 
     @POST
     @Path("/createWithList")
+    @Consumes({ "application/json" })
     @ApiOperation(value = "Creates list of users with given input array", notes = "", response = Void.class, tags={ "user" })
     @ApiResponses(value = { 
         @ApiResponse(code = 200, message = "successful operation", response = Void.class)
     })
-    public Response createUsersWithListInput(@Valid @NotNull List<User> body) {
+    public Response createUsersWithListInput(@NotNull List<@Valid User> user
+) {
         return Response.ok().entity("magic!").build();
     }
 
@@ -54,7 +64,8 @@ import javax.validation.Valid;
         @ApiResponse(code = 400, message = "Invalid username supplied", response = Void.class),
         @ApiResponse(code = 404, message = "User not found", response = Void.class)
     })
-    public Response deleteUser(@PathParam("username") @ApiParam("The name that needs to be deleted") String username) {
+    public Response deleteUser(@PathParam("username") @ApiParam("The name that needs to be deleted") String username
+) {
         return Response.ok().entity("magic!").build();
     }
 
@@ -67,7 +78,8 @@ import javax.validation.Valid;
         @ApiResponse(code = 400, message = "Invalid username supplied", response = Void.class),
         @ApiResponse(code = 404, message = "User not found", response = Void.class)
     })
-    public Response getUserByName(@PathParam("username") @ApiParam("The name that needs to be fetched. Use user1 for testing.") String username) {
+    public Response getUserByName(@PathParam("username") @ApiParam("The name that needs to be fetched. Use user1 for testing.") String username
+) {
         return Response.ok().entity("magic!").build();
     }
 
@@ -79,7 +91,9 @@ import javax.validation.Valid;
         @ApiResponse(code = 200, message = "successful operation", response = String.class),
         @ApiResponse(code = 400, message = "Invalid username/password supplied", response = Void.class)
     })
-    public Response loginUser(@QueryParam("username") @NotNull  @ApiParam("The user name for login")  String username,@QueryParam("password") @NotNull  @ApiParam("The password for login in clear text")  String password) {
+    public Response loginUser(@QueryParam("username") @NotNull  @ApiParam("The user name for login")  String username
+,@QueryParam("password") @NotNull  @ApiParam("The password for login in clear text")  String password
+) {
         return Response.ok().entity("magic!").build();
     }
 
@@ -95,12 +109,15 @@ import javax.validation.Valid;
 
     @PUT
     @Path("/{username}")
+    @Consumes({ "application/json" })
     @ApiOperation(value = "Updated user", notes = "This can only be done by the logged in user.", response = Void.class, tags={ "user" })
     @ApiResponses(value = { 
         @ApiResponse(code = 400, message = "Invalid user supplied", response = Void.class),
         @ApiResponse(code = 404, message = "User not found", response = Void.class)
     })
-    public Response updateUser(@PathParam("username") @ApiParam("name that need to be deleted") String username,@Valid @NotNull User body) {
+    public Response updateUser(@PathParam("username") @ApiParam("name that need to be deleted") String username
+,@Valid @NotNull User user
+) {
         return Response.ok().entity("magic!").build();
     }
 }

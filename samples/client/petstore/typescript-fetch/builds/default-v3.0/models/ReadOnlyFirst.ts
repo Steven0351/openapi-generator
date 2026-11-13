@@ -12,7 +12,7 @@
  * Do not edit the class manually.
  */
 
-import { exists, mapValues } from '../runtime';
+import { mapValues } from '../runtime';
 /**
  * 
  * @export
@@ -21,16 +21,19 @@ import { exists, mapValues } from '../runtime';
 export interface ReadOnlyFirst {
     /**
      * 
-     * @type {string}
-     * @memberof ReadOnlyFirst
      */
     readonly bar?: string;
     /**
      * 
-     * @type {string}
-     * @memberof ReadOnlyFirst
      */
     baz?: string;
+}
+
+/**
+ * Check if a given object implements the ReadOnlyFirst interface.
+ */
+export function instanceOfReadOnlyFirst(value: object): value is ReadOnlyFirst {
+    return true;
 }
 
 export function ReadOnlyFirstFromJSON(json: any): ReadOnlyFirst {
@@ -38,26 +41,28 @@ export function ReadOnlyFirstFromJSON(json: any): ReadOnlyFirst {
 }
 
 export function ReadOnlyFirstFromJSONTyped(json: any, ignoreDiscriminator: boolean): ReadOnlyFirst {
-    if ((json === undefined) || (json === null)) {
+    if (json == null) {
         return json;
     }
     return {
         
-        'bar': !exists(json, 'bar') ? undefined : json['bar'],
-        'baz': !exists(json, 'baz') ? undefined : json['baz'],
+        'bar': json['bar'] == null ? undefined : json['bar'],
+        'baz': json['baz'] == null ? undefined : json['baz'],
     };
 }
 
-export function ReadOnlyFirstToJSON(value?: ReadOnlyFirst | null): any {
-    if (value === undefined) {
-        return undefined;
+export function ReadOnlyFirstToJSON(json: any): ReadOnlyFirst {
+    return ReadOnlyFirstToJSONTyped(json, false);
+}
+
+export function ReadOnlyFirstToJSONTyped(value?: Omit<ReadOnlyFirst, 'bar'> | null, ignoreDiscriminator: boolean = false): any {
+    if (value == null) {
+        return value;
     }
-    if (value === null) {
-        return null;
-    }
+
     return {
         
-        'baz': value.baz,
+        'baz': value['baz'],
     };
 }
 

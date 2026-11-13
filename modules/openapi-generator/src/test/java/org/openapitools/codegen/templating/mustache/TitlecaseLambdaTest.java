@@ -1,8 +1,8 @@
 package org.openapitools.codegen.templating.mustache;
 
-import java.util.Map;
-
 import org.testng.annotations.Test;
+
+import java.util.Map;
 
 public class TitlecaseLambdaTest extends LambdaTest {
 
@@ -13,6 +13,24 @@ public class TitlecaseLambdaTest extends LambdaTest {
 
         // When & Then
         test("Once Upon A Time", "{{#titlecase}}once upon a time{{/titlecase}}", ctx);
+    }
+
+    @Test
+    public void titlecaseSingleLetterTest() {
+        // Given
+        Map<String, Object> ctx = context("titlecase", new TitlecaseLambda());
+
+        // When & Then
+        test("O", "{{#titlecase}}o{{/titlecase}}", ctx);
+    }
+
+    @Test
+    public void titlecaseEmptyStringTest() {
+        // Given
+        Map<String, Object> ctx = context("titlecase", new TitlecaseLambda());
+
+        // When & Then
+        test("", "{{#titlecase}}{{/titlecase}}", ctx);
     }
 
     @Test

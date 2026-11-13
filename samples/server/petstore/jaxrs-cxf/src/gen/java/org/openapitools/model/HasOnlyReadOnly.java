@@ -1,17 +1,22 @@
 package org.openapitools.model;
 
+import com.fasterxml.jackson.annotation.JsonTypeName;
 import javax.validation.constraints.*;
 import javax.validation.Valid;
 
 import io.swagger.annotations.ApiModelProperty;
+import java.util.Objects;
 import com.fasterxml.jackson.annotation.JsonProperty;
+
 
 public class HasOnlyReadOnly  {
   
   @ApiModelProperty(value = "")
+
   private String bar;
 
   @ApiModelProperty(value = "")
+
   private String foo;
  /**
    * Get bar
@@ -33,6 +38,23 @@ public class HasOnlyReadOnly  {
   }
 
 
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    HasOnlyReadOnly hasOnlyReadOnly = (HasOnlyReadOnly) o;
+    return Objects.equals(this.bar, hasOnlyReadOnly.bar) &&
+        Objects.equals(this.foo, hasOnlyReadOnly.foo);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(bar, foo);
+  }
 
   @Override
   public String toString() {
@@ -50,10 +72,7 @@ public class HasOnlyReadOnly  {
    * (except the first line).
    */
   private static String toIndentedString(Object o) {
-    if (o == null) {
-      return "null";
-    }
-    return o.toString().replace("\n", "\n    ");
+    return o == null ? "null" : o.toString().replace("\n", "\n    ");
   }
 }
 

@@ -1,5 +1,4 @@
 import connexion
-import six
 
 from app.openapi_server.models.api_response import ApiResponse  # noqa: E501
 from app.openapi_server.models.pet import Pet  # noqa: E501
@@ -21,7 +20,7 @@ def add_pet(body):  # noqa: E501
     return 'do some magic!'
 
 
-def delete_pet(pet_id, api_key=None):  # noqa: E501
+def delete_pet(pet_id):  # noqa: E501
     """Deletes a pet
 
      # noqa: E501
@@ -33,6 +32,7 @@ def delete_pet(pet_id, api_key=None):  # noqa: E501
 
     :rtype: None
     """
+    api_key = connexion.request.headers.get('api_key')
     return 'do some magic!'
 
 

@@ -12,7 +12,7 @@
  * Do not edit the class manually.
  */
 
-import { exists, mapValues } from '../runtime';
+import { mapValues } from '../runtime';
 /**
  * 
  * @export
@@ -21,32 +21,39 @@ import { exists, mapValues } from '../runtime';
 export interface EnumArrays {
     /**
      * 
-     * @type {string}
-     * @memberof EnumArrays
      */
     justSymbol?: EnumArraysJustSymbolEnum;
     /**
      * 
-     * @type {Array<string>}
-     * @memberof EnumArrays
      */
     arrayEnum?: Array<EnumArraysArrayEnumEnum>;
 }
 
+
 /**
-* @export
-* @enum {string}
-*/
-export enum EnumArraysJustSymbolEnum {
-    GreaterThanOrEqualTo = '>=',
-    Dollar = '$'
-}/**
-* @export
-* @enum {string}
-*/
-export enum EnumArraysArrayEnumEnum {
-    Fish = 'fish',
-    Crab = 'crab'
+ * @export
+ */
+export const EnumArraysJustSymbolEnum = {
+    GreaterThanOrEqualTo: '>=',
+    Dollar: '$',
+} as const;
+export type EnumArraysJustSymbolEnum = typeof EnumArraysJustSymbolEnum[keyof typeof EnumArraysJustSymbolEnum];
+
+/**
+ * @export
+ */
+export const EnumArraysArrayEnumEnum = {
+    Fish: 'fish',
+    Crab: 'crab',
+} as const;
+export type EnumArraysArrayEnumEnum = typeof EnumArraysArrayEnumEnum[keyof typeof EnumArraysArrayEnumEnum];
+
+
+/**
+ * Check if a given object implements the EnumArrays interface.
+ */
+export function instanceOfEnumArrays(value: object): value is EnumArrays {
+    return true;
 }
 
 export function EnumArraysFromJSON(json: any): EnumArrays {
@@ -54,27 +61,29 @@ export function EnumArraysFromJSON(json: any): EnumArrays {
 }
 
 export function EnumArraysFromJSONTyped(json: any, ignoreDiscriminator: boolean): EnumArrays {
-    if ((json === undefined) || (json === null)) {
+    if (json == null) {
         return json;
     }
     return {
         
-        'justSymbol': !exists(json, 'just_symbol') ? undefined : json['just_symbol'],
-        'arrayEnum': !exists(json, 'array_enum') ? undefined : json['array_enum'],
+        'justSymbol': json['just_symbol'] == null ? undefined : json['just_symbol'],
+        'arrayEnum': json['array_enum'] == null ? undefined : json['array_enum'],
     };
 }
 
-export function EnumArraysToJSON(value?: EnumArrays | null): any {
-    if (value === undefined) {
-        return undefined;
+export function EnumArraysToJSON(json: any): EnumArrays {
+    return EnumArraysToJSONTyped(json, false);
+}
+
+export function EnumArraysToJSONTyped(value?: EnumArrays | null, ignoreDiscriminator: boolean = false): any {
+    if (value == null) {
+        return value;
     }
-    if (value === null) {
-        return null;
-    }
+
     return {
         
-        'just_symbol': value.justSymbol,
-        'array_enum': value.arrayEnum,
+        'just_symbol': value['justSymbol'],
+        'array_enum': value['arrayEnum'],
     };
 }
 

@@ -4,17 +4,14 @@
         <groupId>org.openapitools</groupId>
         <artifactId>openapi-generator-project</artifactId>
         <!-- RELEASE_VERSION -->
-        <version>5.3.0-SNAPSHOT</version>
+        <version>7.28.0-SNAPSHOT</version>
         <!-- /RELEASE_VERSION -->
-        <relativePath>../..</relativePath>
+        <relativePath>../../pom.xml</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
-
     <artifactId>openapi-generator-cli</artifactId>
     <packaging>jar</packaging>
-
     <name>openapi-generator (executable)</name>
-
     <build>
         <finalName>openapi-generator-cli</finalName>
         <resources>
@@ -82,7 +79,6 @@
             </plugin>
         </plugins>
     </build>
-
     <profiles>
         <profile>
             <id>static-analysis</id>
@@ -107,9 +103,7 @@
             </build>
         </profile>
     </profiles>
-
     <dependencies>
-
         <dependency>
             <groupId>org.openapitools</groupId>
             <artifactId>openapi-generator</artifactId>
@@ -119,13 +113,17 @@
                     <groupId>org.slf4j</groupId>
                     <artifactId>slf4j-simple</artifactId>
                 </exclusion>
+                <exclusion>
+                    <groupId>org.slf4j</groupId>
+                    <artifactId>slf4j-api</artifactId>
+                </exclusion>
             </exclusions>
         </dependency>
         <!--https://github.com/airlift/airline-->
         <dependency>
             <groupId>io.airlift</groupId>
             <artifactId>airline</artifactId>
-            <version>0.8</version>
+            <version>0.9</version>
         </dependency>
         <dependency>
             <groupId>com.googlecode.lambdaj</groupId>
@@ -135,12 +133,7 @@
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
-            <version>1.2.3</version>
-        </dependency>
-        <dependency>
-            <groupId>org.codehaus.janino</groupId>
-            <artifactId>janino</artifactId>
-            <version>3.1.0</version>
+            <version>1.6.5</version>
         </dependency>
         <dependency>
             <groupId>org.testng</groupId>
@@ -155,5 +148,4 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
-
 </project>

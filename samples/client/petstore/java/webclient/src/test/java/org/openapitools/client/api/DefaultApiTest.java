@@ -13,9 +13,10 @@
 
 package org.openapitools.client.api;
 
-import org.openapitools.client.model.InlineResponseDefault;
-import org.junit.Test;
-import org.junit.Ignore;
+import org.openapitools.client.model.FooGetDefaultResponse;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -26,7 +27,7 @@ import java.util.stream.Collectors;
 /**
  * API tests for DefaultApi
  */
-@Ignore
+@Disabled
 public class DefaultApiTest {
 
     private final DefaultApi api = new DefaultApi();
@@ -39,7 +40,8 @@ public class DefaultApiTest {
      */
     @Test
     public void fooGetTest()  {
-        InlineResponseDefault response = api.fooGet().block();
+        // uncomment below to test the function
+        //FooGetDefaultResponse response = api.fooGet().block();
 
         // TODO: test validations
     }

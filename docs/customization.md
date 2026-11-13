@@ -56,7 +56,7 @@ The above configuration will do the following:
 * Compile a user-provided `my_custom_templates/api_interfaces.mustache` following our usual API template compilation logic. That is, one file will be created per API; APIs are generated defined according to tags in your spec documentation. The destination filename of `Interface.kt` will act as a suffix for the filename. So, a tag of `Equipment` will output a corresponding `EquipmentInterface.kt`.
 * Because `api.mustache` is the same mustache filename as used in your target generator (`kotlin` in this example), we support the following:
   - The destination filename provides a suffix for the generated output. APIs generate per tag in your specification. So, a tag of `Equipment` will output a corresponding `EquipmentImpl.kt`. This option will be used whether `api.mustache` targets a user customized template or a built-in template.
-  - The built-in template will be used if you haven't provided an customized template. The kotlin generator defines the suffix as simply `.kt`, so this scenario would modify only the generated file suffixes according to the previous bullet point.
+  - The built-in template will be used if you haven't provided a customized template. The kotlin generator defines the suffix as simply `.kt`, so this scenario would modify only the generated file suffixes according to the previous bullet point.
   - Your `api.mustache` will be used if it exists in your custom template directory. For generators with library options, such as `jvm-okhttp3` in the kotlin generator, your file must exist in the same relative location as the embedded template. For kotlin using the `jvm-okhttp3` library option, this file would need to be located at `my_custom_templates/libraries/jvm-okhttp/api.mustache`. See [templating](./templating.md) for more details.
 * Compile `my_custom_templates/other/check.mustache` with the supporting files bundle, and output to `scripts/check.sh` in your output directory. Note that we don't currently support setting file flags on output, so scripts such as these will either have to be sourced rather than executed, or have file flags set separately after generation (external to our tooling).
 
@@ -110,7 +110,7 @@ java -cp "out/generators/my-codegen/target/my-codegen-openapi-generator-1.0.0.ja
 Note the `my-codegen` is an option for `-g` now, and you can use the usual arguments for generating your code:
 
 ```sh
-java -cp out/codegens/customCodegen/target/my-codegen-openapi-generator-1.0.0.jar:modules/openapi-generator-cli/target/openapi-generator-cli.jar \
+java -cp out/generators/my-codegen/target/my-codegen-openapi-generator-1.0.0.jar:modules/openapi-generator-cli/target/openapi-generator-cli.jar \
   org.openapitools.codegen.OpenAPIGenerator generate -g my-codegen \
   -i https://raw.githubusercontent.com/openapitools/openapi-generator/master/modules/openapi-generator/src/test/resources/3_0/petstore.yaml \
   -o ./out/myClient
@@ -169,7 +169,7 @@ If you publish your artifact to a distant maven repository, do not forget to add
 
 You may not want to generate *all* models in your project. Likewise, you may want just one or two apis to be written.  If that's the case, you can use system properties or [global properties](./global-properties.md) to control the output.
 
-The default is generate *everything* supported by the specific library. Once you enable a feature, it will restrict the contents generated:
+The default is to generate *everything* supported by the specific library. Once you enable a feature, it will restrict the contents generated:
 
 ```sh
 # generate only models
@@ -216,7 +216,7 @@ These options default to true and don't limit the generation of the feature opti
 
 When using selective generation, _only_ the templates needed for the specific generation will be used.
 
-To skip models defined as the form parameters in "requestBody", please use `skipFormModel` (default to `true`) (this option is introduced at v3.2.2 and `true` by default starting from v5.x).
+To skip models defined as the form parameters in "requestBody", please use `skipFormModel` (default to `true`) (this option is introduced at v3.2.2 and `true` by default starting from v5.0.0).
 
 ```sh
 --global-property skipFormModel=true
@@ -266,6 +266,11 @@ Upon first code generation, you may also pass the CLI option `--ignore-file-over
 
 Editor support for `.openapi-generator-ignore` files is available in IntelliJ via the [.ignore plugin](https://plugins.jetbrains.com/plugin/7495--ignore).
 
+One may want to pre-populate `.openapi-generator-ignore` with a list of entries during the code generation process and the global/general option `openapiGeneratorIgnoreList` (e.g. --openapi-generator-ignore-list in CLI) can do exactly that. For example,
+```
+java -jar modules/openapi-generator-cli/target/openapi-generator-cli.jar generate -g spring -i modules/openapi-generator/src/test/resources/3_0/petstore.yaml -o /tmp/spring --additional-properties useTags=true --openapi-generator-ignore-list "README.md,pom.xml,docs/*.md,src/main/java/org/openapitools/model/*"
+```
+
 ## Customizing the generator
 
 There are different aspects of customizing the code generator beyond just creating or modifying templates.  Each language has a supporting configuration file to handle different type mappings, etc:
@@ -299,6 +304,8 @@ You can use also `config.yml` with following equivalent example:
 apiPackage: "petstore"
 ```
 
+Another example of config file can be found in [modules/openapi-generator/src/test/resources/sampleConfig.json](https://github.com/OpenAPITools/openapi-generator/blob/master/modules/openapi-generator/src/test/resources/sampleConfig.json)
+
 Supported config options can be different per language. Running `config-help -g {lang}` will show available options.
 **These options are applied via configuration file (e.g. config.json or config.yml) or by passing them with `-p {optionName}={optionValue}`**. (If `-p {optionName}` does not work, please open a [ticket](https://github.com/openapitools/openapi-generator/issues/new) and we'll look into it)
 
@@ -318,7 +325,6 @@ CONFIG OPTIONS
 ...... (results omitted)
 	library
 	    library template (sub-template) to use:
-	    jersey1 - HTTP client: Jersey client 1.18. JSON processing: Jackson 2.4.2
 	    jersey2 - HTTP client: Jersey client 2.6
 	    feign - HTTP client: Netflix Feign 8.1.1.  JSON processing: Jackson 2.6.3
 	    okhttp-gson (default) - HTTP client: OkHttp 2.4.0. JSON processing: Gson 2.3.1
@@ -393,4 +399,411 @@ Or for multiple mappings:
 or
 ```
 --import-mappings Pet=my.models.MyPet --import-mappings Order=my.models.MyOrder
+```
+
+## Default Values
+
+To customize the default values for containers, one can leverage the option `defaultToEmptyContainer` to customize what to initalize for array/set/map by respecting the default values in the spec
+
+Set optional array and map default value to an empty container
+```
+java -jar modules/openapi-generator-cli/target/openapi-generator-cli.jar generate -g java -i modules/openapi-generator/src/test/resources/3_0/petstore.yaml -o /tmp/output --additional-properties defaultToEmptyContainer="array?|map?"
+```
+
+Set nullable array (required) default value to an empty container
+```
+java -jar modules/openapi-generator-cli/target/openapi-generator-cli.jar generate -g java -i modules/openapi-generator/src/test/resources/3_0/petstore.yaml -o /tmp/output --additional-properties defaultToEmptyContainer="?array"
+```
+
+Set nullable array (optional) default value to an empty container
+```
+java -jar modules/openapi-generator-cli/target/openapi-generator-cli.jar generate -g java -i modules/openapi-generator/src/test/resources/3_0/petstore.yaml -o /tmp/output --additional-properties defaultToEmptyContainer="?array?"
+```
+
+To simply enable this option to respect default values in the specification (basically null if not specified):
+```
+java -jar modules/openapi-generator-cli/target/openapi-generator-cli.jar generate -g java -i modules/openapi-generator/src/test/resources/3_0/petstore.yaml -o /tmp/output --additional-properties defaultToEmptyContainer=""
+```
+
+Note: not all generators support this generator's option (e.g. --additional-properties defaultToEmptyContainer="?array" in CLI) so please test to confirm. Java generators are the first to implement this feature. We welcome PRs to support this option in other generators. Related PR: https://github.com/OpenAPITools/openapi-generator/pull/21269
+
+## Name Mapping
+
+One can map the property name using `nameMappings` option and parameter name using `parameterNameMappings` option to something else. Consider the following schema:
+```
+    PropertyNameCollision:
+      properties:
+        _type:
+          type: string
+        type:
+          type: string
+        type_:
+          type: string
+      type: object
+```
+`_type`, `type`, `type_` will result in property name collision in the Java client generator for example. We can resolve the issue using `nameMappings` by mapping `_type` to `underscoreType`, `type_` to `typeWithUnderscore`.
+
+Here is an example to use `nameMappings` and `parameterNameMapping` in CLI:
+```sh
+java -jar modules/openapi-generator-cli/target/openapi-generator-cli.jar generate -g java -i modules/openapi-generator/src/test/resources/3_0/java/petstore-with-fake-endpoints-models-for-testing-okhttp-gson.yaml  -o /tmp/java2/ --name-mappings _type=underscoreType,type_=typeWithUnderscore, --parameter-name-mappings _type=paramType,type_=typeParam
+```
+
+To map model names, use `modelNameMappings` option, e.g.
+```sh
+java -jar modules/openapi-generator-cli/target/openapi-generator-cli.jar generate -g csharp -i modules/openapi-generator/src/test/resources/3_0/petstore.yaml  -o /tmp/csharp/ --model-name-mappings Tag=Label
+```
+will rename the `Tag` schema to `Label` instead.
+
+To map enum names, use `enumNameMappings` option, e.g.
+```sh
+java -jar modules/openapi-generator-cli/target/openapi-generator-cli.jar generate -g java -i modules/openapi-generator/src/test/resources/3_0/petstore.yaml  -o /tmp/java/ --enum-name-mappings sold=UNAVAILABLE
+```
+will rename SOLD to UNAVAILABLE instead.
+
+Not all generators support these features yet. Please give it a try to confirm the behaviour and open an issue (ticket) to let us know which generators you would like to have this feature enabled and we'll prioritize accordingly. We also welcome PRs to add these features to generators. Related PRs for reference: #16209, #16234 (modelNameMappings), #16194, #16206 (nameMappings, parameterNameMappings), #17108 (enumNameMappings).
+
+NOTE: some generators use `baseName` (original name obtained directly from OpenAPI spec, e.g. `shipping-date`) mustache tag in the templates so the mapping feature won't work.
+
+To map `operationId` (used in method naming) to something else, use `operationIdNameMappings` option, e.g.
+
+```sh
+java -jar modules/openapi-generator-cli/target/openapi-generator-cli.jar generate -g java -i modules/openapi-generator/src/test/resources/3_0/petstore.yaml  -o /tmp/java/ --operation-id-name-mappings getPetById=returnPetById
+```
+will name the API method as `returnPetById` instead of `getPetById` obtained from OpenAPI doc/spec.
+
+:warning: **NOTE: these mapping options do not perform any validation/change on the input and therefore output (e.g. auto-generated SDK) may not work (e.g. input is a reserved keyword in a particular programming language causing compilation errors). As usual, please test the output to ensure it's working as expected.**
+
+## Schema Mapping
+
+One can map the schema to something else (e.g. external objects/models outside of the package) using the `schemaMappings` option, e.g. in CLI
+```sh
+java -jar modules/openapi-generator-cli/target/openapi-generator-cli.jar generate -g java -i modules/openapi-generator/src/test/resources/3_0/type-alias.yaml -o /tmp/java2/ --schema-mappings TypeAlias=foo.bar.TypeAlias
+```
+Another example (in conjunction with --type-mappings):
+```sh
+java -jar modules/openapi-generator-cli/target/openapi-generator-cli.jar generate -g java -i /tmp/alias.yaml -o /tmp/alias/ --schema-mappings stream=org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody --type-mappings string+binary=stream
+```
+while /tmp/alias.yaml is as follows:
+```yaml
+openapi: 3.0.3
+info:
+  title: Demo app
+  version: 1.0.0
+servers:
+  - url: /api/v1
+paths:
+  /demo:
+    get:
+      summary: Demo
+      operationId: demo
+      responses:
+        '200':
+          description: Demo response
+          content:
+            text/csv:
+              schema:
+                type: string
+                format: binary
+```
+
+## Inline Schema Naming
+
+Inline schemas are created as separate schemas automatically and the auto-generated schema name may not look good to everyone. One can customize the name using the `title` field or the `inlineSchemaNameMapping` option. For example, run the following,
+
+```
+java -jar modules/openapi-generator-cli/target/openapi-generator-cli.jar generate -g java -i  modules/openapi-generator/src/test/resources/3_0/inline_model_resolver.yaml -o /tmp/java3/ --skip-validate-spec --inline-schema-name-mappings inline_object_2=SomethingMapped,inline_object_4=nothing_new
+```
+will show the following in the console:
+```
+[main] INFO  o.o.codegen.InlineModelResolver - Inline schema created as arbitraryObjectRequestBodyProperty_request. To have complete control of the model name, set the `title` field or use the inlineSchemaNameMapping option (--inline-schema-name-mappings in CLI).
+[main] INFO  o.o.codegen.InlineModelResolver - Inline schema created as meta_200_response. To have complete control of the model name, set the `title` field or use the inlineSchemaNameMapping option (--inline-schema-name-mappings in CLI).
+```
+For example, to name the inline schema `meta_200_response` as `MetaObject`, use the `--inline-schema-name-mappings` option as follows:
+```
+java -jar modules/openapi-generator-cli/target/openapi-generator-cli.jar generate -g java -i  modules/openapi-generator/src/test/resources/3_0/inline_model_resolver.yaml -o /tmp/java3/ --skip-validate-spec --inline-schema-name-mappings meta_200_response=MetaObject,arbitraryObjectRequestBodyProperty_request=ArbitraryRequest
+```
+
+Note that inline schema names used with `--inline-schema-name-mappings` are internal identifiers and may differ from generated class/type names. Generators often apply language-specific naming conventions (for example, Java may render `meta_200_response` as `Meta200Response`).
+
+So for Java, to rename `Meta200Response.java`, use `--inline-schema-name-mappings meta_200_response=MetaObject` (not `--inline-schema-name-mappings Meta200Response=MetaObject`).
+
+Another useful option is `inlineSchemaOptions`, which allows you to customize how inline schemas are handled or named
+```
+--inline-schema-options ARRAY_ITEM_SUFFIX=_array_item,MAP_ITEM_SUFFIX=_map_item,RESOLVE_INLINE_ENUMS=true
+```
+
+- `ARRAY_ITEM_SUFFIX` sets the array item suffix
+- `MAP_ITEM_SUFFIX` set the map item suffix
+- `SKIP_SCHEMA_REUSE=true` is a special value to skip reusing inline schemas during refactoring
+- `REFACTOR_ALLOF_INLINE_SCHEMAS=true` will restore the 6.x (or below) behaviour to refactor allOf inline schemas into $ref. (v7.0.0 will skip the refactoring of these allOf inline schemas by default)
+- `RESOLVE_INLINE_ENUMS=true` will refactor inline enum definitions into $ref. This must be activated to allow the renaming of inline enum definitions using `inlineSchemaNameMappings`.
+
+## OpenAPI Normalizer
+
+OpenAPI Normalizer transforms the input OpenAPI doc/spec (which may not perfectly conform to the specification) to make it workable with OpenAPI Generator. A few rules are switched on by default since 7.0.0 release:
+
+- SIMPLIFY_ONEOF_ANYOF 
+- SIMPLIFY_BOOLEAN_ENUM
+- SIMPLIFY_ONEOF_ANYOF_ENUM
+- REFACTOR_ALLOF_WITH_PROPERTIES_ONLY
+
+(One can use `DISABLE_ALL=true` to disable all the rules)
+
+Here is a list of rules supported:
+
+- `REF_AS_PARENT_IN_ALLOF`: when set to `true`, child schemas in `allOf` is considered a parent if it's a `$ref` (instead of inline schema).
+
+Example:
+```
+java -jar modules/openapi-generator-cli/target/openapi-generator-cli.jar generate -g java -i modules/openapi-generator/src/test/resources/3_0/allOf_extension_parent.yaml -o /tmp/java-okhttp/ --openapi-normalizer REF_AS_PARENT_IN_ALLOF=true
+```
+
+- `REMOVE_ANYOF_ONEOF_AND_KEEP_PROPERTIES_ONLY`: when set to `true`, oneOf/anyOf schema with only required properties only in a schema with properties will be removed. [(example)](https://github.com/OpenAPITools/openapi-generator/blob/master/modules/openapi-generator/src/test/resources/3_0/removeAnyOfOneOfAndKeepPropertiesOnly_test.yaml)
+
+Example:
+```
+java -jar modules/openapi-generator-cli/target/openapi-generator-cli.jar generate -g java -i modules/openapi-generator/src/test/resources/3_0/removeAnyOfOneOfAndKeepPropertiesOnly_test.yaml -o /tmp/java-okhttp/ --openapi-normalizer REMOVE_ANYOF_ONEOF_AND_KEEP_PROPERTIES_ONLY=true
+```
+
+- `SIMPLIFY_ANYOF_STRING_AND_ENUM_STRING`: when set to `true`, simplify anyOf schema with string and enum of string to just `string`
+
+Example:
+```
+java -jar modules/openapi-generator-cli/target/openapi-generator-cli.jar generate -g java -i modules/openapi-generator/src/test/resources/3_0/simplifyAnyOfStringAndEnumString_test.yaml -o /tmp/java-okhttp/ --openapi-normalizer SIMPLIFY_ANYOF_STRING_AND_ENUM_STRING=true
+```
+
+- `SIMPLIFY_ONEOF_ANYOF_ENUM`: when set to true, oneOf/anyOf with only enum sub-schemas all containing enum values will be converted to a single enum. This is enabled by default.
+
+Example:
+
+```
+java -jar modules/openapi-generator-cli/target/openapi-generator-cli.jar generate -g java -i modules/openapi-generator/src/test/resources/3_0/simplifyOneOfWithEnums_test.yaml -o /tmp/java-okhttp/ --openapi-normalizer SIMPLIFY_ONEOF_ANYOF_ENUM=true
+```
+
+- `SIMPLIFY_BOOLEAN_ENUM`: when set to `true`, convert boolean enum to just enum.
+
+Example:
+```
+java -jar modules/openapi-generator-cli/target/openapi-generator-cli.jar generate -g java -i modules/openapi-generator/src/test/resources/3_0/simplifyBooleanEnum_test.yaml -o /tmp/java-okhttp/ --openapi-normalizer SIMPLIFY_BOOLEAN_ENUM=true
+```
+
+- `SIMPLIFY_ONEOF_ANYOF`: when set to `true`, simplify oneOf/anyOf by 1) removing null (sub-schema) or enum of null (sub-schema) and setting nullable to true instead, and 2) simplifying oneOf/anyOf with a single sub-schema to just the sub-schema itself.
+
+Example:
+```
+java -jar modules/openapi-generator-cli/target/openapi-generator-cli.jar generate -g java -i modules/openapi-generator/src/test/resources/3_0/simplifyOneOfAnyOf_test.yaml -o /tmp/java-okhttp/ --openapi-normalizer SIMPLIFY_ONEOF_ANYOF=true
+```
+
+- `KEEP_ONLY_FIRST_TAG_IN_OPERATION`: when set to `true`, only keep the first tag in operation if there are more than one tag defined.
+
+Example:
+```
+java -jar modules/openapi-generator-cli/target/openapi-generator-cli.jar generate -g java -i modules/openapi-generator/src/test/resources/3_0/enableKeepOnlyFirstTagInOperation_test.yaml -o /tmp/java-okhttp/ --openapi-normalizer KEEP_ONLY_FIRST_TAG_IN_OPERATION=true
+```
+
+- `SET_TAGS_FOR_ALL_OPERATIONS`: when set to a string value, tags in all operations will reset to the string value provided.
+
+Example:
+```
+java -jar modules/openapi-generator-cli/target/openapi-generator-cli.jar generate -g java -i modules/openapi-generator/src/test/resources/3_0/enableKeepOnlyFirstTagInOperation_test.yaml -o /tmp/java-okhttp/ --openapi-normalizer SET_TAGS_FOR_ALL_OPERATIONS=another_tag_name
+```
+
+- `SET_TAGS_TO_OPERATIONID`: when set to true, tags in all operations will be set to operationId or "default" if operationId is empty
+
+Example:
+```
+java -jar modules/openapi-generator-cli/target/openapi-generator-cli.jar generate -g java -i modules/openapi-generator/src/test/resources/3_0/petstore.yaml -o /tmp/java-okhttp/ --openapi-normalizer SET_TAGS_TO_OPERATIONID=true
+```
+
+- `SET_TAGS_TO_VENDOR_EXTENSION`:  when set to a string value, tags will be set to the value of the provided vendor extension
+
+Example:
+```
+java -jar modules/openapi-generator-cli/target/openapi-generator-cli.jar generate -g java -i modules/openapi-generator/src/test/resources/3_0/enableSetTagsToVendorExtension_test.yaml -o /tmp/java-okhttp/ --openapi-normalizer SET_TAGS_TO_VENDOR_EXTENSION=x-tags
+```
+
+- `ADD_UNSIGNED_TO_INTEGER_WITH_INVALID_MAX_VALUE`: when set to true, auto fix integer with maximum value 4294967295 (2^32-1) or long with 18446744073709551615 (2^64-1) by adding x-unsigned to the schema
+
+Example:
+```
+java -jar modules/openapi-generator-cli/target/openapi-generator-cli.jar generate -g java -i modules/openapi-generator/src/test/resources/3_0/addUnsignedToIntegerWithInvalidMaxValue_test.yaml -o /tmp/java-okhttp/ --openapi-normalizer ADD_UNSIGNED_TO_INTEGER_WITH_INVALID_MAX_VALUE=true
+```
+
+- `REFACTOR_ALLOF_WITH_PROPERTIES_ONLY`: When set to true, refactor schema with allOf and properties in the same level to a schema with allOf only and, the allOf contains a new schema containing the properties in the top level.
+
+Example:
+```
+java -jar modules/openapi-generator-cli/target/openapi-generator-cli.jar generate -g java -i modules/openapi-generator/src/test/resources/3_0/allOf_extension_parent.yaml -o /tmp/java-okhttp/ --openapi-normalizer REFACTOR_ALLOF_WITH_PROPERTIES_ONLY=true
+```
+
+- `REMOVE_X_INTERNAL`: Set to true if you want to disable the default behavior of removing/hiding the x-internal in operations and model
+
+Example:
+```
+java -jar modules/openapi-generator-cli/target/openapi-generator-cli.jar generate -g java -i modules/openapi-generator/src/test/resources/3_0/enableKeepOnlyFirstTagInOperation_test.yaml -o /tmp/java-okhttp/ --openapi-normalizer REMOVE_X_INTERNAL=true
+```
+
+- `NORMALIZER_CLASS`: Set to full classname of a class extending the default org.openapitools.codegen.OpenAPINormalizer. It allows customization of the default normalizer. 
+
+Example:
+```
+java -jar modules/openapi-generator-cli/target/openapi-generator-cli.jar generate -g java -i modules/openapi-generator/src/test/resources/3_0/required-properties.yaml -o /tmp/java-okhttp/ --openapi-normalizer NORMALIZER_CLASS=org.openapitools.codegen.OpenAPINormalizerTest$RemoveRequiredNormalizer
+```
+
+The class must be resolvable on the generation runtime classpath. When using the
+[Gradle plugin](https://github.com/OpenAPITools/openapi-generator/tree/master/modules/openapi-generator-gradle-plugin),
+a custom `NORMALIZER_CLASS` that isn't already on the plugin's own classpath must be added via the
+`openApiGeneratorExtra` dependency configuration (or the `generatorClasspath` property) so it is forwarded to the
+code generation worker in both `workerIsolation` modes (`process` and `classloader`) - see the plugin's README for
+details.
+
+Similarly, a custom generator selected by name or fully qualified class name must be resolvable on the generation
+runtime classpath. With the Gradle plugin, add its jar or project output to `openApiGeneratorExtra` (preferred) or
+`generatorClasspath` so it is forwarded to the code generation worker in both `process` and `classloader`
+`workerIsolation` modes.
+
+- `LOOSE_NULL_DEFINITIONS`: When set to true, allow more schema definitions in OpenAPI 3.0 spec to be the same as `null` in OpenAPI 3.1 spec by setting ModelUtils.looseNullDefinitions to true.
+
+Example:
+```
+java -jar modules/openapi-generator-cli/target/openapi-generator-cli.jar generate -g java -i modules/openapi-generator/src/test/resources/bugs/issue_anyof_bare_nullable_object.yaml -o /tmp/java-okhttp/ --openapi-normalizer LOOSE_NULL_DEFINITIONS=true
+```
+
+- `REMOVE_PROPERTIES_FROM_TYPE_OTHER_THAN_OBJECT`: When set to true, remove the "properties" of a schema with type other than "object".
+
+Example:
+```
+java -jar modules/openapi-generator-cli/target/openapi-generator-cli.jar generate -g java -i modules/openapi-generator/src/test/resources/3_0/required-properties.yaml -o /tmp/java-okhttp/ --openapi-normalizer REMOVE_PROPERTIES_FROM_TYPE_OTHER_THAN_OBJECT=true
+```
+
+- `REPLACE_ONE_OF_BY_DISCRIMINATOR_MAPPING`: when set to true, oneOf is removed and is converted into mappings in a discriminator mapping.
+
+Example:
+```
+java -jar modules/openapi-generator-cli/target/openapi-generator-cli.jar generate -g java -i modules/openapi-generator/src/test/resources/3_0/oneOf_issue_23527.yaml -o /tmp/java/ --openapi-normalizer REPLACE_ONE_OF_BY_DISCRIMINATOR_MAPPING=true
+```
+
+Here is what the change in the spec looks like:
+
+```diff
+diff --git a/api/openapi.yaml b/api/openapi.yaml
+index 6f27abd..146c61c 100644
+--- a/api/openapi.yaml
++++ b/api/openapi.yaml
+@@ -9,10 +9,10 @@ components:
+   schemas:
+     GeoJsonObject:
+       discriminator:
++        mapping:
++          MultiPolygon: "#/components/schemas/Multi-Polygon"
++          Polygon: "#/components/schemas/Polygon"
+         propertyName: type
+-      oneOf:
+-      - $ref: "#/components/schemas/Polygon"
+-      - $ref: "#/components/schemas/Multi-Polygon"
+       properties:
+         type:
+           type: string
+```
+
+- `FILTER`
+
+The `FILTER` parameter allows selective inclusion of API operations based on specific criteria. It applies the `x-internal: true` property to operations that do **not** match the specified values, preventing them from being generated. Multiple filters can be separated by a semicolon.
+
+### Available Filters
+
+- **`operationId`**  
+  When set to `operationId:addPet|getPetById`, operations **not** matching `addPet` or `getPetById` will be marked as internal (`x-internal: true`), and excluded from generation. Matching operations will have `x-internal: false`.
+
+- **`method`**  
+  When set to `method:get|post`, operations **not** using `GET` or `POST` methods will be marked as internal (`x-internal: true`), preventing their generation.
+
+- **`tag`**  
+  When set to `tag:person|basic`, operations **not** tagged with `person` or `basic` will be marked as internal (`x-internal: true`), and will not be generated.
+
+- **`path`**  
+  When set to `path:/v1|/v2`, operations on paths **not** starting with `/v1` or with `/v2` will be marked as internal (`x-internal: true`), and will not be generated.
+
+### Example Usage
+
+```sh
+java -jar modules/openapi-generator-cli/target/openapi-generator-cli.jar generate \
+  -g java \
+  -i modules/openapi-generator/src/test/resources/3_0/petstore.yaml \
+  -o /tmp/java-okhttp/ \
+  --openapi-normalizer FILTER="operationId:addPet|getPetById ; tag:store"
+```
+
+- `SET_CONTAINER_TO_NULLABLE`: When set to `array|set|map` (or just `array`) for example, it will set `nullable` in array, set and map to true.
+
+Example:
+```
+java -jar modules/openapi-generator-cli/target/openapi-generator-cli.jar generate -g java -i modules/openapi-generator/src/test/resources/3_0/petstore.yaml -o /tmp/java-okhttp/ --openapi-normalizer SET_CONTAINER_TO_NULLABLE="array|map"
+```
+
+- `SET_PRIMITIVE_TYPES_TO_NULLABLE`: When set to `string|integer|number|boolean` (or just `string`) for example, it will set the type to `nullable` (nullable: true)
+
+Example:
+```
+java -jar modules/openapi-generator-cli/target/openapi-generator-cli.jar generate -g java -i modules/openapi-generator/src/test/resources/3_0/petstore.yaml -o /tmp/java-okhttp/ --openapi-normalizer SET_PRIMITIVE_TYPES_TO_NULLABLE="integer|number"
+```
+
+- `FIX_DUPLICATED_OPERATIONID`: When set to true, an integer suffix will be added to duplicated operationId(s), e.g. getName => getName_0, getName_1, etc
+
+Example:
+```
+java -jar modules/openapi-generator-cli/target/openapi-generator-cli.jar generate -g java -i modules/openapi-generator/src/test/resources/3_1/java/petstore.yaml -o /tmp/java-okhttp/ --openapi-normalizer FIX_DUPLICATED_OPERATIONID=true
+```
+
+- `SET_BEARER_AUTH_FOR_NAME`: When set to the name of an openapi 2.0 securityDefinition, that securityDefinition will be converted to the openapi 3.0 bearerAuth securityScheme.
+
+Example:
+```
+java -jar modules/openapi-generator-cli/target/openapi-generator-cli.jar generate -g java -i modules/openapi-generator/src/test/resources/2_0/globalSecurity.json -o /tmp/java-okhttp/ --openapi-normalizer SET_BEARER_AUTH_FOR_NAME=api_key
+```
+Transforms this securityDefinition:
+```
+  "securityDefinitions": {
+    "api_key": {
+      "type": "apiKey",
+      "name": "api_key",
+      "in": "header"
+    },
+  },
+```
+Into this securityScheme:
+```
+  securitySchemes:
+    api_key:
+      scheme: bearer
+      type: http
+```
+
+- `SECURITY_SCHEMES_FILTER`
+
+The `SECURITY_SCHEMES_FILTER` parameter allows selective inclusion of API security schemes based on specific criteria. It removes security schemes that do **not** match the specified values, preventing them from being generated. All references to removed security schemes also deleted. Multiple filters can be separated by a semicolon.
+
+### Available Filters
+
+- **`key`**
+  When set to `key:api_key|http_bearer`, security schemes **not** matching `api_key` or `http_bearer` will be marked as internal (`x-internal: true`), and excluded from generation. Matching operations will have `x-internal: false`.
+
+- **`type`**
+  When set to `type:apiKey|http`, security schemes **not** using `apiKey` or `http` types will be marked as internal (`x-internal: true`), preventing their generation.
+
+### Example Usage
+
+```sh
+java -jar modules/openapi-generator-cli/target/openapi-generator-cli.jar generate \
+  -g java \
+  -i modules/openapi-generator/src/test/resources/3_0/petstore.yaml \
+  -o /tmp/java-okhttp/ \
+  --openapi-normalizer SECURITY_SCHEMES_FILTER="key:api_key|http_bearer ; type:oauth2"
+```
+
+- `SORT_MODEL_PROPERTIES`: When set to true, model properties will be sorted alphabetically by name. This ensures deterministic code generation output regardless of property ordering in the source spec.
+
+Example:
+```
+java -jar modules/openapi-generator-cli/target/openapi-generator-cli.jar generate -g java -i modules/openapi-generator/src/test/resources/3_0/petstore.yaml -o /tmp/java-okhttp/ --openapi-normalizer SORT_MODEL_PROPERTIES=true
 ```
